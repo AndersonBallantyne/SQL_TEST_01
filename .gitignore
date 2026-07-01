@@ -1,0 +1,15 @@
+﻿# Secrets — never commit real credentials
+.env
+
+# OS files
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editor
+.vscode/
+
+# Logs, backups, database dumps
+*.log
+*.bak
+*.dump

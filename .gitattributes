@@ -1,0 +1,4 @@
+﻿* text=auto
+*.sql text
+*.yml text
+*.md text

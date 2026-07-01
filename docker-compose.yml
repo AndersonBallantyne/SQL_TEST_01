@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: pg_local
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: REDACTED_PG_DEV_PASSWORD
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: mssql_local
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "REDACTED_MSSQL_DEV_PASSWORD_OLD"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssqldata:/var/opt/mssql
+
+volumes:
+  pgdata:
+  mssqldata:
