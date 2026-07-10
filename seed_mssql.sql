@@ -2,8 +2,7 @@ USE appdb;
 GO
 DELETE FROM orders;
 DELETE FROM customers;
-DBCC CHECKIDENT ('customers', RESEED, 0);
-DBCC CHECKIDENT ('orders', RESEED, 0);
+
 GO
 INSERT INTO customers (name, email) VALUES
     ('Ada Lovelace',      'ada@example.com'),
