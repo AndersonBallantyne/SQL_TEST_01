@@ -1,6 +1,8 @@
 -- seed.sql — sample data for the customers/orders demo (PostgreSQL)
 -- Idempotent: wipes and reloads, so re-running always yields the same rows.
 
+TRUNCATE TABLE orders, customers RESTART IDENTITY CASCADE;
+
 INSERT INTO customers (name, email) VALUES
     ('Ada Lovelace',      'ada@example.com'),
     ('Alan Turing',       'alan@example.com'),

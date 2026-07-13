@@ -4,9 +4,9 @@ services:
     container_name: pg_local
     restart: unless-stopped
     environment:
-      POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: REDACTED_PG_DEV_PASSWORD
-      POSTGRES_DB: appdb
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "REDACTED_MSSQL_DEV_PASSWORD"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
       MSSQL_PID: "Developer"
     ports:
       - "1433:1433"

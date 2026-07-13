@@ -1,5 +1,6 @@
 ﻿# Secrets — never commit real credentials
 .env
+CREDENTIALS.local.md
 
 # OS files
 Thumbs.db
