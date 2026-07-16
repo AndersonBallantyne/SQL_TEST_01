@@ -58,51 +58,53 @@ When you need data to answer a question, use the run_sql_query tool. Only write 
 """
 
 
-user_question = "How many customers do we have?"
+user_question = "What's the total revenue from all orders?"
 
 messages = [{"role": "user", "content": user_question}]
 
-response = client.messages.create(
-    model="claude-haiku-4-5",
-    max_tokens=1024,
-    system=SYSTEM_PROMPT,
-    tools=tools,
-    messages=[{"role": "user", "content": user_question}]
-)
-for block in response.content:
-    print(block)
+while True:
+    response = client.messages.create(
+        model="claude-haiku-4-5",
+        max_tokens=1024,
+        system=SYSTEM_PROMPT,
+        tools=tools,
+        messages=messages
+    )
 
-print("stop_reason:", response.stop_reason)
+    for block in response.content:
+        print(block)
+    print("stop_reason:", response.stop_reason)
 
-tool_use_block = next(block for block in response.content if block.type == "tool_use")
+    messages.append({"role": "assistant", "content": response.content})
 
-result = run_sql_query(tool_use_block.input["sql"])
+    if response.stop_reason != "tool_use":
+        break
 
-print(result)
+    tool_results = []
+    for block in response.content:
+        if block.type != "tool_use":
+            continue
 
-messages.append({"role": "assistant", "content": response.content})
-messages.append({
-    "role": "user",
-    "content": [
-        {
+        if block.name == "run_sql_query":
+            result = run_sql_query(block.input["sql"])
+        elif block.name == "list_tables":
+            result = list_tables()
+        elif block.name == "describe_table":
+            result = describe_table(block.input["table_name"])
+
+        print(result)
+
+        tool_results.append({
             "type": "tool_result",
-            "tool_use_id": tool_use_block.id,
+            "tool_use_id": block.id,
             "content": str(result)
-        }
-    ]
-})
+        })
 
-final_response = client.messages.create(
-    model="claude-haiku-4-5",
-    max_tokens=1024,
-    system=SYSTEM_PROMPT,
-    tools=tools,
-    messages=messages
-)
-
-for block in final_response.content:
-    if block.type == "text":
-        print(block.text)
+    messages.append({"role": "user", "content": tool_results})
+    
+    for block in response.content:
+        if block.type == "text":
+            print(block.text)
 
 
 
