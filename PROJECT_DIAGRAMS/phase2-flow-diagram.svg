@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 1300" width="680" height="1300" role="img" aria-labelledby="title desc">
+  <title id="title">Phase 2 flow: first Anthropic API call</title>
+  <desc id="desc">Flowchart: start, an auth checkpoint decision, three setup steps, a run-and-verify decision, two closing steps, then continue to Phase 3.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #101827; }
+    .heading    { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 22px; font-weight: 600; }
+    .subheading { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 11px; fill: #7C8894; letter-spacing: 0.12em; }
+    .step-label { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; }
+    .step-desc  { font-size: 13px; fill: #4B5768; }
+    .step-mono  { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px; fill: #7C8894; }
+    .decision-title { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; text-anchor: middle; }
+    .decision-q     { font-size: 12.5px; fill: #B5502B; text-anchor: middle; font-weight: 600; }
+    .legend-text { font-size: 11px; fill: #7C8894; }
+    .rect-node   { fill: #FFFFFF; stroke: #B9C4C7; stroke-width: 1.5; }
+    .diamond-node{ fill: #F7E9E2; stroke: #B5502B; stroke-width: 1.5; }
+    .pill-node   { fill: #0B5158; }
+    .pill-text   { fill: #F3F9F9; font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13.5px; font-weight: 700; text-anchor: middle; letter-spacing: 0.04em; }
+    .badge       { fill: #0B5158; }
+    .badge-text  { fill: #F3F9F9; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+    .arrow-line  { stroke: #B9C4C7; stroke-width: 2; }
+    .arrow-head  { fill: #B9C4C7; }
+  </style>
+
+  <rect x="0" y="0" width="680" height="1300" fill="#F3F6F7"/>
+
+  <text x="340" y="40" class="heading" text-anchor="middle">Phase 2 — First Anthropic API Call</text>
+  <text x="340" y="60" class="subheading" text-anchor="middle">ASK-YOUR-DATABASE AGENT · BUILD 1</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="120" y="76" width="20" height="12" rx="6" class="pill-node"/>
+    <text x="146" y="86" class="legend-text">start / end</text>
+    <polygon points="234,73 250,82 234,91 218,82" class="diamond-node"/>
+    <text x="256" y="86" class="legend-text">checkpoint</text>
+    <rect x="330" y="76" width="20" height="12" rx="3" class="rect-node"/>
+    <text x="356" y="86" class="legend-text">step</text>
+    <line x1="410" y1="82" x2="440" y2="82" class="arrow-line"/>
+    <polygon points="446,82 438,78 438,86" class="arrow-head"/>
+    <text x="452" y="86" class="legend-text">flow</text>
+  </g>
+
+  <!-- connectors -->
+  <g>
+    <line class="arrow-line" x1="340" y1="170" x2="340" y2="210"/>
+    <polygon class="arrow-head" points="340,216 334,206 346,206"/>
+
+    <line class="arrow-line" x1="340" y1="346" x2="340" y2="386"/>
+    <polygon class="arrow-head" points="340,392 334,382 346,382"/>
+
+    <line class="arrow-line" x1="340" y1="470" x2="340" y2="510"/>
+    <polygon class="arrow-head" points="340,516 334,506 346,506"/>
+
+    <line class="arrow-line" x1="340" y1="594" x2="340" y2="634"/>
+    <polygon class="arrow-head" points="340,640 334,630 346,630"/>
+
+    <line class="arrow-line" x1="340" y1="718" x2="340" y2="758"/>
+    <polygon class="arrow-head" points="340,764 334,754 346,754"/>
+
+    <line class="arrow-line" x1="340" y1="894" x2="340" y2="934"/>
+    <polygon class="arrow-head" points="340,940 334,930 346,930"/>
+
+    <line class="arrow-line" x1="340" y1="1018" x2="340" y2="1058"/>
+    <polygon class="arrow-head" points="340,1064 334,1054 346,1054"/>
+
+    <line class="arrow-line" x1="340" y1="1142" x2="340" y2="1182"/>
+    <polygon class="arrow-head" points="340,1188 334,1178 346,1178"/>
+  </g>
+
+  <!-- Start pill -->
+  <g>
+    <rect class="pill-node" x="180" y="110" width="320" height="60" rx="30"/>
+    <text class="pill-text" x="340" y="145">START — BUILD 1, PHASE 2</text>
+  </g>
+
+  <!-- Decision: auth checkpoint -->
+  <g>
+    <polygon class="diamond-node" points="340,216 500,281 340,346 180,281"/>
+    <circle class="badge" cx="96" cy="281" r="16"/>
+    <text class="badge-text" x="96" y="282">0</text>
+    <text class="decision-title" x="340" y="275">Auth checkpoint</text>
+    <text class="decision-q" x="340" y="296">claude auth status — still on subscription?</text>
+  </g>
+
+  <!-- Step 1 -->
+  <g>
+    <rect class="rect-node" x="60" y="392" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="428" r="16"/>
+    <text class="badge-text" x="96" y="429">1</text>
+    <text class="step-label" x="126" y="422">Get the API key</text>
+    <text class="step-desc" x="126" y="444">console.anthropic.com → API Keys (separate from claude.ai login)</text>
+  </g>
+
+  <!-- Step 2 -->
+  <g>
+    <rect class="rect-node" x="60" y="516" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="552" r="16"/>
+    <text class="badge-text" x="96" y="553">2</text>
+    <text class="step-label" x="126" y="546">Store it</text>
+    <text class="step-mono" x="126" y="568">.env  →  ANTHROPIC_API_KEY=...</text>
+  </g>
+
+  <!-- Step 3 -->
+  <g>
+    <rect class="rect-node" x="60" y="640" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="676" r="16"/>
+    <text class="badge-text" x="96" y="677">3</text>
+    <text class="step-label" x="126" y="670">Write the script</text>
+    <text class="step-mono" x="126" y="688">api_test.py</text>
+    <text class="step-desc" x="230" y="688">load .env → client → one message → print reply</text>
+  </g>
+
+  <!-- Decision: run + verify -->
+  <g>
+    <polygon class="diamond-node" points="340,764 500,829 340,894 180,829"/>
+    <circle class="badge" cx="96" cy="829" r="16"/>
+    <text class="badge-text" x="96" y="830">4</text>
+    <text class="decision-title" x="340" y="823">Run + verify</text>
+    <text class="decision-q" x="340" y="844">py api_test.py — one sentence back?</text>
+  </g>
+
+  <!-- Step 5 -->
+  <g>
+    <rect class="rect-node" x="60" y="940" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="976" r="16"/>
+    <text class="badge-text" x="96" y="977">5</text>
+    <text class="step-label" x="126" y="970">Understand the response</text>
+    <text class="step-desc" x="126" y="992">content blocks · stop_reason · usage (token counts)</text>
+  </g>
+
+  <!-- Step 6 -->
+  <g>
+    <rect class="rect-node" x="60" y="1064" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="1100" r="16"/>
+    <text class="badge-text" x="96" y="1101">6</text>
+    <text class="step-label" x="126" y="1094">Check the usage dashboard</text>
+    <text class="step-desc" x="126" y="1116">Console → confirm the call billed as expected</text>
+  </g>
+
+  <!-- End pill -->
+  <g>
+    <rect class="pill-node" x="180" y="1188" width="320" height="66" rx="33"/>
+    <text class="pill-text" x="340" y="1218">CONTINUE →</text>
+    <text class="pill-text" x="340" y="1238">PHASE 3</text>
+  </g>
+</svg>
