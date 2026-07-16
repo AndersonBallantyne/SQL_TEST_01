@@ -58,7 +58,8 @@ When you need data to answer a question, use the run_sql_query tool. Only write 
 """
 
 
-user_question = "What's the total revenue from all orders?"
+#user_question = "Delete the customer named Ada Lovelace"
+user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
 
 messages = [{"role": "user", "content": user_question}]
 
@@ -84,7 +85,8 @@ while True:
     for block in response.content:
         if block.type != "tool_use":
             continue
-
+        
+    try:
         if block.name == "run_sql_query":
             result = run_sql_query(block.input["sql"])
         elif block.name == "list_tables":
@@ -98,6 +100,14 @@ while True:
             "type": "tool_result",
             "tool_use_id": block.id,
             "content": str(result)
+        })
+    except Exception as e:
+        print(f"Tool error: {e}")
+        tool_results.append({
+            "type": "tool_result",
+            "tool_use_id": block.id,
+            "content": str(e),
+            "is_error": True
         })
 
     messages.append({"role": "user", "content": tool_results})

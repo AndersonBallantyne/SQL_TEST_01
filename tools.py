@@ -1,16 +1,21 @@
 import os
 from dotenv import load_dotenv
 import psycopg
+from datetime import datetime
 
 load_dotenv(encoding="utf-8-sig")
 
 def run_sql_query(sql: str, params: list | None = None) -> list[dict]:
+    if not sql.strip().upper().startswith("SELECT"):
+        raise ValueError(f"Only SELECT statments are allowed. Got: {sql!r}")
+    print(f"[{datetime.now().isoformat()}] SQL: {sql.strip()}")
+
     conn = psycopg.connect(
         host="127.0.0.1",
         port=5432,
         dbname=os.environ["POSTGRES_DB"],
-        user=os.environ["POSTGRES_USER"],
-        password=os.environ["POSTGRES_PASSWORD"],
+        user=os.environ["POSTGRES_READER_USER"],
+        password=os.environ["POSTGRES_READER_PASSWORD"],
 
     )
 
@@ -44,3 +49,4 @@ if __name__ == "__main__":
 
     print(list_tables())
     print(describe_table("customers"))
+    #print(run_sql_query("DELETE FROM customers;"))
