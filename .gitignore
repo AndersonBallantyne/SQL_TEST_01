@@ -10,6 +10,9 @@ $RECYCLE.BIN/
 # Editor
 .vscode/
 
+# Python bytecode cache
+__pycache__/
+
 # Logs, backups, database dumps
 *.log
 *.bak
