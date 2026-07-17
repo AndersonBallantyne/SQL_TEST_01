@@ -1,0 +1,4 @@
+anthropic==0.116.0
+psycopg==3.3.4
+psycopg-binary==3.3.4
+python-dotenv==1.2.2

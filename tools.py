@@ -11,7 +11,7 @@ def run_sql_query(sql: str, params: list | None = None) -> list[dict]:
     print(f"[{datetime.now().isoformat()}] SQL: {sql.strip()}")
 
     conn = psycopg.connect(
-        host="127.0.0.1",
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
         port=5432,
         dbname=os.environ["POSTGRES_DB"],
         user=os.environ["POSTGRES_READER_USER"],

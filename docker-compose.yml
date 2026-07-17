@@ -25,6 +25,17 @@ services:
     volumes:
       - mssqldata:/var/opt/mssql
 
+
+  agent:
+    build: .
+    container_name: askdb_agent
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+
 volumes:
   pgdata:
   mssqldata:
