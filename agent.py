@@ -56,21 +56,26 @@ You don't know the schema in advance. Use list_tables to see what tables exist, 
 
 When you need data to answer a question, use the run_sql_query tool. Only write SELECT queries — do not modify data.
 """
-
+MAX_TOOL_TURNS = 10
 
 #user_question = "Delete the customer named Ada Lovelace"
 user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
 
 messages = [{"role": "user", "content": user_question}]
-
-while True:
-    response = client.messages.create(
-        model="claude-haiku-4-5",
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        tools=tools,
-        messages=messages
-    )
+turn = 0
+while turn < MAX_TOOL_TURNS:
+    turn += 1
+    try:
+        response = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=1024,
+            system=SYSTEM_PROMPT,
+            tools=tools,
+            messages=messages
+        )
+    except anthropic.APIError as e:
+        print(f"Anthropic API error: {e}")
+        break
 
     for block in response.content:
         print(block)
@@ -85,36 +90,40 @@ while True:
     for block in response.content:
         if block.type != "tool_use":
             continue
-        
-    try:
-        if block.name == "run_sql_query":
-            result = run_sql_query(block.input["sql"])
-        elif block.name == "list_tables":
-            result = list_tables()
-        elif block.name == "describe_table":
-            result = describe_table(block.input["table_name"])
 
-        print(result)
+        try:
+            if block.name == "run_sql_query":
+                result = run_sql_query(block.input["sql"])
+            elif block.name == "list_tables":
+                result = list_tables()
+            elif block.name == "describe_table":
+                result = describe_table(block.input["table_name"])
 
-        tool_results.append({
-            "type": "tool_result",
-            "tool_use_id": block.id,
-            "content": str(result)
-        })
-    except Exception as e:
-        print(f"Tool error: {e}")
-        tool_results.append({
-            "type": "tool_result",
-            "tool_use_id": block.id,
-            "content": str(e),
-            "is_error": True
-        })
+            print(result)
+
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": str(result)
+            })
+        except Exception as e:
+            print(f"Tool error: {e}")
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": str(e),
+                "is_error": True
+            })
 
     messages.append({"role": "user", "content": tool_results})
     
     for block in response.content:
         if block.type == "text":
             print(block.text)
+
+else:
+    print(f"Stopped after reaching the {MAX_TOOL_TURNS}-turn limit.")
+
 
 
 
