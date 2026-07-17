@@ -78,7 +78,7 @@
     <circle class="badge" cx="96" cy="281" r="16"/>
     <text class="badge-text" x="96" y="282">0</text>
     <text class="decision-title" x="340" y="275">Phase 3 loop check</text>
-    <text class="decision-q" x="340" y="296">single-shot round trip confirmed end-to-end?</text>
+    <text class="decision-q" x="340" y="296">loop confirmed end-to-end?</text>
   </g>
 
   <!-- Step 1 -->
@@ -123,7 +123,7 @@
     <circle class="badge" cx="96" cy="953" r="16"/>
     <text class="badge-text" x="96" y="954">5</text>
     <text class="decision-title" x="340" y="947">Discovery check</text>
-    <text class="decision-q" x="340" y="968">model calls list_tables / describe_table before writing SQL?</text>
+    <text class="decision-q" x="340" y="968">schema discovered before SQL?</text>
   </g>
 
   <!-- Step 6 -->

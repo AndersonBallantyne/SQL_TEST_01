@@ -78,7 +78,7 @@
     <circle class="badge" cx="96" cy="281" r="16"/>
     <text class="badge-text" x="96" y="282">0</text>
     <text class="decision-title" x="340" y="275">Phase 5 check</text>
-    <text class="decision-q" x="340" y="296">read-only role, SQL guard &amp; logging committed &amp; verified?</text>
+    <text class="decision-q" x="340" y="296">Phase 5 hardening committed &amp; verified?</text>
   </g>
 
   <!-- Step 1 -->
@@ -123,7 +123,7 @@
     <circle class="badge" cx="96" cy="953" r="16"/>
     <text class="badge-text" x="96" y="954">5</text>
     <text class="decision-title" x="340" y="947">Build &amp; run test</text>
-    <text class="decision-q" x="340" y="968">docker compose up — agent container starts and connects to Postgres?</text>
+    <text class="decision-q" x="340" y="968">container starts &amp; reaches Postgres?</text>
   </g>
 
   <!-- Step 6 -->
@@ -138,7 +138,7 @@
   <!-- End pill -->
   <g>
     <rect class="pill-node" x="180" y="1188" width="320" height="66" rx="33"/>
-    <text class="pill-text" x="340" y="1218">BUILD 1 COMPLETE →</text>
-    <text class="pill-text" x="340" y="1238">BUILD 2</text>
+    <text class="pill-text" x="340" y="1218">CONTINUE →</text>
+    <text class="pill-text" x="340" y="1238">HARDENING PASS</text>
   </g>
 </svg>
