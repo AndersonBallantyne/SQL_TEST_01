@@ -1,0 +1,430 @@
+<title>SQL_TEST_01 — Command Reference</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A;
+      --surface: #172023;
+      --ink: #E8EDED;
+      --ink-2: #C2CBCD;
+      --muted: #8CA0A3;
+      --rule: #32403F;
+      --teal: #1C7A82;
+      --teal-ink: #EFFBFB;
+      --teal-tint: #17282A;
+      --accent: #E2916A;
+      --accent-tint: #2C2019;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A;
+    --surface: #172023;
+    --ink: #E8EDED;
+    --ink-2: #C2CBCD;
+    --muted: #8CA0A3;
+    --rule: #32403F;
+    --teal: #1C7A82;
+    --teal-ink: #EFFBFB;
+    --teal-tint: #17282A;
+    --accent: #E2916A;
+    --accent-tint: #2C2019;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--teal);
+    flex: none;
+  }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(28px, 4vw, 38px);
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0 0 10px;
+  }
+  .lede {
+    font-size: 16px;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0 0 28px;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 32px;
+  }
+  .meta dt {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin: 0 0 48px;
+  }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+    color: var(--teal);
+    text-decoration: none;
+    padding: 6px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--surface);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+  nav.toc a:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+  section.group { margin-bottom: 44px; scroll-margin-top: 24px; }
+
+  .group-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .group-head h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600;
+    font-size: 21px;
+    margin: 0;
+  }
+  .group-tag {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .group-note {
+    font-size: 13.5px;
+    color: var(--ink-2);
+    margin: 4px 0 14px;
+    max-width: 64ch;
+  }
+
+  .ref-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    background: var(--surface);
+  }
+  table.ref {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  table.ref thead th {
+    text-align: left;
+    background: var(--teal);
+    color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    white-space: nowrap;
+  }
+  table.ref thead th:first-child { border-top-left-radius: 9px; }
+  table.ref thead th:last-child { border-top-right-radius: 9px; }
+  table.ref td {
+    padding: 11px 16px;
+    border-top: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  table.ref tbody tr:hover td { background: var(--teal-tint); }
+  table.ref td.cmd {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--accent);
+    white-space: pre;
+    width: 46%;
+  }
+  table.ref td.desc { color: var(--ink-2); }
+  table.ref td.desc b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 600px) {
+    table.ref td.cmd { width: auto; }
+    table.ref thead { display: none; }
+    table.ref tr { display: block; border-top: 1px solid var(--rule); }
+    table.ref tr:first-child { border-top: none; }
+    table.ref td { display: block; border-top: none; padding: 6px 14px; }
+    table.ref td.cmd { padding-top: 12px; }
+    table.ref td.desc { padding-bottom: 12px; }
+  }
+
+  /* Print: placed last so it wins ties against the unconditional table.ref rules above
+     (equal specificity means source order decides) - an earlier placement let the base
+     border-top:1px rule silently win back during printing. */
+  @media print {
+    @page { margin: 0.5in; }
+    nav.toc a { border-color: var(--rule) !important; }
+    .page { padding: 0; max-width: 100%; }
+    section.group { break-inside: avoid-page; }
+    .ref-table-wrap { overflow-x: visible; box-shadow: none; }
+    table.ref thead { display: none; }
+    table.ref tr { display: block; border-top: 1px solid var(--rule); break-inside: avoid; }
+    table.ref tr:first-child { border-top: none; }
+    table.ref td { display: block; border-top: none; padding: 5px 16px; }
+    table.ref td.cmd {
+      padding-top: 11px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 11px;
+    }
+    table.ref td.desc { padding-bottom: 11px; font-size: 11.5px; }
+  }
+</style>
+
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Command Reference · Living Document</p>
+  <h1>Everything you've typed so far</h1>
+  <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized. Appended at the end of each build, not written once and frozen.</p>
+
+  <dl class="meta">
+    <div><dt>Covers</dt><dd>Build 1 (agent) &amp; Build 2 (pipeline)</dd></div>
+    <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop</dd></div>
+    <div><dt>Databases</dt><dd>pg_local (appdb)</dd></div>
+  </dl>
+
+  <nav class="toc" aria-label="Jump to section">
+    <a href="#docker">Docker</a>
+    <a href="#psql">psql</a>
+    <a href="#powershell">PowerShell</a>
+    <a href="#git">Git</a>
+    <a href="#psycopg">psycopg</a>
+    <a href="#pandas">pandas</a>
+    <a href="#stdlib">Python stdlib</a>
+  </nav>
+
+  <section class="group" id="docker">
+    <div class="group-head"><h2>Docker</h2><span class="group-tag">Container orchestration</span></div>
+    <p class="group-note">Starting the stack, and getting SQL in and out of a running container.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">docker compose up -d --build</td><td class="desc">Build images if anything changed, then start every service in the background.</td></tr>
+          <tr><td class="cmd">docker ps</td><td class="desc">List running containers — the first check when a connection unexpectedly fails.</td></tr>
+          <tr><td class="cmd">docker exec -it pg_local psql -U devuser -d appdb</td><td class="desc">Open a <b>live, interactive</b> psql session inside the Postgres container.</td></tr>
+          <tr><td class="cmd">docker exec -i pg_local psql -U devuser -d appdb < file.sql</td><td class="desc">Run a whole .sql file inside the container <b>non-interactively</b> — the <code>-i</code> keeps stdin open so the redirected file reaches psql.</td></tr>
+          <tr><td class="cmd">docker compose down -v</td><td class="desc">Stop everything and delete volumes too — next start re-initializes DB passwords from .env. Used deliberately, not casually.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="psql">
+    <div class="group-head"><h2>psql</h2><span class="group-tag">Meta-commands &amp; DDL patterns</span></div>
+    <p class="group-note">Once you're inside a psql session — both the backslash meta-commands and the recurring SQL shapes.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">\d table_name</td><td class="desc">Describe a table — every column, its type, and any constraints. The one check that settles "did my CREATE TABLE actually work."</td></tr>
+          <tr><td class="cmd">\du role_name</td><td class="desc">Describe a role — confirms it has no Superuser/Createrole/Createdb it shouldn't.</td></tr>
+          <tr><td class="cmd">\pset null 'marker'</td><td class="desc">Display NULLs as a visible marker instead of blank — otherwise a NULL and an empty string look identical.</td></tr>
+          <tr><td class="cmd">\! cls</td><td class="desc">Shell out and run an OS command without leaving psql — <code>cls</code> clears the terminal screen.</td></tr>
+          <tr><td class="cmd">\q</td><td class="desc">Quit psql, back to the shell prompt.</td></tr>
+          <tr><td class="cmd">CREATE SCHEMA IF NOT EXISTS name;</td><td class="desc">Create a schema, skip quietly if it's already there — safe to rerun.</td></tr>
+          <tr><td class="cmd">DROP TABLE IF EXISTS name;</td><td class="desc">Drop a table, skip quietly if it doesn't exist — what makes a rebuild script rerunnable from a blank database.</td></tr>
+          <tr><td class="cmd">GRANT SELECT ON ALL TABLES IN SCHEMA s TO role;</td><td class="desc">Give a role read access to every table <b>currently</b> in a schema.</td></tr>
+          <tr><td class="cmd">ALTER DEFAULT PRIVILEGES IN SCHEMA s GRANT SELECT ON TABLES TO role;</td><td class="desc">Extend that same grant automatically to any table created <b>later</b> — without this, new tables start private.</td></tr>
+          <tr><td class="cmd">col TYPE GENERATED ALWAYS AS (expr) STORED</td><td class="desc">A column Postgres computes and locks from other columns in the same row — structurally impossible for it to drift out of sync.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="powershell">
+    <div class="group-head"><h2>PowerShell</h2><span class="group-tag">Host-side shell</span></div>
+    <p class="group-note">Running Python, checking your own environment, and vetting/installing system-level tools from outside any container.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">.\.venv\Scripts\python.exe script.py</td><td class="desc">Run a script with the project's own virtual-env interpreter directly — sidesteps PATH/activation issues entirely.</td></tr>
+          <tr><td class="cmd">.\.venv\Scripts\python.exe -m pip install pkg</td><td class="desc">Install a package into that specific virtual env, not wherever PATH happens to point.</td></tr>
+          <tr><td class="cmd">.\.venv\Scripts\python.exe -m pip show pkg</td><td class="desc">Check whether a package is installed, and exactly which version.</td></tr>
+          <tr><td class="cmd">Get-ChildItem Env: | Where-Object { $_.Name -like "*X*" }</td><td class="desc">List environment variables whose name matches a pattern — e.g. catching a stray API key leaked into the shell.</td></tr>
+          <tr><td class="cmd">Get-Content file</td><td class="desc">Print a file's contents — the go-to way to verify what actually got saved to disk.</td></tr>
+          <tr><td class="cmd">claude auth status</td><td class="desc">Confirm this Claude Code session is on subscription login, not silently metered API billing.</td></tr>
+          <tr><td class="cmd">winget show --id pkg -e</td><td class="desc">Pull a package's full manifest — publisher, source URL, license, install hash — before trusting or installing it.</td></tr>
+          <tr><td class="cmd">winget install --id pkg -e</td><td class="desc">Install a package system-wide once it's been vetted, not before.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="git">
+    <div class="group-head"><h2>Git</h2><span class="group-tag">Checkpointing progress</span></div>
+    <p class="group-note">Committing at the end of every phase, per the project's own working style.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">git status</td><td class="desc">What's changed, staged, or untracked, right now.</td></tr>
+          <tr><td class="cmd">git add file</td><td class="desc">Stage a specific file by name — never a blind <code>-A</code>.</td></tr>
+          <tr><td class="cmd">git commit -m "..."</td><td class="desc">Record the staged snapshot with a message explaining <b>why</b>, not just what.</td></tr>
+          <tr><td class="cmd">git mv old new</td><td class="desc">Rename a tracked file while git keeps its history attached to the new name.</td></tr>
+          <tr><td class="cmd">git log --oneline -n</td><td class="desc">Recent commit history, one line each — the fastest way to check "where are we, really."</td></tr>
+          <tr><td class="cmd">git diff</td><td class="desc">Exact unstaged changes, line by line, before they get staged.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="psycopg">
+    <div class="group-head"><h2>Python — psycopg</h2><span class="group-tag">Talking to Postgres</span></div>
+    <p class="group-note">The driver behind every script in this project — agent.py, tools.py, ingest.py, profile.py.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">psycopg.connect(host=, dbname=, user=, password=)</td><td class="desc">Open a connection to a Postgres database.</td></tr>
+          <tr><td class="cmd">with conn.cursor() as cur:</td><td class="desc">Open a cursor scoped to a <code>with</code> block — closes itself automatically, even on error.</td></tr>
+          <tr><td class="cmd">cur.execute(sql, params)</td><td class="desc">Run one SQL statement, with parameters passed safely (never string-formatted into the query).</td></tr>
+          <tr><td class="cmd">cur.executemany(sql, rows)</td><td class="desc">Run the same statement once per row — how ingest.py loads 1,535 rows in one call.</td></tr>
+          <tr><td class="cmd">cur.fetchall()</td><td class="desc">Pull every result row back as a Python list.</td></tr>
+          <tr><td class="cmd">cur.description</td><td class="desc">Metadata about the result's columns — used to grab column names generically.</td></tr>
+          <tr><td class="cmd">conn.commit()</td><td class="desc">Make written changes permanent.</td></tr>
+          <tr><td class="cmd">conn.close()</td><td class="desc">Release the connection.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="pandas">
+    <div class="group-head"><h2>Python — pandas</h2><span class="group-tag">Profiling raw data</span></div>
+    <p class="group-note">Everything profile.py used to understand raw.allocations before designing the clean schema.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">pd.DataFrame(rows, columns=cols)</td><td class="desc">Build a DataFrame straight from plain rows + column names — no SQLAlchemy required.</td></tr>
+          <tr><td class="cmd">df["col"].unique()</td><td class="desc">Every distinct value in a column, once each — printed with <code>repr()</code> to expose hidden whitespace.</td></tr>
+          <tr><td class="cmd">df["col"].value_counts(dropna=False)</td><td class="desc">Count of each distinct value, including blanks/NaN.</td></tr>
+          <tr><td class="cmd">pd.to_datetime(s, format=, errors="coerce")</td><td class="desc">Parse a column of date strings against an exact format; anything that doesn't match becomes <code>NaT</code> instead of crashing the run.</td></tr>
+          <tr><td class="cmd">series.dt.total_seconds()</td><td class="desc">Convert a time difference into a plain number of seconds.</td></tr>
+          <tr><td class="cmd">series.str.fullmatch(pattern)</td><td class="desc">Test every value in a column against a regex at once — used to confirm two columns were digit-only.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="stdlib">
+    <div class="group-head"><h2>Python — standard library</h2><span class="group-tag">csv · os · dotenv</span></div>
+    <p class="group-note">No extra install required — these ship with Python itself, or python-dotenv.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">csv.DictReader(f)</td><td class="desc">Read a CSV where each row comes back as a <code>{column: value}</code> dict — chosen over pandas for ingestion specifically so nothing gets silently type-coerced.</td></tr>
+          <tr><td class="cmd">open(path, newline="", encoding="utf-8-sig")</td><td class="desc">Open a file safely for CSV reading, transparently stripping a leading BOM if present.</td></tr>
+          <tr><td class="cmd">os.environ["KEY"]</td><td class="desc">Read a required env var — raises immediately if it's missing, rather than continuing with a silent gap.</td></tr>
+          <tr><td class="cmd">os.environ.get("KEY", default)</td><td class="desc">Read an optional env var, falling back to a default (e.g. <code>POSTGRES_HOST</code> defaulting to <code>127.0.0.1</code> outside Docker).</td></tr>
+          <tr><td class="cmd">load_dotenv(encoding="utf-8-sig")</td><td class="desc">Load .env into the process environment — BOM-safe, matching how Windows tools often save that file.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 2, Phase 2. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+  </footer>
+
+</div>
