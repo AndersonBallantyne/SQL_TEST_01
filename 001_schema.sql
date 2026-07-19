@@ -1,4 +1,4 @@
--- schema.sql — PostgreSQL schema for the customers/orders demo
+-- 001_schema.sql — PostgreSQL schema for the customers/orders demo (renamed from schema.sql)
 -- Running this REBUILDS the tables from scratch. It drops existing data first,
 -- which is what you want for a clean, reproducible setup.
 

@@ -1,4 +1,4 @@
--- raw_schema.sql — PostgreSQL raw staging schema for Build 2 (raw-to-queryable pipeline)
+-- 004_raw_schema.sql — PostgreSQL raw staging schema for Build 2 (raw-to-queryable pipeline) (renamed from raw_schema.sql)
 -- Running this REBUILDS the raw layer from scratch. It drops existing data first,
 -- which is what you want for a clean, reproducible setup. Re-run ingest.py afterward
 -- to reload the CSV.
@@ -19,3 +19,10 @@ CREATE TABLE raw.allocations (
     resource_count       TEXT,
     summary              TEXT
 );
+
+
+-- Grant the read-only agent role access to this schema. Assumes appdb_reader
+-- already exists (created by readonly_role.sql) — run that first on a fresh volume.
+GRANT USAGE ON SCHEMA raw TO appdb_reader;
+GRANT SELECT ON ALL TABLES IN SCHEMA raw TO appdb_reader;
+ALTER DEFAULT PRIVILEGES IN SCHEMA raw GRANT SELECT ON TABLES TO appdb_reader;

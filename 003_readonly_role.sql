@@ -1,4 +1,4 @@
--- readonly_role.sql — read-only role for the LLM agent. Idempotent: safe to re-run.
+-- 003_readonly_role.sql — read-only role for the LLM agent. Idempotent: safe to re-run. (renamed from readonly_role.sql)
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'appdb_reader') THEN

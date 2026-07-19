@@ -1,4 +1,4 @@
--- seed.sql — sample data for the customers/orders demo (PostgreSQL)
+-- 002_seed.sql — sample data for the customers/orders demo (PostgreSQL) (renamed from seed.sql)
 -- Idempotent: wipes and reloads, so re-running always yields the same rows.
 
 TRUNCATE TABLE orders, customers RESTART IDENTITY CASCADE;
