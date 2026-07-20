@@ -269,7 +269,7 @@
   <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
-    <div><dt>Covers</dt><dd>Build 1 (agent) &amp; Build 2 (pipeline)</dd></div>
+    <div><dt>Covers</dt><dd>Build 1 (agent) &amp; Build 2 (pipeline) — both complete</dd></div>
     <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop</dd></div>
     <div><dt>Databases</dt><dd>pg_local (appdb)</dd></div>
   </dl>
@@ -281,6 +281,8 @@
     <a href="#git">Git</a>
     <a href="#psycopg">psycopg</a>
     <a href="#pandas">pandas</a>
+    <a href="#pandera">pandera</a>
+    <a href="#pytest">pytest</a>
     <a href="#stdlib">Python stdlib</a>
   </nav>
 
@@ -405,6 +407,40 @@
     </div>
   </section>
 
+  <section class="group" id="pandera">
+    <div class="group-head"><h2>Python — pandera</h2><span class="group-tag">Data-quality schemas</span></div>
+    <p class="group-note">test_data_quality.py uses this to declare what "correct" looks like for clean.allocations, as data instead of ad hoc checks.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">import pandera.pandas as pa</td><td class="desc">The explicit pandas-backend import for modern pandera versions.</td></tr>
+          <tr><td class="cmd">pa.DataFrameSchema({...})</td><td class="desc">Declare an entire DataFrame's expected shape — one entry per column — as data, not scattered asserts.</td></tr>
+          <tr><td class="cmd">pa.Column(type, checks, nullable=)</td><td class="desc">One column's expected type, whether NULLs are allowed, and any constraints.</td></tr>
+          <tr><td class="cmd">pa.Check.ge(0)</td><td class="desc">A reusable constraint — here, "greater than or equal to 0" — attached to a Column.</td></tr>
+          <tr><td class="cmd">schema.validate(df)</td><td class="desc">Check a real DataFrame against the schema; raises a real error the moment something doesn't match.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="pytest">
+    <div class="group-head"><h2>pytest</h2><span class="group-tag">Running the test suite</span></div>
+    <p class="group-note">First automated test suite in the project — codifies checks that were previously done by hand.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">.\.venv\Scripts\python.exe -m pytest -v</td><td class="desc">Discover and run every <code>test_*</code> function in the project, printing each one's name and pass/fail individually.</td></tr>
+          <tr><td class="cmd">def test_something():</td><td class="desc">Any function named <code>test_...</code> in a <code>test_*.py</code> file is auto-discovered — no registration needed.</td></tr>
+          <tr><td class="cmd">assert condition</td><td class="desc">Plain Python <code>assert</code> — pytest reports exactly which assertion failed and the actual vs. expected values.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="group" id="stdlib">
     <div class="group-head"><h2>Python — standard library</h2><span class="group-tag">csv · os · dotenv</span></div>
     <p class="group-note">No extra install required — these ship with Python itself, or python-dotenv.</p>
@@ -424,7 +460,7 @@
   </section>
 
   <footer>
-    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 2, Phase 2. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 2 (complete). Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
   </footer>
 
 </div>
