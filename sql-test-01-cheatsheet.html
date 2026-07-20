@@ -295,7 +295,7 @@
           <tr><td class="cmd">docker compose up -d --build</td><td class="desc">Build images if anything changed, then start every service in the background.</td></tr>
           <tr><td class="cmd">docker ps</td><td class="desc">List running containers — the first check when a connection unexpectedly fails.</td></tr>
           <tr><td class="cmd">docker exec -it pg_local psql -U devuser -d appdb</td><td class="desc">Open a <b>live, interactive</b> psql session inside the Postgres container.</td></tr>
-          <tr><td class="cmd">docker exec -i pg_local psql -U devuser -d appdb < file.sql</td><td class="desc">Run a whole .sql file inside the container <b>non-interactively</b> — the <code>-i</code> keeps stdin open so the redirected file reaches psql.</td></tr>
+          <tr><td class="cmd">Get-Content file.sql -Raw | docker exec -i pg_local psql -U devuser -d appdb</td><td class="desc">Run a whole .sql file inside the container <b>non-interactively</b>, PowerShell-style — <code>&lt;</code> redirection doesn't exist in PowerShell, so the file gets piped in instead. (Bash/cmd would use <code>docker exec -i ... &lt; file.sql</code>.)</td></tr>
           <tr><td class="cmd">docker compose down -v</td><td class="desc">Stop everything and delete volumes too — next start re-initializes DB passwords from .env. Used deliberately, not casually.</td></tr>
         </tbody>
       </table>
