@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 import anthropic
-from tools import run_sql_query, list_tables, describe_table
+from tools import run_sql_query, list_tables, describe_table, save_dataframe
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -44,7 +44,32 @@ tools = [
                 }
             },
             "required": ["table_name"]
-        }      
+        }
+    },
+
+    {
+        "name": "save_dataframe",
+        "description": "Persist a computed result (e.g. an aggregation you just calculated) to your own scratch workspace, so it can be reused in a later question. This only ever writes to your personal workspace - it cannot affect any of the main database tables.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "table_name": {
+                    "type": "string",
+                    "description": "A short name for this saved result - lowercase letters, digits, and underscores only."
+                },
+                "columns": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Column names for the result, in order."
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {"type": "array"},
+                    "description": "The rows of data to save, each a list of values matching the columns order."
+                }
+            },
+            "required": ["table_name", "columns", "rows"]
+        }
     }
 ]
 
@@ -55,12 +80,18 @@ Database: appdb (PostgreSQL)
 You don't know the schema in advance. Use list_tables to see what tables exist, and describe_table to see a table's columns before writing SQL against it.
 
 When you need data to answer a question, use the run_sql_query tool. Only write SELECT queries — do not modify data.
+
+If asked to save or persist a computed result for later reuse, use save_dataframe. It only writes to your own scratch workspace and cannot affect any of the main database tables.
+
+Anything you save with save_dataframe becomes a normal table you can rediscover later — use list_tables and describe_table to find and inspect it, the same way you would any other table, before assuming a past result isn't available.
 """
 MAX_TOOL_TURNS = 10
 
 #user_question = "Delete the customer named Ada Lovelace"
 #user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
-user_question = "What's the average allocation duration, in hours, grouped by patron email domain?"
+#user_question = "What's the average allocation duration, in hours, grouped by patron email domain?"
+#user_question = "What's the average allocation duration, in hours, grouped by patron email domain? Save this result for later as domain_avg_duration."
+user_question = "Do you have a previously saved result about average allocation duration? If so, what did it find?"
 
 
 messages = [{"role": "user", "content": user_question}]
@@ -100,6 +131,12 @@ while turn < MAX_TOOL_TURNS:
                 result = list_tables()
             elif block.name == "describe_table":
                 result = describe_table(block.input["table_name"])
+            elif block.name == "save_dataframe":
+                result = save_dataframe(
+                    block.input["table_name"],
+                    block.input["columns"],
+                    [tuple(row) for row in block.input["rows"]],
+                )
 
             print(result)
 

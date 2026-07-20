@@ -33,7 +33,7 @@ def list_tables() -> list[dict]:
     return run_sql_query("""
         SELECT table_schema, table_name
         FROM information_schema.tables
-        WHERE table_schema IN ('public', 'clean')
+        WHERE table_schema IN ('public', 'clean', 'agent_scratch')
         ORDER BY table_name;
     """)
 
@@ -41,7 +41,7 @@ def describe_table(name: str) -> list[dict]:
     return run_sql_query("""
         SELECT column_name, data_type
         FROM information_schema.columns
-        WHERE table_schema IN ('public', 'clean') AND table_name = %s
+        WHERE table_schema IN ('public', 'clean', 'agent_scratch') AND table_name = %s
         ORDER BY ordinal_position;
     """, [name])
 
