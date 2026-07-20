@@ -29,9 +29,9 @@ def run_sql_query(sql: str, params: list | None = None) -> list[dict]:
 
 def list_tables() -> list[dict]:
     return run_sql_query("""
-        SELECT table_name
+        SELECT table_schema, table_name
         FROM information_schema.tables
-        WHERE table_schema = 'public'
+        WHERE table_schema IN ('public', 'clean')
         ORDER BY table_name;
     """)
 
@@ -39,7 +39,7 @@ def describe_table(name: str) -> list[dict]:
     return run_sql_query("""
         SELECT column_name, data_type
         FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = %s
+        WHERE table_schema IN ('public', 'clean') AND table_name = %s
         ORDER BY ordinal_position;
     """, [name])
 

@@ -59,7 +59,9 @@ When you need data to answer a question, use the run_sql_query tool. Only write 
 MAX_TOOL_TURNS = 10
 
 #user_question = "Delete the customer named Ada Lovelace"
-user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
+#user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
+user_question = "What's the average allocation duration, in hours, grouped by patron email domain?"
+
 
 messages = [{"role": "user", "content": user_question}]
 turn = 0
