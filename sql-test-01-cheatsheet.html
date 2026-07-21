@@ -269,7 +269,7 @@
   <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
-    <div><dt>Covers</dt><dd>Build 1 (agent) &amp; Build 2 (pipeline) — both complete</dd></div>
+    <div><dt>Covers</dt><dd>Build 1 (agent), Build 2 (pipeline), Build 2.5 (scratch workspace) &amp; Build 3 (semantic search) — all complete</dd></div>
     <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop</dd></div>
     <div><dt>Databases</dt><dd>pg_local (appdb)</dd></div>
   </dl>
@@ -280,9 +280,11 @@
     <a href="#powershell">PowerShell</a>
     <a href="#git">Git</a>
     <a href="#psycopg">psycopg</a>
+    <a href="#sql-composition">psycopg.sql</a>
     <a href="#pandas">pandas</a>
     <a href="#pandera">pandera</a>
     <a href="#pytest">pytest</a>
+    <a href="#vector-search">pgvector &amp; embeddings</a>
     <a href="#stdlib">Python stdlib</a>
   </nav>
 
@@ -322,6 +324,16 @@
           <tr><td class="cmd">GRANT SELECT ON ALL TABLES IN SCHEMA s TO role;</td><td class="desc">Give a role read access to every table <b>currently</b> in a schema.</td></tr>
           <tr><td class="cmd">ALTER DEFAULT PRIVILEGES IN SCHEMA s GRANT SELECT ON TABLES TO role;</td><td class="desc">Extend that same grant automatically to any table created <b>later</b> — without this, new tables start private.</td></tr>
           <tr><td class="cmd">col TYPE GENERATED ALWAYS AS (expr) STORED</td><td class="desc">A column Postgres computes and locks from other columns in the same row — structurally impossible for it to drift out of sync.</td></tr>
+          <tr><td class="cmd">GRANT USAGE, CREATE ON SCHEMA s TO role;</td><td class="desc">Let a role create objects inside a schema, not just read from it — how <code>appdb_agent_writer</code> got write access scoped to <code>agent_scratch</code> only, never anywhere wider.</td></tr>
+          <tr><td class="cmd">ALTER DEFAULT PRIVILEGES FOR ROLE owner IN SCHEMA s GRANT SELECT ON TABLES TO role;</td><td class="desc">Extend a <b>different</b> role's read access to tables a specific owner role creates later in that schema — how <code>appdb_reader</code> can always see whatever <code>appdb_agent_writer</code> saves, without a re-grant each time.</td></tr>
+          <tr><td class="cmd">CREATE EXTENSION IF NOT EXISTS vector;</td><td class="desc">Enable pgvector for the database — requires the <code>pgvector/pgvector</code> Postgres image, not the plain <code>postgres</code> one.</td></tr>
+          <tr><td class="cmd">ALTER DATABASE db REFRESH COLLATION VERSION;</td><td class="desc">Clear the collation-version mismatch warning that appears after swapping to an image built against a different glibc/ICU — safe here since the data is plain ASCII text.</td></tr>
+          <tr><td class="cmd">col vector(384)</td><td class="desc">pgvector's column type for a fixed-dimension embedding — 384 matches the sentence-transformers model in use, not an arbitrary choice.</td></tr>
+          <tr><td class="cmd">a &lt;=&gt; b</td><td class="desc">Cosine distance between two vectors — smaller means more similar. What <code>search_summaries</code> orders by.</td></tr>
+          <tr><td class="cmd">a &lt;-&gt; b</td><td class="desc">Euclidean (L2) distance between two vectors — used in this project only for the self-distance sanity check (<code>v &lt;-&gt; v</code> should be exactly 0).</td></tr>
+          <tr><td class="cmd">vector_dims(col)</td><td class="desc">The dimensionality of a stored vector — a quick sanity check that every row actually has a real 384-dim embedding, not a malformed one.</td></tr>
+          <tr><td class="cmd">CREATE INDEX ... USING hnsw (col vector_cosine_ops)</td><td class="desc">Build an approximate-nearest-neighbor graph index matching the <code>&lt;=&gt;</code> operator, so similarity search can use an index scan instead of a full table scan as the corpus grows.</td></tr>
+          <tr><td class="cmd">EXPLAIN ANALYZE SELECT ...</td><td class="desc">Confirms whether the planner actually used a new index (<code>Index Scan</code>) or fell back to <code>Seq Scan</code> — the only real way to verify an index is doing anything.</td></tr>
         </tbody>
       </table>
     </div>
@@ -388,6 +400,24 @@
     </div>
   </section>
 
+  <section class="group" id="sql-composition">
+    <div class="group-head"><h2>Python — psycopg.sql</h2><span class="group-tag">Safe dynamic identifiers</span></div>
+    <p class="group-note"><code>save_dataframe</code>'s guardrail for building a <code>CREATE TABLE</code>/<code>INSERT</code> statement where the table and column names themselves come from the model, not just the values — <code>%s</code> parameters alone can't protect an identifier.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">from psycopg import sql</td><td class="desc">The submodule that builds SQL safely out of parts psycopg can't treat as plain data — like table and column names.</td></tr>
+          <tr><td class="cmd">sql.Identifier(name)</td><td class="desc">Safely quotes a dynamic identifier (table/column name) — the equivalent of a parameter, but for names instead of values.</td></tr>
+          <tr><td class="cmd">sql.SQL("...{}...").format(...)</td><td class="desc">Builds a SQL string from literal fragments plus safely-escaped pieces like <code>Identifier</code> — never plain <code>f"..."</code> string interpolation.</td></tr>
+          <tr><td class="cmd">sql.SQL(", ").join(parts)</td><td class="desc">Joins a list of <code>Identifier</code>/<code>SQL</code> fragments with a separator — how a variable-length column list gets assembled.</td></tr>
+          <tr><td class="cmd">sql.Placeholder()</td><td class="desc">A <code>%s</code> value placeholder built the same composable way, for when the number of columns isn't known until runtime.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="group" id="pandas">
     <div class="group-head"><h2>Python — pandas</h2><span class="group-tag">Profiling raw data</span></div>
     <p class="group-note">Everything profile_raw_data.py used to understand raw.allocations before designing the clean schema. (Renamed from profile.py in Build 3 — it was silently shadowing Python's stdlib profile module.)</p>
@@ -436,6 +466,27 @@
           <tr><td class="cmd">.\.venv\Scripts\python.exe -m pytest -v</td><td class="desc">Discover and run every <code>test_*</code> function in the project, printing each one's name and pass/fail individually.</td></tr>
           <tr><td class="cmd">def test_something():</td><td class="desc">Any function named <code>test_...</code> in a <code>test_*.py</code> file is auto-discovered — no registration needed.</td></tr>
           <tr><td class="cmd">assert condition</td><td class="desc">Plain Python <code>assert</code> — pytest reports exactly which assertion failed and the actual vs. expected values.</td></tr>
+          <tr><td class="cmd">with pytest.raises(ExceptionType):</td><td class="desc">Asserts a block <b>must</b> raise a specific exception — used to prove a role boundary actually blocks a write, not just that it "seems fine."</td></tr>
+          <tr><td class="cmd">def test_x(monkeypatch): monkeypatch.setattr(mod, "NAME", val)</td><td class="desc">Temporarily overrides a module-level constant for one test only, auto-restored after — how a cap like <code>MAX_SCRATCH_TABLES</code> gets tested at its boundary without creating 50 real tables.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="vector-search">
+    <div class="group-head"><h2>pgvector &amp; embeddings</h2><span class="group-tag">sentence-transformers · pgvector.psycopg</span></div>
+    <p class="group-note">Turning free text into vectors and getting Postgres to store/compare them — <code>embed_summaries.py</code>, <code>search_summaries.py</code>, <code>tools.py</code>'s <code>search_summaries</code>.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">from sentence_transformers import SentenceTransformer</td><td class="desc">A local, free embedding model library — no API key or per-call cost, unlike Voyage AI/OpenAI embeddings.</td></tr>
+          <tr><td class="cmd">SentenceTransformer("all-MiniLM-L6-v2")</td><td class="desc">Loads the specific 384-dim model used throughout this project — first call downloads and caches it locally.</td></tr>
+          <tr><td class="cmd">model.encode(text_or_texts, show_progress_bar=True)</td><td class="desc">Turns one string or a list of strings into embedding vector(s) — a progress bar matters when embedding 1,500+ rows at once.</td></tr>
+          <tr><td class="cmd">from pgvector.psycopg import register_vector</td><td class="desc">Teaches a psycopg connection how to send/receive pgvector's <code>vector</code> type directly as numpy-like arrays, instead of raw strings.</td></tr>
+          <tr><td class="cmd">register_vector(conn)</td><td class="desc">Applies that registration to a specific connection — needed once per connection, before any vector query runs.</td></tr>
+          <tr><td class="cmd">cur.execute("... WHERE col &lt;=&gt; %s &lt; %s ...", (embedding, threshold))</td><td class="desc">Passes a computed embedding straight in as a query parameter — the distance operator and the threshold cutoff both happen inside the SQL, not in Python after fetching everything.</td></tr>
         </tbody>
       </table>
     </div>
@@ -460,7 +511,7 @@
   </section>
 
   <footer>
-    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 2 (complete). Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 3, including its follow-up hardening pass (idempotent re-embedding, HNSW index) — all complete. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
   </footer>
 
 </div>
