@@ -1,0 +1,513 @@
+<title>Build 3 Handoff Brief — Semantic Search &amp; Retrieval</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  h3.phase-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px; font-weight: 600; margin: 32px 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.phase-title .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 700; flex: none;
+  }
+  p.phase-goal { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .kw { color: var(--teal); font-weight: 600; }
+  .str { color: var(--accent); }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+
+  table.ref-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; word-break: break-word; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: normal; }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  .recap-block {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 20px 22px; margin: 14px 0 20px; font-size: 14px;
+  }
+  .recap-block p { margin: 0 0 12px; }
+  .recap-block p:last-child { margin-bottom: 0; }
+  .recap-block code { background: var(--teal-tint); padding: 1px 5px; border-radius: 4px; font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px; }
+
+  .diagram-embed { text-align: center; margin: 18px 0 24px; }
+  .diagram-embed svg { max-width: 460px; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow); }
+  .diagram-embed .caption { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 3 · Handoff Brief</p>
+  <h1>Semantic Search &amp; Retrieval</h1>
+  <p class="lede">A standalone, in-progress reference for Build 3 — Phases 1-2 in full, every file, the full verification log, and a dedicated look at how a question actually flows through the agent at runtime.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Phases 1-2 complete, in progress</dd></div>
+    <div><dt>Commits</dt><dd><code>2e36f06</code> → <code>f4f2eb4</code></dd></div>
+    <div><dt>Continues</dt><dd>Build 2 / Build 2.5</dd></div>
+    <div><dt>Data choice</dt><dd>clean.allocations.summary</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#what">What &amp; Why</a>
+    <a href="#phase1">Phase 1</a>
+    <a href="#phase2">Phase 2</a>
+    <a href="#flow">Request Flow</a>
+    <a href="#verification">Verification Log</a>
+    <a href="#limitations">Known Limitations</a>
+    <a href="#env">Environment State</a>
+  </nav>
+
+  <section class="doc-section" id="what">
+    <h2>What Was Built, and Why</h2>
+    <p class="section-note">
+      Build 2 gave the agent structured data to read. Build 3 gives it <b>semantic</b> reach over the one genuinely unstructured field in the schema — <code>clean.allocations.summary</code>, free-text equipment descriptions — so questions about the general kind or theme of a checkout ("camera gear") work even without exact keyword matches.
+    </p>
+    <p class="section-note">
+      Data choice was deliberated, not assumed: two alternatives (a new purpose-sourced document corpus, and a meta/self-referential RAG agent over this project's own documentation) were considered and explicitly deferred — the documentation angle is logged as a future <b>Build 3.5</b>. <code>summary</code> won because it extends the same dataset across builds rather than sprawling into a new kind of corpus, per this project's own stated principle.
+    </p>
+    <p class="section-note">
+      No new database role was needed here, unlike Build 2.5 — semantic search is just another <i>read</i>, so it uses <code>appdb_reader</code> like every other query tool.
+    </p>
+  </section>
+
+  <section class="doc-section" id="phase1">
+    <h3 class="phase-title"><span class="badge">1</span>Enable Semantic Search</h3>
+    <p class="phase-goal">Goal: get <code>pgvector</code> running, embed the existing corpus, and prove raw similarity search works before touching the agent at all.</p>
+
+    <div class="callout"><b>Infrastructure change:</b> <code>docker-compose.yml</code>'s <code>postgres</code> image swapped from <code>postgres:17</code> to <code>pgvector/pgvector:pg17</code> — same Postgres 17, extension pre-installed. Data survives the swap (it lives in the separate <code>pgdata</code> volume, not the image). The swap did trigger a collation-version warning (the new image bundles a different glibc/ICU version) — resolved with <code>ALTER DATABASE appdb REFRESH COLLATION VERSION;</code>, safe for this dataset's plain ASCII/business text.</div>
+
+    <pre class="code"><span class="fn">008_add_summary_embedding.sql</span><code><span class="cmt">-- adds a pgvector embedding column for clean.allocations.summary.
+-- Depends on the vector extension (Phase 1, step 1) and clean.allocations existing.</span>
+
+<span class="kw">ALTER TABLE</span> clean.allocations
+    <span class="kw">ADD COLUMN IF NOT EXISTS</span> summary_embedding <span class="kw">vector</span>(384);</code></pre>
+
+    <div class="callout"><b>Embedding model choice:</b> <code>sentence-transformers</code> (<code>all-MiniLM-L6-v2</code>, 384-dim), run locally — no new paid API/account, zero marginal cost, sufficient quality for equipment-description text. Considered and declined: Voyage AI (Anthropic's own recommended embeddings partner) and OpenAI's <code>text-embedding-3-small</code> — both good options, both would have added a new credential for a task that doesn't need frontier-tier embeddings.</div>
+
+    <pre class="code"><span class="fn">embed_summaries.py</span><code><span class="kw">import</span> os
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="kw">import</span> psycopg
+<span class="kw">from</span> pgvector.psycopg <span class="kw">import</span> register_vector
+<span class="kw">from</span> sentence_transformers <span class="kw">import</span> SentenceTransformer
+
+load_dotenv(encoding=<span class="str">"utf-8-sig"</span>)
+
+model = SentenceTransformer(<span class="str">"all-MiniLM-L6-v2"</span>)
+
+conn = psycopg.connect(
+    host=os.environ.get(<span class="str">"POSTGRES_HOST"</span>, <span class="str">"127.0.0.1"</span>),
+    port=5432,
+    dbname=os.environ[<span class="str">"POSTGRES_DB"</span>],
+    user=os.environ[<span class="str">"POSTGRES_USER"</span>],
+    password=os.environ[<span class="str">"POSTGRES_PASSWORD"</span>],
+)
+register_vector(conn)
+
+<span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+    cur.execute(<span class="str">"SELECT allocation_id, summary FROM clean.allocations"</span>)
+    rows = cur.fetchall()
+
+texts = [summary <span class="kw">if</span> summary <span class="kw">else</span> <span class="str">""</span> <span class="kw">for</span> _, summary <span class="kw">in</span> rows]
+embeddings = model.encode(texts, show_progress_bar=<span class="kw">True</span>)
+
+<span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+    cur.executemany(
+        <span class="str">"UPDATE clean.allocations SET summary_embedding = %s WHERE allocation_id = %s"</span>,
+        [(embedding, allocation_id) <span class="kw">for</span> (allocation_id, _), embedding <span class="kw">in</span> zip(rows, embeddings)],
+    )
+conn.commit()
+conn.close()</code></pre>
+
+    <p><b>Verified:</b> all 1,535 rows embedded, correct 384 dimensions, self-distance = 0 for spot-checked rows (a vector's distance to itself must always be zero — confirms the vector math itself, not just non-null values).</p>
+
+    <pre class="code"><span class="fn">search_summaries.py — standalone verification script</span><code>query_embedding = model.encode(query_text)
+cur.execute(<span class="str">"""
+    SELECT allocation_id, summary, summary_embedding &lt;=&gt; %s AS distance
+    FROM clean.allocations
+    ORDER BY distance
+    LIMIT 5
+"""</span>, (query_embedding,))</code></pre>
+
+    <div class="callout good"><b>Relevance checkpoint passed via contrast test:</b> <code>"camera equipment"</code> scored <code>0.469</code>-<code>0.513</code>, returning genuinely coherent video/audio production gear. A deliberately out-of-domain query, <code>"office desk chair"</code> (this corpus has zero office furniture), scored meaningfully worse at <code>0.657</code>-<code>0.773</code> — real discrimination, even though the office-chair query's own top-5 results were still nonsense (there's nothing relevant to find; a plain top-K query has no "no good match" concept). That gap became the seed for Phase 2's threshold work.</div>
+  </section>
+
+  <section class="doc-section" id="phase2">
+    <h3 class="phase-title"><span class="badge">2</span>Wire Into the Agent</h3>
+    <p class="phase-goal">Goal: expose semantic search as a real tool, with an actual relevance threshold instead of always returning top-K regardless of quality.</p>
+
+    <div class="callout warn"><b>Calibration methodology correction, mid-phase:</b> a first calibration attempt sampled real corpus summaries as "in-domain queries" and got a misleadingly large separation (<code>0.16</code> vs <code>0.65</code>) — because many real summaries are near-duplicates of each other (the same standard kit checked out repeatedly), this measured duplication, not relevance. Using that number as the threshold would have rejected Phase 1's own working example (<code>"camera equipment"</code> at <code>0.469</code>-<code>0.513</code> is <i>higher</i> than the flawed <code>0.4066</code> midpoint). Recalibrated using short natural-language queries on <b>both</b> sides — matching how the agent actually queries — giving a real, narrower, correctly-placed separation.</div>
+
+    <pre class="code"><span class="fn">calibrate_threshold.py — corrected methodology</span><code>in_domain_queries = [
+    <span class="str">"camera equipment"</span>, <span class="str">"video tripod"</span>, <span class="str">"audio recording gear"</span>, <span class="str">"lighting kit"</span>,
+    <span class="str">"memory card"</span>, <span class="str">"laptop charger"</span>, <span class="str">"camera lens"</span>, <span class="str">"microphone"</span>, <span class="str">"HDMI cable"</span>,
+    <span class="cmt"># ... 20 total, short phrases for things this corpus genuinely has</span>
+]
+out_of_domain_queries = [
+    <span class="str">"office desk chair"</span>, <span class="str">"kitchen blender"</span>, <span class="str">"garden shovel"</span>, <span class="str">"running shoes"</span>,
+    <span class="cmt"># ... 20 total, short phrases for things this corpus has none of</span>
+]
+<span class="cmt"># For each query: embed it, find its single nearest neighbor's distance in the corpus.</span>
+<span class="cmt"># Result: in-domain 0.3109-0.6019 (mean 0.4519) vs out-of-domain 0.6538-0.8235 (mean 0.7584)</span>
+<span class="cmt"># Clean separation - midpoint threshold ~0.6279, rounded to 0.63</span></code></pre>
+
+    <pre class="code"><span class="fn">tools.py — search_summaries</span><code>_embedding_model = <span class="kw">None</span>
+
+<span class="kw">def</span> _get_embedding_model():
+    <span class="kw">global</span> _embedding_model
+    <span class="kw">if</span> _embedding_model <span class="kw">is None</span>:
+        _embedding_model = SentenceTransformer(<span class="str">"all-MiniLM-L6-v2"</span>)
+    <span class="kw">return</span> _embedding_model
+
+SIMILARITY_DISTANCE_THRESHOLD = 0.63
+
+<span class="kw">def</span> search_summaries(query_text: <span class="kw">str</span>, limit: <span class="kw">int</span> = 5) -> <span class="kw">list</span>[<span class="kw">dict</span>]:
+    model = _get_embedding_model()
+    query_embedding = model.encode(query_text)
+    <span class="cmt"># ... connects as appdb_reader, register_vector(conn) ...</span>
+    cur.execute(<span class="str">"""
+        SELECT allocation_id, summary, summary_embedding &lt;=&gt; %s AS distance
+        FROM clean.allocations
+        WHERE summary_embedding &lt;=&gt; %s &lt; %s
+        ORDER BY distance
+        LIMIT %s
+    """</span>, (query_embedding, query_embedding, SIMILARITY_DISTANCE_THRESHOLD, limit))
+    rows = cur.fetchall()
+
+    <span class="kw">if not</span> rows:
+        <span class="kw">return</span> [{<span class="str">"message"</span>: <span class="str">f"No sufficiently relevant results for {query_text!r} ..."</span>}]
+    <span class="kw">return</span> [{<span class="str">"allocation_id"</span>: aid, <span class="str">"summary"</span>: summary, <span class="str">"distance"</span>: <span class="kw">round</span>(<span class="kw">float</span>(dist), 4)} <span class="kw">for</span> aid, summary, dist <span class="kw">in</span> rows]</code></pre>
+
+    <div class="callout warn"><b>Real incident during agent wiring:</b> the <code>elif block.name == "search_summaries":</code> dispatch branch was missed when adding the tool schema. Because Python's <code>if</code>/<code>elif</code> chain had no matching branch and no <code>else</code>, the loop variable <code>result</code> silently kept its value from the <i>previous</i> tool call (<code>describe_table</code>'s column list) — no exception, so nothing looked broken. The model received a mismatched result and pragmatically fell back to a plain SQL <code>ILIKE '%camera%'</code> query instead, producing a correct-looking final answer that never actually exercised <code>search_summaries</code> at all. Caught only by checking that the tool's actual output matched its own logic, not by the final answer looking plausible.</div>
+
+    <pre class="code"><span class="fn">agent.py — the fix</span><code><span class="kw">elif</span> block.name == <span class="str">"search_summaries"</span>:
+    result = search_summaries(block.input[<span class="str">"query_text"</span>])
+<span class="kw">else</span>:
+    <span class="kw">raise</span> ValueError(<span class="str">f"Unknown tool name: {block.name}"</span>)</code></pre>
+    <p style="font-size:13.5px; color:var(--ink-2);">That <code>else</code> is the generalizable part of the fix — any future tool added without its dispatch branch now fails loudly, instead of silently reusing stale data from whatever ran before it.</p>
+
+    <div class="callout good"><b>Verified live, twice:</b> first pass (before the fix) proved the bug — the printed "result" for <code>search_summaries</code> was actually <code>describe_table</code>'s stale output. Second pass (after the fix) showed the real thing: a model-loading progress bar (first genuine invocation lazy-loads the embedding model) followed by the correct <code>{allocation_id, summary, distance}</code> shape, matching Phase 1's own numbers exactly for the same query. The agent then combined those results with a follow-up <code>run_sql_query</code> for exact checkout dates — a two-tool combination nobody coded explicitly, just the model composing what the system prompt made available.</div>
+  </section>
+
+  <section class="doc-section" id="flow">
+    <h2>How a Question Flows Through the Agent</h2>
+    <p class="section-note">A dedicated walkthrough of the runtime request lifecycle as it stands after Phase 2 — distinct from the build-phase diagrams above, this is the architecture of a single question's journey, every time.</p>
+
+    <div class="diagram-embed">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 1300" width="680" height="1300" role="img" aria-labelledby="title desc">
+  <title id="title">Build 3 agent request flow: how a question moves through the agent</title>
+  <desc id="desc">Flowchart: a user question arrives, a checkpoint asking whether the model needs a tool or can answer directly, the model picking one of five tools, agent.py dispatching to the matching Python function or raising an error if none match, the tool running against Postgres as either the read-only or scratch-writer role, the result feeding back to the model as context, a checkpoint asking whether that's enough to answer or another tool call is needed, a step checking the stop reason against the turn limit, then a final answer.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #101827; }
+    .heading    { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 22px; font-weight: 600; }
+    .subheading { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 11px; fill: #7C8894; letter-spacing: 0.12em; }
+    .step-label { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; }
+    .step-desc  { font-size: 13px; fill: #4B5768; }
+    .step-mono  { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px; fill: #7C8894; }
+    .decision-title { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; text-anchor: middle; }
+    .decision-q     { font-size: 12.5px; fill: #B5502B; text-anchor: middle; font-weight: 600; }
+    .legend-text { font-size: 11px; fill: #7C8894; }
+    .rect-node   { fill: #FFFFFF; stroke: #B9C4C7; stroke-width: 1.5; }
+    .diamond-node{ fill: #F7E9E2; stroke: #B5502B; stroke-width: 1.5; }
+    .pill-node   { fill: #0B5158; }
+    .pill-text   { fill: #F3F9F9; font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13.5px; font-weight: 700; text-anchor: middle; letter-spacing: 0.04em; }
+    .badge       { fill: #0B5158; }
+    .badge-text  { fill: #F3F9F9; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+    .arrow-line  { stroke: #B9C4C7; stroke-width: 2; }
+    .arrow-head  { fill: #B9C4C7; }
+  </style>
+
+  <rect x="0" y="0" width="680" height="1300" fill="#F3F6F7"/>
+
+  <text x="340" y="40" class="heading" text-anchor="middle">Build 3 — How a Question Flows Through the Agent</text>
+  <text x="340" y="60" class="subheading" text-anchor="middle">AGENT REQUEST LIFECYCLE · BUILD 3</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="120" y="76" width="20" height="12" rx="6" class="pill-node"/>
+    <text x="146" y="86" class="legend-text">start / end</text>
+    <polygon points="234,73 250,82 234,91 218,82" class="diamond-node"/>
+    <text x="256" y="86" class="legend-text">checkpoint</text>
+    <rect x="330" y="76" width="20" height="12" rx="3" class="rect-node"/>
+    <text x="356" y="86" class="legend-text">step</text>
+    <line x1="410" y1="82" x2="440" y2="82" class="arrow-line"/>
+    <polygon points="446,82 438,78 438,86" class="arrow-head"/>
+    <text x="452" y="86" class="legend-text">flow</text>
+  </g>
+
+  <!-- connectors -->
+  <g>
+    <line class="arrow-line" x1="340" y1="170" x2="340" y2="210"/>
+    <polygon class="arrow-head" points="340,216 334,206 346,206"/>
+
+    <line class="arrow-line" x1="340" y1="346" x2="340" y2="386"/>
+    <polygon class="arrow-head" points="340,392 334,382 346,382"/>
+
+    <line class="arrow-line" x1="340" y1="470" x2="340" y2="510"/>
+    <polygon class="arrow-head" points="340,516 334,506 346,506"/>
+
+    <line class="arrow-line" x1="340" y1="594" x2="340" y2="634"/>
+    <polygon class="arrow-head" points="340,640 334,630 346,630"/>
+
+    <line class="arrow-line" x1="340" y1="718" x2="340" y2="758"/>
+    <polygon class="arrow-head" points="340,764 334,754 346,754"/>
+
+    <line class="arrow-line" x1="340" y1="842" x2="340" y2="882"/>
+    <polygon class="arrow-head" points="340,888 334,878 346,878"/>
+
+    <line class="arrow-line" x1="340" y1="1018" x2="340" y2="1058"/>
+    <polygon class="arrow-head" points="340,1064 334,1054 346,1054"/>
+
+    <line class="arrow-line" x1="340" y1="1142" x2="340" y2="1182"/>
+    <polygon class="arrow-head" points="340,1188 334,1178 346,1178"/>
+  </g>
+
+  <!-- Start pill -->
+  <g>
+    <rect class="pill-node" x="180" y="110" width="320" height="60" rx="30"/>
+    <text class="pill-text" x="340" y="145">USER QUESTION</text>
+  </g>
+
+  <!-- Decision: orientation -->
+  <g>
+    <polygon class="diamond-node" points="340,216 500,281 340,346 180,281"/>
+    <circle class="badge" cx="96" cy="281" r="16"/>
+    <text class="badge-text" x="96" y="282">0</text>
+    <text class="decision-title" x="340" y="275">Orientation</text>
+    <text class="decision-q" x="340" y="296">need a tool, or answer directly?</text>
+  </g>
+
+  <!-- Step 1 -->
+  <g>
+    <rect class="rect-node" x="60" y="392" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="428" r="16"/>
+    <text class="badge-text" x="96" y="429">1</text>
+    <text class="step-label" x="126" y="422">Model picks one tool</text>
+    <text class="step-desc" x="126" y="444">schema discovery, SQL, semantic search, or a scratch save</text>
+  </g>
+
+  <!-- Step 2 -->
+  <g>
+    <rect class="rect-node" x="60" y="516" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="552" r="16"/>
+    <text class="badge-text" x="96" y="553">2</text>
+    <text class="step-label" x="126" y="546">agent.py dispatches to Python</text>
+    <text class="step-mono" x="126" y="568">if/elif matches the tool name, else raises an error</text>
+  </g>
+
+  <!-- Step 3 -->
+  <g>
+    <rect class="rect-node" x="60" y="640" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="676" r="16"/>
+    <text class="badge-text" x="96" y="677">3</text>
+    <text class="step-label" x="126" y="670">The tool runs against Postgres</text>
+    <text class="step-desc" x="126" y="692">appdb_reader for reads, appdb_agent_writer for saves</text>
+  </g>
+
+  <!-- Step 4 -->
+  <g>
+    <rect class="rect-node" x="60" y="764" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="800" r="16"/>
+    <text class="badge-text" x="96" y="801">4</text>
+    <text class="step-label" x="126" y="794">Result feeds back as context</text>
+    <text class="step-desc" x="126" y="816">success or error - both valid, the model decides what's next</text>
+  </g>
+
+  <!-- Decision: continue? -->
+  <g>
+    <polygon class="diamond-node" points="340,888 500,953 340,1018 180,953"/>
+    <circle class="badge" cx="96" cy="953" r="16"/>
+    <text class="badge-text" x="96" y="954">5</text>
+    <text class="decision-title" x="340" y="947">Continue?</text>
+    <text class="decision-q" x="340" y="968">enough to answer, or another tool call?</text>
+  </g>
+
+  <!-- Step 6 -->
+  <g>
+    <rect class="rect-node" x="60" y="1064" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="1100" r="16"/>
+    <text class="badge-text" x="96" y="1101">6</text>
+    <text class="step-label" x="126" y="1094">Check stop_reason</text>
+    <text class="step-mono" x="126" y="1116">end_turn = done, tool_use = loop back to step 1</text>
+  </g>
+
+  <!-- End pill -->
+  <g>
+    <rect class="pill-node" x="180" y="1188" width="320" height="66" rx="33"/>
+    <text class="pill-text" x="340" y="1218">FINAL ANSWER</text>
+    <text class="pill-text" x="340" y="1238">OR TURN-LIMIT STOP</text>
+  </g>
+</svg>
+      <p class="caption">Same visual system as the build/phase diagrams — this one documents runtime behavior, not a build plan.</p>
+    </div>
+
+    <div class="recap-block">
+      <p><b>1. The question enters as a single message.</b> <code>user_question</code> is wrapped into <code>messages = [{"role": "user", "content": user_question}]</code> — that's the entire starting context. The model gets no hardcoded schema, no pre-fetched data — just the question, the <code>SYSTEM_PROMPT</code>, and the five tool schemas (<code>run_sql_query</code>, <code>list_tables</code>, <code>describe_table</code>, <code>save_dataframe</code>, <code>search_summaries</code>).</p>
+
+      <p><b>2. First API call — the model orients itself.</b> Per the system prompt ("you don't know the schema in advance"), it typically calls <code>list_tables</code> first, then <code>describe_table</code> on whatever looks relevant — this is pure discovery, no data yet. Each of these returns as a <code>tool_use</code> block; the <code>while turn &lt; MAX_TOOL_TURNS</code> loop dispatches it through the <code>if/elif/else</code> chain in <code>agent.py</code>, gets a result back from <code>tools.py</code>, and feeds that result back to the model as the next turn's context.</p>
+
+      <p><b>3. The real judgment call — which data tool to reach for.</b> This is decided by the model itself, guided by the system-prompt line: <i>"For questions about the general kind or theme of equipment... use search_summaries instead of writing SQL yourself."</i> Nothing in the code forces this choice — it's the model reading that instruction and applying it. A structured question ("how many allocations did STDA make?") gets <code>run_sql_query</code>. A thematic one ("what camera equipment...") gets <code>search_summaries</code>.</p>
+
+      <p><b>4. If it picks <code>search_summaries</code>:</b> <code>tools.py</code> embeds the query text with the lazily-loaded <code>sentence-transformers</code> model (loaded once, cached module-level), runs a cosine-distance query against <code>clean.allocations.summary_embedding</code> filtered by the calibrated <code>0.63</code> threshold, and returns either real <code>{allocation_id, summary, distance}</code> rows or an explicit "no sufficiently relevant results" message — never a silent empty list.</p>
+
+      <p><b>5. Observed emergent pattern — semantic search feeds structured follow-up.</b> In both live tests, the model didn't stop at <code>search_summaries</code>'s results — it took the returned <code>allocation_id</code>s and issued a <i>second</i>, precise <code>run_sql_query</code> (e.g., pulling exact <code>actual_start</code>/<code>actual_end</code> dates) to enrich the answer. Nobody coded that combination explicitly; it's the model composing two tools because the system prompt gave it both options and the question benefited from both.</p>
+
+      <p><b>6. Self-correction, observed again.</b> When a query is written as <code>FROM allocations</code> (unqualified) instead of <code>FROM clean.allocations</code>, it fails with a real Postgres error — which comes back as a normal (non-crashing) <code>tool_result</code> with <code>is_error: True</code>, per Build 1's hardening pass. The model reads that error and retries schema-qualified, without any help.</p>
+
+      <p><b>7. Termination.</b> The loop ends when <code>stop_reason</code> is <code>end_turn</code> (a plain-text final answer, no more tool calls) — or, as a safeguard, when <code>MAX_TOOL_TURNS</code> (10) is hit, printing a clean stop message instead of hanging forever.</p>
+
+      <p><b>Underneath all of this, the same trust boundary from Build 1 still governs everything, now with two lanes:</b> the LLM proposes actions but never executes anything directly → <code>agent.py</code>'s dispatch is the gate (now with the <code>else: raise</code> guard against an unhandled tool silently reusing stale data) → the database role is the real backstop. Read paths (<code>run_sql_query</code>, <code>list_tables</code>, <code>describe_table</code>, <code>search_summaries</code>) all run as <code>appdb_reader</code> — physically incapable of writing. <code>save_dataframe</code> alone runs as <code>appdb_agent_writer</code> — physically incapable of touching anything outside <code>agent_scratch</code>. The model's own judgment decides <i>which</i> tool to call; the roles decide what's <i>possible</i> regardless of what it decides.</p>
+    </div>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification Log</h2>
+    <ul class="check-list">
+      <li><b>Embedding backfill</b><span class="detail">1,535/1,535 rows embedded, correct 384 dimensions, self-distance = 0 on spot checks.</span></li>
+      <li><b>Relevance contrast test</b><span class="detail"><code>"camera equipment"</code> (0.469-0.513) vs <code>"office desk chair"</code> (0.657-0.773) — real, meaningful separation.</span></li>
+      <li><b>Threshold calibration</b><span class="detail">Corrected methodology: in-domain 0.3109-0.6019 vs out-of-domain 0.6538-0.8235 → threshold 0.63, empirically justified not guessed.</span></li>
+      <li><b>search_summaries direct test</b><span class="detail">Relevant query returns real rows; out-of-domain query returns the explicit "no relevant results" message, not an empty list.</span></li>
+      <li><b>Agent integration, twice</b><span class="detail">First run exposed the missing-dispatch bug (stale result silently reused); second run, post-fix, showed the real tool executing (progress bar + matching distances) and combining with a follow-up SQL query for exact dates.</span></li>
+    </ul>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Known Limitations &amp; Open Items</h2>
+    <div class="callout warn"><b>No automated re-embedding for new rows.</b> <code>embed_summaries.py</code> is a one-time backfill. If the raw→clean pipeline ever runs again with new source data, new <code>clean.allocations</code> rows will have <code>NULL summary_embedding</code> until this script is re-run manually. Not automated - deliberately out of scope for this build.</div>
+    <div class="callout warn"><b>The 0.63 threshold is an empirically-grounded heuristic, not a guarantee.</b> Calibrated from 40 curated queries (20 in-domain, 20 out-of-domain) against this specific corpus - a reasonable, evidence-based starting point, but not something that generalizes automatically if the corpus or query style changes substantially.</div>
+    <div class="callout"><b>Carried forward from Build 2.5:</b> the <code>list_tables</code>/<code>describe_table</code> merge-into-one-call idea and the lack of a per-table row/size cap on <code>agent_scratch</code> both remain low-priority, unaddressed items.</div>
+    <div class="callout"><b>Incidental fix during this build:</b> <code>profile.py</code> was renamed to <code>profile_raw_data.py</code> after it was found silently shadowing Python's stdlib <code>profile</code> module, breaking an unrelated import deep in <code>torch</code>'s own import chain. Unrelated to semantic search itself, logged separately in project memory.</div>
+  </section>
+
+  <section class="doc-section" id="env">
+    <h2>Environment State</h2>
+    <table class="ref-table">
+      <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Postgres image</td><td class="mono">pgvector/pgvector:pg17 (was postgres:17)</td></tr>
+        <tr><td>New extension</td><td class="mono">vector</td></tr>
+        <tr><td>New column</td><td class="mono">clean.allocations.summary_embedding vector(384)</td></tr>
+        <tr><td>New SQL file</td><td class="mono">008_add_summary_embedding.sql</td></tr>
+        <tr><td>Embedding model</td><td class="mono">sentence-transformers, all-MiniLM-L6-v2 (local, free)</td></tr>
+        <tr><td>New/changed Python</td><td class="mono">embed_summaries.py, search_summaries.py, calibrate_threshold.py, tools.py (+search_summaries), agent.py (+tool, +dispatch, +else guard, +prompt line)</td></tr>
+        <tr><td>Renamed</td><td class="mono">profile.py → profile_raw_data.py</td></tr>
+        <tr><td>Role used</td><td class="mono">appdb_reader (no new role needed for this build)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    In progress — Phases 1-2 complete and verified. This brief will be updated if further Build 3 phases happen, the same way the Build 2.5 brief was updated after its table-cap fix. Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
