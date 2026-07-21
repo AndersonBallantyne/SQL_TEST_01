@@ -2,6 +2,7 @@ import os
 import pytest
 from dotenv import load_dotenv
 import psycopg
+import tools
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -64,3 +65,23 @@ def test_writer_can_create_and_reader_can_see_it_in_agent_scratch():
         cur.execute("DROP TABLE agent_scratch.pytest_boundary_test")
     writer_conn.commit()
     writer_conn.close()
+
+
+def test_scratch_table_cap_blocks_new_tables_but_not_existing_ones(monkeypatch):
+    monkeypatch.setattr(tools, "MAX_SCRATCH_TABLES", 0)
+
+    with pytest.raises(RuntimeError):
+        tools.save_dataframe("pytest_cap_test_new_table", ["x"], [(1,)])
+
+    # An existing table should still accept new rows even "at" the cap -
+    # the cap only ever blocks creating a brand-new table.
+    result = tools.save_dataframe(
+        "domain_avg_duration", ["patron_email_domain", "avg_duration_hours"], [("@pytest.test", 0.0)]
+    )
+    assert result["rows_written"] == 1
+
+    conn = _connect_as("POSTGRES_AGENT_WRITER_USER", "POSTGRES_AGENT_WRITER_PASSWORD")
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM agent_scratch.domain_avg_duration WHERE patron_email_domain = '@pytest.test'")
+    conn.commit()
+    conn.close()

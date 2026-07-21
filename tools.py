@@ -63,6 +63,8 @@ def _infer_type(value):
             return pg_type
     raise TypeError(f"Unsupported value type: {type(value)}")
 
+MAX_SCRATCH_TABLES = 50
+
 def save_dataframe(table_name: str, columns: list[str], rows: list[tuple]) -> dict:
     if not SAFE_NAME.match(table_name):
         raise ValueError(f"Invalid table name: {table_name!r}")
@@ -83,6 +85,28 @@ def save_dataframe(table_name: str, columns: list[str], rows: list[tuple]) -> di
     )
 
     with conn.cursor() as cur:
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_schema = 'agent_scratch' AND table_name = %s
+            )
+        """, [table_name])
+        table_already_exists = cur.fetchone()[0]
+
+        if not table_already_exists:
+            cur.execute("""
+                SELECT count(*) FROM information_schema.tables
+                WHERE table_schema = 'agent_scratch'
+            """)
+            current_count = cur.fetchone()[0]
+            if current_count >= MAX_SCRATCH_TABLES:
+                conn.close()
+                raise RuntimeError(
+                    f"agent_scratch already has {current_count} tables "
+                    f"(limit {MAX_SCRATCH_TABLES}) - refusing to create another. "
+                    f"Clean up existing scratch tables before saving new ones."
+                )
+
         col_defs = sql.SQL(", ").join(
             sql.SQL("{} {}").format(sql.Identifier(col), sql.SQL(pg_type))
             for col, pg_type in zip(columns, column_types)
