@@ -18,19 +18,23 @@ conn = psycopg.connect(
 register_vector(conn)
 
 with conn.cursor() as cur:
-    cur.execute("SELECT allocation_id, summary FROM clean.allocations")
+    cur.execute("SELECT allocation_id, summary FROM clean.allocations WHERE summary_embedding IS NULL")
     rows = cur.fetchall()
 
-print(f"Embedding {len(rows)} rows...")
-texts = [summary if summary else "" for _, summary in rows]
-embeddings = model.encode(texts, show_progress_bar=True)
+if not rows:
+    print("No rows need embedding - everything is already up to date.")
+    conn.close()
+else:
+    print(f"Embedding {len(rows)} row(s) missing a summary_embedding...")
+    texts = [summary if summary else "" for _, summary in rows]
+    embeddings = model.encode(texts, show_progress_bar=True)
 
-with conn.cursor() as cur:
-    cur.executemany(
-        "UPDATE clean.allocations SET summary_embedding = %s WHERE allocation_id = %s",
-        [(embedding, allocation_id) for (allocation_id, _), embedding in zip(rows, embeddings)],
-    )
-conn.commit()
-conn.close()
+    with conn.cursor() as cur:
+        cur.executemany(
+            "UPDATE clean.allocations SET summary_embedding = %s WHERE allocation_id = %s",
+            [(embedding, allocation_id) for (allocation_id, _), embedding in zip(rows, embeddings)],
+        )
+    conn.commit()
+    conn.close()
 
-print(f"Backfilled embeddings for {len(rows)} rows.")
+    print(f"Embedded {len(rows)} row(s).")
