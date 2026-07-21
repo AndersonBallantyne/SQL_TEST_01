@@ -381,14 +381,14 @@ way you would any other table, before assuming a past result isn't available.</s
       <li><b>Type inference check</b><span class="detail">A mixed <code>str</code>/<code>int</code>/<code>float</code>/<code>bool</code> row produced exactly <code>text</code>/<code>bigint</code>/<code>double precision</code>/<code>boolean</code> columns, confirmed via <code>\d</code>.</span></li>
       <li><b>Injection/escape attempts</b><span class="detail">Four attempts (dotted schema name, bare SQL keyword, leading digit, semicolon-chained DROP) all rejected before touching the database.</span></li>
       <li><b>Agent round trip, across two separate process runs</b><span class="detail">Run 1 computed and saved an aggregation; run 2 (fresh process, no shared memory) discovered, read back, and correctly reported the exact same figures.</span></li>
-      <li><b>Full automated suite</b><span class="detail">8/8 tests passing — 4 from Build 2's <code>test_data_quality.py</code>, 4 new from Phase 4's <code>test_agent_scratch_boundary.py</code>.</span></li>
+      <li><b>Full automated suite</b><span class="detail">9/9 tests passing — 4 from Build 2's <code>test_data_quality.py</code>, 5 from <code>test_agent_scratch_boundary.py</code> (4 from Phase 4, plus the table-cap test added as a same-day follow-up).</span></li>
     </ul>
   </section>
 
   <section class="doc-section" id="limitations">
     <h2>Known Limitations &amp; Open Items</h2>
     <div class="callout warn"><b>No cleanup policy for scratch tables.</b> Nothing expires or caps what accumulates in <code>agent_scratch</code>. Deliberately deferred — a manual <code>DROP TABLE</code> is fine for now; automated expiry would be over-engineering for what's currently a single-agent, low-volume workspace.</div>
-    <div class="callout warn"><b>No table/size limits.</b> A pathological loop could in principle create many scratch tables. <code>MAX_TOOL_TURNS = 10</code> (from Build 1's hardening pass) already bounds this indirectly per run, but there's no explicit cap on total scratch tables across runs.</div>
+    <div class="callout good"><b>Resolved — table-count cap.</b> <code>MAX_SCRATCH_TABLES = 50</code> in <code>save_dataframe</code>, checked before any new <code>CREATE TABLE</code> runs (not before every write — appending to an already-existing table is never blocked). Verified live by temporarily lowering the cap to 1: appending to the existing <code>domain_avg_duration</code> table still succeeded while a brand-new table was refused with a clear <code>RuntimeError</code>. Codified as <code>test_scratch_table_cap_blocks_new_tables_but_not_existing_ones</code> (uses <code>monkeypatch</code> to lower the cap to 0 rather than creating 50 real tables). No per-table row/byte-size cap exists yet — not addressed, and lower priority than the table-count gap was.</div>
     <div class="callout"><b>Carried forward, still open:</b> the <code>list_tables</code>/<code>describe_table</code> merge-into-one-call idea (flagged during Build 2 Phase 3) remains unaddressed — now touches three schemas instead of two, same low-priority status.</div>
   </section>
 
