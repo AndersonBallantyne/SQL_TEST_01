@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 import anthropic
-from tools import run_sql_query, list_tables, describe_table, save_dataframe
+#from tools import run_sql_query, list_tables, describe_table, save_dataframe
+from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -70,6 +71,21 @@ tools = [
             },
             "required": ["table_name", "columns", "rows"]
         }
+    },
+
+    {
+        "name": "search_summaries",
+        "description": "Semantic search over allocation summaries (equipment descriptions). Use this for questions about the general kind or theme of equipment rather than an exact structured filter - it finds conceptually related items even without exact keyword matches. Returns a message, not an error, if nothing is sufficiently relevant.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query_text": {
+                    "type": "string",
+                    "description": "A natural-language description of the kind of equipment or allocation you're looking for."
+                }
+            },
+            "required": ["query_text"]
+        }
     }
 ]
 
@@ -84,6 +100,7 @@ When you need data to answer a question, use the run_sql_query tool. Only write 
 If asked to save or persist a computed result for later reuse, use save_dataframe. It only writes to your own scratch workspace and cannot affect any of the main database tables.
 
 Anything you save with save_dataframe becomes a normal table you can rediscover later — use list_tables and describe_table to find and inspect it, the same way you would any other table, before assuming a past result isn't available.
+For questions about the general kind or theme of equipment (e.g. "camera gear", "audio equipment") rather than exact structured filters, use search_summaries instead of writing SQL yourself - it finds conceptually related items even without exact keyword matches.
 """
 MAX_TOOL_TURNS = 10
 
@@ -91,7 +108,8 @@ MAX_TOOL_TURNS = 10
 #user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
 #user_question = "What's the average allocation duration, in hours, grouped by patron email domain?"
 #user_question = "What's the average allocation duration, in hours, grouped by patron email domain? Save this result for later as domain_avg_duration."
-user_question = "Do you have a previously saved result about average allocation duration? If so, what did it find?"
+#user_question = "Do you have a previously saved result about average allocation duration? If so, what did it find?"
+user_question = "What kind of camera equipment has been checked out recently?"
 
 
 messages = [{"role": "user", "content": user_question}]
@@ -137,6 +155,10 @@ while turn < MAX_TOOL_TURNS:
                     block.input["columns"],
                     [tuple(row) for row in block.input["rows"]],
                 )
+            elif block.name == "search_summaries":
+                result = search_summaries(block.input["query_text"])
+            else:
+                raise ValueError(f"Unknown tool name: {block.name}")
 
             print(result)
 

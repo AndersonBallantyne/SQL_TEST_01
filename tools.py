@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import psycopg
 from psycopg import sql
 from datetime import datetime
+from pgvector.psycopg import register_vector
+from sentence_transformers import SentenceTransformer
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -44,6 +46,45 @@ def describe_table(name: str) -> list[dict]:
         WHERE table_schema IN ('public', 'clean', 'agent_scratch') AND table_name = %s
         ORDER BY ordinal_position;
     """, [name])
+
+_embedding_model = None
+
+def _get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embedding_model
+
+SIMILARITY_DISTANCE_THRESHOLD = 0.63
+
+def search_summaries(query_text: str, limit: int = 5) -> list[dict]:
+    model = _get_embedding_model()
+    query_embedding = model.encode(query_text)
+
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_READER_USER"],
+        password=os.environ["POSTGRES_READER_PASSWORD"],
+    )
+    register_vector(conn)
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT allocation_id, summary, summary_embedding <=> %s AS distance
+            FROM clean.allocations
+            WHERE summary_embedding <=> %s < %s
+            ORDER BY distance
+            LIMIT %s
+        """, (query_embedding, query_embedding, SIMILARITY_DISTANCE_THRESHOLD, limit))
+        rows = cur.fetchall()
+    conn.close()
+
+    if not rows:
+        return [{"message": f"No sufficiently relevant results for {query_text!r} — nothing scored below the relevance threshold."}]
+
+    return [{"allocation_id": aid, "summary": summary, "distance": round(float(dist), 4)} for aid, summary, dist in rows]
+
 
 
 SAFE_NAME = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
@@ -127,6 +168,7 @@ def save_dataframe(table_name: str, columns: list[str], rows: list[tuple]) -> di
     conn.close()
     print(f"[{datetime.now().isoformat()}] Wrote {len(rows)} rows to agent_scratch.{table_name}")
     return {"schema": "agent_scratch", "table": table_name, "rows_written": len(rows)}
+
 
 
 if __name__ == "__main__":
