@@ -19,6 +19,22 @@ def _connect_as(user_env, password_env):
     return conn
 
 
+def test_hnsw_index_exists_on_summary_embedding():
+    conn = _connect_as("POSTGRES_READER_USER", "POSTGRES_READER_PASSWORD")
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT am.amname
+            FROM pg_index i
+            JOIN pg_class c ON c.oid = i.indexrelid
+            JOIN pg_am am ON am.oid = c.relam
+            WHERE c.relname = 'idx_allocations_summary_embedding_hnsw'
+        """)
+        row = cur.fetchone()
+    conn.close()
+    assert row is not None
+    assert row[0] == "hnsw"
+
+
 def test_all_rows_have_embeddings_with_correct_dimensions():
     conn = _connect_as("POSTGRES_READER_USER", "POSTGRES_READER_PASSWORD")
     with conn.cursor() as cur:
