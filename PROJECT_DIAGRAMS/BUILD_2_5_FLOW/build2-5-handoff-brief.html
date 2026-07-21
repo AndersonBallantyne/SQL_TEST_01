@@ -1,0 +1,414 @@
+<title>Build 2.5 Handoff Brief — Agent Scratch Workspace</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  h3.phase-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px; font-weight: 600; margin: 32px 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.phase-title .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 700; flex: none;
+  }
+  p.phase-goal { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .kw { color: var(--teal); font-weight: 600; }
+  .str { color: var(--accent); }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+
+  table.ref-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 2.5 · Handoff Brief</p>
+  <h1>Agent Scratch Workspace</h1>
+  <p class="lede">A standalone, deep-dive reference for Build 2.5 — every phase, every file, every verification result, in full. Complements (does not replace) the living cheat sheet and the phase diagrams.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Complete — all 4 phases</dd></div>
+    <div><dt>Commits</dt><dd><code>a44da27</code> → <code>567a66c</code></dd></div>
+    <div><dt>Continues</dt><dd>Build 2 (raw-to-queryable pipeline)</dd></div>
+    <div><dt>Precedes</dt><dd>Build 3 (pgvector RAG agent)</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#what">What &amp; Why</a>
+    <a href="#boundary">Trust Boundary</a>
+    <a href="#phase1">Phase 1</a>
+    <a href="#phase2">Phase 2</a>
+    <a href="#phase3">Phase 3</a>
+    <a href="#phase4">Phase 4</a>
+    <a href="#verification">Verification Log</a>
+    <a href="#limitations">Known Limitations</a>
+    <a href="#env">Environment State</a>
+  </nav>
+
+  <section class="doc-section" id="what">
+    <h2>What Was Built, and Why</h2>
+    <p class="section-note">
+      Build 2's pipeline gave the agent something real to read (<code>clean.allocations</code>). Build 2.5 gives it somewhere to <b>write</b> — a place to persist a computed result (an aggregation, a derived table) so it can be reused in a later question, without ever touching the boundary that keeps the rest of the database read-only.
+    </p>
+    <p class="section-note">
+      This was deliberately scoped as its own mini-build — inserted between Build 2 and Build 3, not folded into either — because it's a distinct agent-architecture capability (agent memory / write-back), not a data-pipeline concern (Build 2) or a retrieval concern (Build 3). See <code>project_agent-roadmap.md</code> memory for the full reasoning trail behind that call.
+    </p>
+  </section>
+
+  <section class="doc-section" id="boundary">
+    <h2>Trust Boundary, Extended</h2>
+    <p class="section-note">The existing Build 1 boundary is untouched. A second, parallel boundary was added alongside it — not a widening of the first one.</p>
+    <table class="ref-table">
+      <thead><tr><th>Role</th><th>Can do</th><th>Cannot do</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">appdb_reader</td><td>SELECT on public, clean, agent_scratch</td><td>Any write, anywhere</td></tr>
+        <tr><td class="mono">appdb_agent_writer</td><td>CREATE + write in agent_scratch only</td><td>Touch public, clean, or raw at all</td></tr>
+      </tbody>
+    </table>
+    <div class="callout good"><b>Why two roles, not one wider role:</b> extending <code>appdb_reader</code> with write access anywhere would mean one credential holds both read-everywhere and write-somewhere — harder to reason about and audit. Two narrow, single-purpose roles keep each one's blast radius small and independently verifiable.</div>
+  </section>
+
+  <section class="doc-section" id="phase1">
+    <h3 class="phase-title"><span class="badge">1</span>Provision the Role and Schema</h3>
+    <p class="phase-goal">Goal: create <code>appdb_agent_writer</code> and <code>agent_scratch</code>, with grants scoped so the writer can touch nothing else, and prove that boundary live before building anything on top of it.</p>
+
+    <pre class="code"><span class="fn">006_agent_scratch_role.sql</span><code><span class="cmt">-- writable role for the agent's scratch workspace. Idempotent: safe to re-run.</span>
+<span class="kw">DO</span> $$
+<span class="kw">BEGIN</span>
+    <span class="kw">IF NOT EXISTS</span> (<span class="kw">SELECT FROM</span> pg_catalog.pg_roles <span class="kw">WHERE</span> rolname = <span class="str">'appdb_agent_writer'</span>) <span class="kw">THEN</span>
+        <span class="kw">CREATE ROLE</span> appdb_agent_writer <span class="kw">WITH LOGIN</span>;
+    <span class="kw">END IF</span>;
+<span class="kw">END</span>
+$$;
+
+<span class="kw">GRANT CONNECT ON DATABASE</span> appdb <span class="kw">TO</span> appdb_agent_writer;</code></pre>
+
+    <pre class="code"><span class="fn">007_agent_scratch_schema.sql</span><code><span class="cmt">-- the agent's writable scratch schema for persisted findings.
+-- Depends on appdb_agent_writer (006) and appdb_reader (003) already existing.</span>
+
+<span class="kw">CREATE SCHEMA IF NOT EXISTS</span> agent_scratch;
+
+<span class="kw">GRANT USAGE, CREATE ON SCHEMA</span> agent_scratch <span class="kw">TO</span> appdb_agent_writer;
+
+<span class="kw">GRANT USAGE ON SCHEMA</span> agent_scratch <span class="kw">TO</span> appdb_reader;
+<span class="kw">GRANT SELECT ON ALL TABLES IN SCHEMA</span> agent_scratch <span class="kw">TO</span> appdb_reader;
+<span class="kw">ALTER DEFAULT PRIVILEGES FOR ROLE</span> appdb_agent_writer <span class="kw">IN SCHEMA</span> agent_scratch
+    <span class="kw">GRANT SELECT ON TABLES TO</span> appdb_reader;</code></pre>
+
+    <div class="callout"><b>Why <code>FOR ROLE appdb_agent_writer</code> is new here:</b> every earlier default-privilege line (<code>003</code>/<code>004</code>/<code>005</code>) worked without it because the same role (<code>devuser</code>) both created the tables and ran the <code>ALTER DEFAULT PRIVILEGES</code> statement. Here the table creator (<code>appdb_agent_writer</code>) is a different role than the script runner (<code>devuser</code>) — the default has to be set explicitly for that other role, or it silently wouldn't apply.</div>
+
+    <p><b>How it was run</b> (PowerShell):</p>
+    <pre class="code"><code>Get-Content 006_agent_scratch_role.sql -Raw | docker exec -i pg_local psql -U devuser -d appdb
+Get-Content 007_agent_scratch_schema.sql -Raw | docker exec -i pg_local psql -U devuser -d appdb</code></pre>
+
+    <p><b>Boundary check — no password needed, via <code>SET ROLE</code>:</b> since <code>devuser</code> is effectively a superuser, it can test exactly what <code>appdb_agent_writer</code> can and can't do without ever touching its credential.</p>
+    <pre class="code"><code><span class="kw">SET ROLE</span> appdb_agent_writer;
+
+<span class="cmt">-- Both FAILED as expected: permission denied for schema clean / public</span>
+<span class="kw">CREATE TABLE</span> clean.test_boundary (x <span class="kw">int</span>);
+<span class="kw">CREATE TABLE</span> public.test_boundary (x <span class="kw">int</span>);
+
+<span class="cmt">-- Both SUCCEEDED as expected</span>
+<span class="kw">CREATE TABLE</span> agent_scratch.test_boundary (id <span class="kw">serial primary key</span>, note <span class="kw">text</span>);
+<span class="kw">INSERT INTO</span> agent_scratch.test_boundary (note) <span class="kw">VALUES</span> (<span class="str">'boundary check'</span>);
+
+<span class="kw">RESET ROLE</span>;
+<span class="cmt">-- devuser AND appdb_reader (via a second SET ROLE) could both read the row back</span></code></pre>
+  </section>
+
+  <section class="doc-section" id="phase2">
+    <h3 class="phase-title"><span class="badge">2</span>Build the Guarded Write Tool</h3>
+    <p class="phase-goal">Goal: a function the agent can call to persist a result — without ever giving it a "run arbitrary write SQL" tool, and without defaulting to the raw layer's all-<code>TEXT</code> shortcut (which would break real arithmetic on computed results).</p>
+
+    <div class="callout"><b>Four guardrail layers, none of which alone has to be perfect:</b>
+      <ol style="margin:8px 0 0; padding-left:20px;">
+        <li>The <code>agent_scratch.</code> prefix is <b>hardcoded</b> in the function — never something the caller can specify.</li>
+        <li>Table/column names are checked against a safe identifier pattern before any SQL is built.</li>
+        <li>SQL is constructed with <code>psycopg.sql.Identifier</code>, not string formatting.</li>
+        <li><code>appdb_agent_writer</code> itself is physically incapable of writing anywhere else, regardless of any bug in the three layers above.</li>
+      </ol>
+    </div>
+
+    <div class="callout warn"><b>Design correction mid-phase:</b> the first draft defaulted every column to <code>TEXT</code>, mirroring <code>raw.allocations</code>. The user asked directly whether that would cause problems for calculations — it would have. <code>raw</code>'s all-<code>TEXT</code> approach exists to preserve source data before any transformation decision; <code>agent_scratch</code> holds <i>already-computed</i> results that need real arithmetic and correct sort order. <code>TEXT</code> makes <code>SUM</code>/<code>AVG</code> error outright, and — worse — makes <code>ORDER BY</code> silently sort lexicographically (<code>'9'</code> after <code>'10'</code>), a quiet wrong-answer bug rather than a loud one. Fixed by inferring each column's real Postgres type from the actual Python value passed in.</div>
+
+    <pre class="code"><span class="fn">tools.py — additions</span><code><span class="kw">import</span> re
+<span class="kw">from</span> psycopg <span class="kw">import</span> sql
+
+SAFE_NAME = re.compile(<span class="str">r"^[a-z_][a-z0-9_]{0,62}$"</span>)
+
+<span class="cmt"># Order matters: bool must come before int, since isinstance(True, int) is True in Python.</span>
+PG_TYPE_MAP = {
+    <span class="kw">bool</span>: <span class="str">"BOOLEAN"</span>,
+    <span class="kw">int</span>: <span class="str">"BIGINT"</span>,
+    <span class="kw">float</span>: <span class="str">"DOUBLE PRECISION"</span>,
+    <span class="kw">str</span>: <span class="str">"TEXT"</span>,
+    datetime: <span class="str">"TIMESTAMP"</span>,
+}
+
+<span class="kw">def</span> _infer_type(value):
+    <span class="kw">for</span> py_type, pg_type <span class="kw">in</span> PG_TYPE_MAP.items():
+        <span class="kw">if</span> isinstance(value, py_type):
+            <span class="kw">return</span> pg_type
+    <span class="kw">raise</span> TypeError(<span class="str">f"Unsupported value type: {type(value)}"</span>)
+
+<span class="kw">def</span> save_dataframe(table_name: <span class="kw">str</span>, columns: <span class="kw">list</span>[<span class="kw">str</span>], rows: <span class="kw">list</span>[<span class="kw">tuple</span>]) -> <span class="kw">dict</span>:
+    <span class="kw">if not</span> SAFE_NAME.match(table_name):
+        <span class="kw">raise</span> ValueError(<span class="str">f"Invalid table name: {table_name!r}"</span>)
+    <span class="kw">for</span> col <span class="kw">in</span> columns:
+        <span class="kw">if not</span> SAFE_NAME.match(col):
+            <span class="kw">raise</span> ValueError(<span class="str">f"Invalid column name: {col!r}"</span>)
+    <span class="kw">if not</span> rows:
+        <span class="kw">raise</span> ValueError(<span class="str">"Cannot infer types from an empty result set"</span>)
+
+    column_types = [_infer_type(v) <span class="kw">for</span> v <span class="kw">in</span> rows[0]]
+
+    conn = psycopg.connect(
+        host=os.environ.get(<span class="str">"POSTGRES_HOST"</span>, <span class="str">"127.0.0.1"</span>),
+        port=5432,
+        dbname=os.environ[<span class="str">"POSTGRES_DB"</span>],
+        user=os.environ[<span class="str">"POSTGRES_AGENT_WRITER_USER"</span>],
+        password=os.environ[<span class="str">"POSTGRES_AGENT_WRITER_PASSWORD"</span>],
+    )
+
+    <span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+        col_defs = sql.SQL(<span class="str">", "</span>).join(
+            sql.SQL(<span class="str">"{} {}"</span>).format(sql.Identifier(col), sql.SQL(pg_type))
+            <span class="kw">for</span> col, pg_type <span class="kw">in</span> zip(columns, column_types)
+        )
+        create_stmt = sql.SQL(<span class="str">"CREATE TABLE IF NOT EXISTS agent_scratch.{} ({})"</span>).format(
+            sql.Identifier(table_name), col_defs
+        )
+        cur.execute(create_stmt)
+
+        insert_stmt = sql.SQL(<span class="str">"INSERT INTO agent_scratch.{} ({}) VALUES ({})"</span>).format(
+            sql.Identifier(table_name),
+            sql.SQL(<span class="str">", "</span>).join(sql.Identifier(c) <span class="kw">for</span> c <span class="kw">in</span> columns),
+            sql.SQL(<span class="str">", "</span>).join(sql.Placeholder() <span class="kw">for</span> _ <span class="kw">in</span> columns),
+        )
+        cur.executemany(insert_stmt, rows)
+
+    conn.commit()
+    conn.close()
+    <span class="kw">return</span> {<span class="str">"schema"</span>: <span class="str">"agent_scratch"</span>, <span class="str">"table"</span>: table_name, <span class="str">"rows_written"</span>: <span class="kw">len</span>(rows)}</code></pre>
+
+    <p><b>Verified live</b> — a mixed-type row (<code>str</code>, <code>int</code>, <code>float</code>, <code>bool</code>) round-tripped with exactly the right Postgres types (confirmed via <code>\d</code>): <code>text</code>, <code>bigint</code>, <code>double precision</code>, <code>boolean</code>. Four escape/injection attempts — a dotted schema-qualified name, a bare SQL keyword, a leading digit, a semicolon-chained <code>DROP</code> — were all rejected by the identifier check before any query touched the database.</p>
+  </section>
+
+  <section class="doc-section" id="phase3">
+    <h3 class="phase-title"><span class="badge">3</span>Wire Into the Agent, Prove the Round Trip</h3>
+    <p class="phase-goal">Goal: expose <code>save_dataframe</code> as a real tool, and prove a save-then-read-back round trip works across genuinely separate process runs — not just within one session's memory.</p>
+
+    <pre class="code"><span class="fn">agent.py — new tool schema</span><code>{
+    <span class="str">"name"</span>: <span class="str">"save_dataframe"</span>,
+    <span class="str">"description"</span>: <span class="str">"Persist a computed result ... to your own scratch workspace ... cannot affect any of the main database tables."</span>,
+    <span class="str">"input_schema"</span>: {
+        <span class="str">"type"</span>: <span class="str">"object"</span>,
+        <span class="str">"properties"</span>: {
+            <span class="str">"table_name"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>},
+            <span class="str">"columns"</span>: {<span class="str">"type"</span>: <span class="str">"array"</span>, <span class="str">"items"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>}},
+            <span class="str">"rows"</span>: {<span class="str">"type"</span>: <span class="str">"array"</span>, <span class="str">"items"</span>: {<span class="str">"type"</span>: <span class="str">"array"</span>}}
+        },
+        <span class="str">"required"</span>: [<span class="str">"table_name"</span>, <span class="str">"columns"</span>, <span class="str">"rows"</span>]
+    }
+}</code></pre>
+
+    <pre class="code"><span class="fn">agent.py — dispatch addition</span><code><span class="kw">elif</span> block.name == <span class="str">"save_dataframe"</span>:
+    result = save_dataframe(
+        block.input[<span class="str">"table_name"</span>],
+        block.input[<span class="str">"columns"</span>],
+        [<span class="kw">tuple</span>(row) <span class="kw">for</span> row <span class="kw">in</span> block.input[<span class="str">"rows"</span>]],
+    )</code></pre>
+
+    <pre class="code"><span class="fn">tools.py — schema discovery widened again</span><code>WHERE table_schema IN (<span class="str">'public'</span>, <span class="str">'clean'</span>, <span class="str">'agent_scratch'</span>)</code></pre>
+
+    <div class="callout warn"><b>Real gap found and fixed mid-phase:</b> run 1 asked the agent to compute an average and save it — worked perfectly, including the same graceful self-correction from Build 2 Phase 3 (tried the table name unqualified, got a real error, retried with the schema prefix on its own). Run 2, a <i>fresh</i> process with zero memory of run 1, was asked whether it had a previously saved result — and it flatly said it had no way to check, without even attempting <code>list_tables</code>. Root cause: nothing told the model that saved results are discoverable the same way as any other table. Fixed with one line in the system prompt:</div>
+
+    <pre class="code"><code><span class="cmt">Anything you save with save_dataframe becomes a normal table you can rediscover
+later — use list_tables and describe_table to find and inspect it, the same
+way you would any other table, before assuming a past result isn't available.</span></code></pre>
+
+    <p>Re-ran after the fix: the agent called <code>list_tables</code>, found <code>agent_scratch.domain_avg_duration</code>, reasoned it was relevant even though its name didn't literally match the question's wording, inspected it, read it back, and answered correctly with the exact figures from run 1.</p>
+  </section>
+
+  <section class="doc-section" id="phase4">
+    <h3 class="phase-title"><span class="badge">4</span>Automated Boundary Tests</h3>
+    <p class="phase-goal">Goal: codify Phase 1's manual <code>SET ROLE</code> boundary check as a real, repeatable pytest suite — the stretch phase, done rather than skipped.</p>
+
+    <pre class="code"><span class="fn">test_agent_scratch_boundary.py</span><code><span class="kw">def</span> test_writer_has_no_elevated_privileges():
+    conn = _connect_as(<span class="str">"POSTGRES_USER"</span>, <span class="str">"POSTGRES_PASSWORD"</span>)
+    <span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+        cur.execute(<span class="str">"""SELECT rolsuper, rolcreaterole, rolcreatedb
+            FROM pg_roles WHERE rolname = 'appdb_agent_writer'"""</span>)
+        rolsuper, rolcreaterole, rolcreatedb = cur.fetchone()
+    conn.close()
+    <span class="kw">assert not</span> rolsuper
+    <span class="kw">assert not</span> rolcreaterole
+    <span class="kw">assert not</span> rolcreatedb
+
+<span class="kw">def</span> test_writer_blocked_from_clean_schema():
+    conn = _connect_as(<span class="str">"POSTGRES_AGENT_WRITER_USER"</span>, <span class="str">"POSTGRES_AGENT_WRITER_PASSWORD"</span>)
+    <span class="kw">with</span> pytest.raises(psycopg.errors.InsufficientPrivilege):
+        <span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+            cur.execute(<span class="str">"CREATE TABLE clean.pytest_boundary_test (x int)"</span>)
+    conn.close()
+
+<span class="cmt"># + test_writer_blocked_from_public_schema (same pattern)
+# + test_writer_can_create_and_reader_can_see_it_in_agent_scratch
+#   (writer creates+inserts, reader connection reads it back, writer drops it)</span></code></pre>
+
+    <p><b>Result:</b> all 4 new tests passed on the first run, alongside the 4 existing <code>test_data_quality.py</code> tests from Build 2 — 8 total, all green, in the same suite.</p>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification Log</h2>
+    <p class="section-note">What was actually exercised against the running system, not just read for plausibility — same standard as every prior build in this project.</p>
+    <ul class="check-list">
+      <li><b>Role privilege check</b><span class="detail"><code>appdb_agent_writer</code> — no Superuser / Createrole / Createdb attributes.</span></li>
+      <li><b>Boundary check, via SET ROLE</b><span class="detail">Blocked from <code>clean</code> and <code>public</code> with real permission-denied errors; succeeded in <code>agent_scratch</code>; <code>appdb_reader</code> confirmed able to read what the writer wrote.</span></li>
+      <li><b>Type inference check</b><span class="detail">A mixed <code>str</code>/<code>int</code>/<code>float</code>/<code>bool</code> row produced exactly <code>text</code>/<code>bigint</code>/<code>double precision</code>/<code>boolean</code> columns, confirmed via <code>\d</code>.</span></li>
+      <li><b>Injection/escape attempts</b><span class="detail">Four attempts (dotted schema name, bare SQL keyword, leading digit, semicolon-chained DROP) all rejected before touching the database.</span></li>
+      <li><b>Agent round trip, across two separate process runs</b><span class="detail">Run 1 computed and saved an aggregation; run 2 (fresh process, no shared memory) discovered, read back, and correctly reported the exact same figures.</span></li>
+      <li><b>Full automated suite</b><span class="detail">8/8 tests passing — 4 from Build 2's <code>test_data_quality.py</code>, 4 new from Phase 4's <code>test_agent_scratch_boundary.py</code>.</span></li>
+    </ul>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Known Limitations &amp; Open Items</h2>
+    <div class="callout warn"><b>No cleanup policy for scratch tables.</b> Nothing expires or caps what accumulates in <code>agent_scratch</code>. Deliberately deferred — a manual <code>DROP TABLE</code> is fine for now; automated expiry would be over-engineering for what's currently a single-agent, low-volume workspace.</div>
+    <div class="callout warn"><b>No table/size limits.</b> A pathological loop could in principle create many scratch tables. <code>MAX_TOOL_TURNS = 10</code> (from Build 1's hardening pass) already bounds this indirectly per run, but there's no explicit cap on total scratch tables across runs.</div>
+    <div class="callout"><b>Carried forward, still open:</b> the <code>list_tables</code>/<code>describe_table</code> merge-into-one-call idea (flagged during Build 2 Phase 3) remains unaddressed — now touches three schemas instead of two, same low-priority status.</div>
+  </section>
+
+  <section class="doc-section" id="env">
+    <h2>Environment State</h2>
+    <table class="ref-table">
+      <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>New role</td><td class="mono">appdb_agent_writer</td></tr>
+        <tr><td>New schema</td><td class="mono">agent_scratch</td></tr>
+        <tr><td>New credentials</td><td class="mono">POSTGRES_AGENT_WRITER_USER / POSTGRES_AGENT_WRITER_PASSWORD</td></tr>
+        <tr><td>New SQL files</td><td class="mono">006_agent_scratch_role.sql, 007_agent_scratch_schema.sql</td></tr>
+        <tr><td>New/changed Python</td><td class="mono">tools.py (+save_dataframe, widened discovery), agent.py (+tool, +dispatch, +prompt line), test_agent_scratch_boundary.py</td></tr>
+        <tr><td>Live artifact from testing</td><td class="mono">agent_scratch.domain_avg_duration (kept, real example — not test scaffolding)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Build 2.5 complete. Next: Build 3 — retrieval-augmented agent (pgvector on the existing Postgres). This brief is a point-in-time snapshot of Build 2.5 specifically; ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
