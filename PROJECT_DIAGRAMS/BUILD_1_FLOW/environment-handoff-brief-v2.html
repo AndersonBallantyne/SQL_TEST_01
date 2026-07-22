@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dockerized SQL Learning Lab — Handoff Brief v2</title>
+
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --paper-raised: #FFFFFF;
+    --ink: #101827;
+    --ink-muted: #4B5768;
+    --ink-faint: #7C8894;
+    --accent: #0F7A82;
+    --accent-deep: #0B5158;
+    --accent-tint: #E4F1F1;
+    --warn: #B5502B;
+    --warn-tint: #F7E9E2;
+    --ok: #3E7A3B;
+    --ok-tint: #E7F0E4;
+    --line: #D7DEE0;
+    --line-strong: #B9C4C7;
+    --code-bg: #0F1B22;
+    --code-ink: #D9EDEC;
+    --code-accent: #6FD3C7;
+    --code-warn: #E39A7A;
+    --shadow: 0 1px 2px rgba(16,24,39,0.06), 0 8px 24px rgba(16,24,39,0.05);
+
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0B1420;
+      --paper-raised: #101C29;
+      --ink: #E7EDEE;
+      --ink-muted: #9FB0B6;
+      --ink-faint: #6E7F86;
+      --accent: #3FBFC6;
+      --accent-deep: #1C8890;
+      --accent-tint: #10333330;
+      --warn: #E08A57;
+      --warn-tint: #2E1F16;
+      --ok: #7CB57A;
+      --ok-tint: #17281A;
+      --line: #223140;
+      --line-strong: #33475A;
+      --code-bg: #060B0F;
+      --code-ink: #CFEDEA;
+      --code-accent: #6FD3C7;
+      --code-warn: #E39A7A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0B1420;
+    --paper-raised: #101C29;
+    --ink: #E7EDEE;
+    --ink-muted: #9FB0B6;
+    --ink-faint: #6E7F86;
+    --accent: #3FBFC6;
+    --accent-deep: #1C8890;
+    --accent-tint: #10333330;
+    --warn: #E08A57;
+    --warn-tint: #2E1F16;
+    --ok: #7CB57A;
+    --ok-tint: #17281A;
+    --line: #223140;
+    --line-strong: #33475A;
+    --code-bg: #060B0F;
+    --code-ink: #CFEDEA;
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7;
+    --paper-raised: #FFFFFF;
+    --ink: #101827;
+    --ink-muted: #4B5768;
+    --ink-faint: #7C8894;
+    --accent: #0F7A82;
+    --accent-deep: #0B5158;
+    --accent-tint: #E4F1F1;
+    --warn: #B5502B;
+    --warn-tint: #F7E9E2;
+    --line: #D7DEE0;
+    --line-strong: #B9C4C7;
+    --code-bg: #0F1B22;
+    --code-ink: #D9EDEC;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 28px 96px;
+  }
+
+  .masthead {
+    padding: 56px 0 32px;
+    border-bottom: 3px solid var(--accent-deep);
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+  h1.doc-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 2.5rem;
+    line-height: 1.12;
+    margin: 0 0 10px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .doc-subtitle {
+    font-size: 1.05rem;
+    color: var(--ink-muted);
+    max-width: 62ch;
+    margin: 0 0 22px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+  }
+  .meta-row strong { color: var(--ink); font-weight: 600; }
+  .meta-row .k { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); display: block; margin-bottom: 2px; }
+
+  .continuity {
+    background: var(--accent-tint);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 3px;
+    padding: 18px 22px;
+    margin-bottom: 48px;
+    font-size: 0.95rem;
+  }
+  .continuity p { margin: 0; }
+  .continuity strong { color: var(--accent-deep); }
+
+  section { margin-bottom: 56px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 10px;
+  }
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .section-dek {
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+    margin: 12px 0 22px;
+    max-width: 68ch;
+  }
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    font-weight: 600;
+    margin: 28px 0 10px;
+  }
+  p { margin: 0 0 12px; }
+  .lede { font-size: 1.02rem; color: var(--ink-muted); max-width: 70ch; }
+
+  .finding {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--warn);
+    border-radius: 3px;
+    padding: 20px 24px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  .finding-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .finding-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.08rem;
+    color: var(--ink);
+  }
+  .finding-tag {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--warn);
+    background: var(--warn-tint);
+    border: 1px solid var(--warn);
+    border-radius: 2px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    flex: none;
+  }
+  .finding-tag.resolved { color: var(--ok); background: var(--ok-tint); border-color: var(--ok); }
+  .finding dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 14px; margin: 14px 0 0; font-size: 0.92rem; }
+  .finding dt { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); padding-top: 2px; }
+  .finding dd { margin: 0; color: var(--ink); }
+
+  .table-wrap { overflow-x: auto; margin: 18px 0; border-radius: 3px; border: 1px solid var(--line); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: var(--paper-raised); }
+  thead th {
+    background: var(--accent-deep);
+    color: #F3F9F9;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody td { padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--accent-tint) 45%, transparent); }
+  td.mono, th.mono { font-family: var(--font-mono); font-size: 0.85rem; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  .diff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--line-strong);
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 14px 0 22px;
+  }
+  @media (max-width: 640px) { .diff { grid-template-columns: 1fr; } }
+  .diff > div { background: var(--code-bg); padding: 14px 16px; overflow-x: auto; }
+  .diff .label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--code-warn);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .diff.after .label { color: var(--code-accent); }
+  .diff pre {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--code-ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .file-tag {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--accent-deep);
+    background: var(--accent-tint);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+
+  .vlog { list-style: none; margin: 16px 0; padding: 0; border-left: 2px solid var(--line-strong); }
+  .vlog li { position: relative; padding: 2px 0 20px 24px; font-size: 0.92rem; }
+  .vlog li::before {
+    content: "";
+    position: absolute; left: -7px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--ok); border: 2px solid var(--paper);
+  }
+  .vlog .vtitle { font-weight: 600; color: var(--ink); }
+  .vlog .vresult { color: var(--ink-muted); font-family: var(--font-mono); font-size: 0.82rem; }
+
+  .diagram {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 20px 0 8px;
+    font-size: 0.85rem;
+  }
+  .dz {
+    flex: 1;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    padding: 14px 16px;
+    background: var(--paper-raised);
+  }
+  .dz h4 { margin: 0 0 6px; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-deep); }
+  .dz p { margin: 0; color: var(--ink-muted); font-size: 0.82rem; }
+  .dz.untrusted { border-style: dashed; }
+  .dz.trusted { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .darrow { flex: none; width: 40px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-family: var(--font-mono); }
+  @media (max-width: 640px) { .diagram { flex-direction: column; } .darrow { width: auto; height: 24px; transform: rotate(90deg); } }
+
+  ul.clean, ol.clean { margin: 0 0 14px; padding-left: 20px; }
+  ul.clean li, ol.clean li { margin-bottom: 6px; }
+
+  .risk {
+    background: var(--warn-tint);
+    border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+    border-radius: 3px;
+    padding: 16px 20px;
+    margin: 14px 0;
+    font-size: 0.92rem;
+  }
+  .risk .rtitle { font-weight: 700; color: var(--warn); font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+
+  .colophon {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .print-btn {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    background: var(--accent-deep);
+    color: #F3F9F9;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 20px;
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+  .print-btn:hover { background: var(--accent); }
+  .print-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  @media print {
+    .print-btn { display: none; }
+    body { background: #fff; color: #000; }
+    .continuity, .finding, .risk { box-shadow: none; }
+    section { break-inside: avoid-page; }
+    .table-wrap, .diff, .finding { break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow"><span class="dot"></span>Handoff Brief · Revision 2</div>
+    <h1 class="doc-title">Dockerized SQL Learning Lab</h1>
+    <p class="doc-subtitle">Audit findings, remediation, and forward plan for the PostgreSQL + SQL Server environment in <span class="file-tag">SQL_TEST_01</span>.</p>
+    <div class="meta-row">
+      <div><span class="k">Prepared</span><strong>13 Jul 2026</strong></div>
+      <div><span class="k">Supersedes</span><strong>Session Summary &amp; Handoff Brief, Rev. 1</strong></div>
+      <div><span class="k">Project folder</span><strong>C:\IMAGEBANK_2023\DOCKER_SQL\SQL_TEST_01</strong></div>
+      <div><span class="k">Status</span><strong>Environment live · audit closed</strong></div>
+    </div>
+  </header>
+
+  <div class="continuity">
+    <p><strong>What this revision adds.</strong> Rev. 1 closed with the environment "live and version-controlled." Before resuming the SQL/Docker lesson plan, this session audited that claim against the actual repo, git history, and running containers rather than trusting the document — and found three places where the written record and reality had drifted. All three are now fixed and verified live. This brief folds those findings in, records exactly what changed, and adds tooling recommendations scoped to the three goals Rev. 1 set out (SQL curriculum, Docker curriculum, agentic roadmap).</p>
+  </div>
+
+  <section id="findings">
+    <div class="section-head"><span class="section-num">01</span><h2>Audit Findings</h2></div>
+    <p class="section-dek">Three discrepancies surfaced by reading the actual files and running commands against the live containers — not by re-reading Rev. 1's claims.</p>
+
+    <div class="finding">
+      <div class="finding-head">
+        <span class="finding-title">Finding 1 — Credentials were hardcoded and committed, not read from <code>.env</code></span>
+        <span class="finding-tag resolved">Resolved</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt><dd>Rev. 1 stated: "Moved passwords into a Git-ignored <code>.env</code>; compose reads them via <code>${VAR}</code> substitution." Reading <code>docker-compose.yml</code> directly showed literal values instead.</dd>
+        <dt>Root cause</dt><dd><code>POSTGRES_PASSWORD: REDACTED_PG_DEV_PASSWORD</code> and <code>MSSQL_SA_PASSWORD: "REDACTED_MSSQL_DEV_PASSWORD"</code> were hardcoded in the compose file from the very first commit (<code class="mono">d80d058</code>) and updated in cleartext again in <code class="mono">2ef7dae</code>. <code>.env</code> / <code>.env.example</code> existed but were never wired in — dead scaffolding.</dd>
+        <dt>Impact</dt><dd>Two real, working passwords sat in plaintext in git history the entire time.</dd>
+        <dt>Fix</dt><dd>Compose now references <code>${POSTGRES_PASSWORD}</code> / <code>${MSSQL_SA_PASSWORD}</code>; both values rotated in <code>.env</code>.</dd>
+      </dl>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <span class="finding-title">Finding 2 — <code>seed.sql</code> was not actually idempotent</span>
+        <span class="finding-tag resolved">Resolved</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt><dd>Rev. 1 stated: "Idempotent <code>seed.sql</code> (<code>TRUNCATE ... RESTART IDENTITY</code> on PG)." The file contained two bare <code>INSERT</code> blocks and no reset statement at all.</dd>
+        <dt>Root cause</dt><dd>The reset logic described in the doc was never written into the file.</dd>
+        <dt>Impact</dt><dd>A second run would violate the <code>UNIQUE(email)</code> constraint on <code>customers</code> and fail outright.</dd>
+        <dt>Fix</dt><dd>Added <code>TRUNCATE TABLE orders, customers RESTART IDENTITY CASCADE;</code> ahead of the inserts.</dd>
+      </dl>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <span class="finding-title">Finding 3 — SQL Server identity reseed reproduced the exact "shifted by one" bug Rev. 1 had already logged</span>
+        <span class="finding-tag resolved">Resolved</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt><dd>Restoring the <code>DBCC CHECKIDENT RESEED</code> calls (removed by the untested commit <code class="mono">e6151a0 "Trying to reset PASS"</code>) to fix Finding 2's SQL Server counterpart reintroduced a live bug on the very first run against a fresh volume.</dd>
+        <dt>Root cause</dt><dd>SQL Server has a documented quirk: <code>DBCC CHECKIDENT (..., RESEED, 0)</code> on a table that has <em>never</em> held a row makes the next insert start at <code>0</code>, not <code>1</code>. <code>seed_mssql.sql</code>'s <code>orders</code> insert hardcoded <code>customer_id</code> literals (<code>1</code>, <code>2</code>, <code>3</code>) — the exact pattern Rev. 1's own troubleshooting log names as the root cause of "JOIN pairings shifted by one."</dd>
+        <dt>Impact</dt><dd>On a freshly recreated volume, every order attached to the wrong customer (order id 1 landed on Alan Turing instead of Ada Lovelace).</dd>
+        <dt>Fix</dt><dd>Rewrote the <code>orders</code> insert to join <code>customers</code> by <code>email</code> instead of a positional ID literal — Rev. 1's own stated lesson ("prefer looking up FKs by a stable key"), now actually implemented. Correctness no longer depends on identity-reseed behavior at all.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="changes">
+    <div class="section-head"><span class="section-num">02</span><h2>Changes Made</h2></div>
+    <p class="section-dek">Exact before/after for every file touched this session.</p>
+
+    <h3><span class="file-tag">docker-compose.yml</span> — credential substitution</h3>
+    <div class="diff">
+      <div class="before"><span class="label">Before</span><pre>environment:
+  POSTGRES_USER: devuser
+  POSTGRES_PASSWORD: REDACTED_PG_DEV_PASSWORD
+  POSTGRES_DB: appdb
+  &#8942;
+  MSSQL_SA_PASSWORD: "REDACTED_MSSQL_DEV_PASSWORD"</pre></div>
+      <div class="after after-panel"><span class="label">After</span><pre>environment:
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB}
+  &#8942;
+  MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}</pre></div>
+    </div>
+
+    <h3><span class="file-tag">.env</span> — rotated (not committed; values withheld from this document on purpose)</h3>
+    <div class="diff">
+      <div class="before"><span class="label">Before</span><pre>POSTGRES_PASSWORD=REDACTED_PG_DEV_PASSWORD
+MSSQL_SA_PASSWORD=REDACTED_MSSQL_DEV_PASSWORD
+
+# same values as the ones exposed
+# in docker-compose.yml history</pre></div>
+      <div class="after after-panel"><span class="label">After</span><pre>POSTGRES_PASSWORD=&lt;rotated, local only&gt;
+MSSQL_SA_PASSWORD=&lt;rotated, local only&gt;
+
+# new values, never committed;
+# containers recreated to apply them</pre></div>
+    </div>
+
+    <h3><span class="file-tag">seed.sql</span> — made idempotent</h3>
+    <div class="diff">
+      <div class="before"><span class="label">Before</span><pre>-- Idempotent: wipes and reloads...
+-- (claim only — no reset statement)
+
+INSERT INTO customers (name, email)
+VALUES ...</pre></div>
+      <div class="after after-panel"><span class="label">After</span><pre>-- Idempotent: wipes and reloads...
+
+TRUNCATE TABLE orders, customers
+  RESTART IDENTITY CASCADE;
+
+INSERT INTO customers (name, email)
+VALUES ...</pre></div>
+    </div>
+
+    <h3><span class="file-tag">seed_mssql.sql</span> — reseed restored, FK lookup fixed</h3>
+    <div class="diff">
+      <div class="before"><span class="label">Before</span><pre>DELETE FROM orders;
+DELETE FROM customers;
+
+GO
+INSERT INTO orders
+  (customer_id, product, amount)
+VALUES
+  (1, 'Keyboard',     79.99),
+  (1, 'Monitor',     249.00),
+  (2, 'Mouse',        29.50), ...</pre></div>
+      <div class="after after-panel"><span class="label">After</span><pre>DELETE FROM orders;
+DELETE FROM customers;
+DBCC CHECKIDENT ('customers', RESEED, 0);
+DBCC CHECKIDENT ('orders', RESEED, 0);
+GO
+INSERT INTO orders (customer_id, product, amount)
+SELECT c.id, v.product, v.amount
+FROM (VALUES
+  ('ada@example.com',  'Keyboard',  79.99),
+  ('ada@example.com',  'Monitor', 249.00),
+  ('alan@example.com', 'Mouse',    29.50), ...
+) AS v(email, product, amount)
+JOIN customers c ON c.email = v.email;</pre></div>
+    </div>
+  </section>
+
+  <section id="verification">
+    <div class="section-head"><span class="section-num">03</span><h2>Verification Log</h2></div>
+    <p class="section-dek">Every fix was exercised against the real containers, not just read for plausibility.</p>
+    <ul class="vlog">
+      <li><span class="vtitle">Postgres TRUNCATE syntax</span><br><span class="vresult">docker exec pg_local psql &#8594; TRUNCATE TABLE — confirmed valid despite an IDE lint error (linter was scoring the file as T-SQL dialect, a false positive)</span></li>
+      <li><span class="vtitle">seed.sql run twice</span><br><span class="vresult">customers settled at ids 1&ndash;4 both times &#8594; idempotency confirmed</span></li>
+      <li><span class="vtitle">New SQL Server password</span><br><span class="vresult">sqlcmd login with rotated <code>MSSQL_SA_PASSWORD</code> &#8594; succeeded after volume recreation</span></li>
+      <li><span class="vtitle">Fresh-table scenario reproduced</span><br><span class="vresult">re-ran schema_mssql.sql (DROP/CREATE) then the fixed seed &#8594; Ada correctly owns Keyboard + Monitor on the very first run, despite ids cosmetically starting at 0</span></li>
+      <li><span class="vtitle">seed_mssql.sql run twice</span><br><span class="vresult">pairings stayed correct; ids settled at 1&ndash;5 on the second pass</span></li>
+    </ul>
+  </section>
+
+  <section id="state">
+    <div class="section-head"><span class="section-num">04</span><h2>Current Environment State</h2></div>
+    <p class="section-dek">Continuity snapshot — supersedes the Rev. 1 table.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Containers</td><td class="mono">pg_local (postgres:17) · mssql_local (mssql/server:2019-latest) — both recreated this session on fresh volumes</td></tr>
+          <tr><td>Credentials</td><td>Rotated; sourced from gitignored <code class="mono">.env</code> via compose substitution — no cleartext values in tracked files going forward</td></tr>
+          <tr><td>Volumes</td><td class="mono">sql_test_01_pgdata, sql_test_01_mssqldata — fresh, freshly seeded</td></tr>
+          <tr><td>Data loaded</td><td>Both engines: 4 customers, 5 orders, correct pairings verified by query, one customer intentionally order-less</td></tr>
+          <tr><td>seed.sql / seed_mssql.sql</td><td>Both confirmed idempotent and FK-safe under repeat runs</td></tr>
+          <tr><td>Restart command</td><td class="mono">cd to project folder, then: docker compose up -d</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="risk">
+    <div class="section-head"><span class="section-num">05</span><h2>Open Item</h2></div>
+    <div class="risk">
+      <div class="rtitle">Residual — old cleartext passwords remain in git history</div>
+      <p style="margin:0">Rotation neutralizes them going forward, but <code>REDACTED_PG_DEV_PASSWORD</code> and <code>REDACTED_MSSQL_DEV_PASSWORD</code> are still readable in commits <code class="mono">d80d058</code> and <code class="mono">2ef7dae</code>. Low real-world risk while the repo stays local and unpublished — but Rev. 1's own Build 5 ("Live deployment with CI") implies pushing this to a public remote eventually. Purge before that happens; see tooling recommendation below.</p>
+    </div>
+  </section>
+
+  <section id="tooling">
+    <div class="section-head"><span class="section-num">06</span><h2>Recommended Tooling — Moving Forward</h2></div>
+    <p class="section-dek">Scoped to the three goals Rev. 1 set out, plus one item that closes the gap this audit exposed.</p>
+
+    <h3>Close the gap this audit found</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tool</th><th>What it's for</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">gitleaks</td><td>Pre-commit secret scanner — would have caught Finding 1 at commit time instead of a later audit.</td></tr>
+          <tr><td class="mono">pre-commit</td><td>Wires gitleaks (and sqlfluff, below) into <code class="mono">git commit</code> automatically, one config file.</td></tr>
+          <tr><td class="mono">git filter-repo</td><td>Purges the two cleartext passwords from history — run once, before this repo is ever pushed publicly.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Goal 1 — SQL beginner &#8594; intermediate</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tool</th><th>What it's for</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">sqlfluff</td><td>Dialect-aware SQL linter/formatter. Configuring it per-file (postgres vs. tsql) would have prevented the false-positive lint error seen on <code class="mono">seed.sql</code> this session.</td></tr>
+          <tr><td class="mono">ms-mssql.mssql</td><td>VS Code extension with a native graphical execution-plan viewer — directly supports the upcoming Indexes &amp; Query Performance module.</td></tr>
+          <tr><td>dbdiagram.io / DBML</td><td>Visual ER modeling once constraints, composite keys, and normalization (1NF&#8211;3NF) enter the lesson plan.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Goal 2 — Docker beginner &#8594; intermediate</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tool</th><th>What it's for</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">ms-azuretools.vscode-docker</td><td>Container/image/compose management inside VS Code — same GUI-first pattern already established with SQLTools.</td></tr>
+          <tr><td class="mono">redhat.vscode-yaml</td><td>Schema validation and autocomplete for <code class="mono">docker-compose.yml</code> — would have surfaced structural issues earlier.</td></tr>
+          <tr><td class="mono">eamodio.gitlens</td><td>Blame/history inline in the editor — the fastest way to spot exactly which commit introduced a hardcoded secret, as in Finding 1.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Goal 3 — Ask-Your-Database agent (Sections 11&#8211;13 of Rev. 1)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Library</th><th>What it's for</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">anthropic</td><td>Python SDK for the raw model API — Step 2 of the roadmap, before any framework.</td></tr>
+          <tr><td class="mono">psycopg (v3)</td><td>Postgres driver for the agent's read-only <code class="mono">run_sql_query</code> tool.</td></tr>
+          <tr><td class="mono">python-dotenv</td><td>Loads <code class="mono">.env</code> into the agent process — extends the credential habit already in place rather than inventing a new one.</td></tr>
+          <tr><td class="mono">pydantic</td><td>Typed, validated tool-call schemas — a clean fit for the <code class="mono">tool_schema</code> module Rev. 1 already sketched.</td></tr>
+          <tr><td>pgvector</td><td>Postgres extension for Build 3 (retrieval-augmented agent) — adds vector search on the database already owned, no new datastore.</td></tr>
+          <tr><td class="mono">structlog</td><td>Structured logging for Build 4 (observability/evals) — or log generated SQL straight into an <code class="mono">agent_logs</code> table and dogfood the SQL skills being taught.</td></tr>
+          <tr><td class="mono">nektos/act</td><td>Runs GitHub Actions locally for Build 5 (CI) — fast iteration before pushing.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Trust boundary — unchanged, still the design to build toward</h3>
+    <div class="diagram">
+      <div class="dz untrusted"><h4>LLM API</h4><p>Proposes SQL via tool calls. External, untrusted. Cannot execute anything.</p></div>
+      <div class="darrow">&#8594;</div>
+      <div class="dz trusted"><h4>Agent (Python)</h4><p>The gate. Validates and executes tool calls. Runs inside Docker, trusted code.</p></div>
+      <div class="darrow">&#8594;</div>
+      <div class="dz"><h4>appdb (read-only role)</h4><p>Executes SELECT only. Physically cannot modify or drop data.</p></div>
+    </div>
+  </section>
+
+  <div class="colophon">
+    <span>End of Rev. 2. Environment is live, seeded, and verified — not just documented. Next concrete target unchanged: the Ask-Your-Database agent.</span>
+    <span>SQL_TEST_01 · 13 Jul 2026</span>
+  </div>
+
+</div>
+
+<button class="print-btn" onclick="window.print()" aria-label="Save this brief as a PDF">Save as PDF ↓</button>
+
+</body>
+</html>

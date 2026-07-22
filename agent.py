@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import anthropic
 #from tools import run_sql_query, list_tables, describe_table, save_dataframe
-from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries
+from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries, search_docs
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -86,6 +86,21 @@ tools = [
             },
             "required": ["query_text"]
         }
+    },
+
+    {
+        "name": "search_docs",
+        "description": "Semantic search over this project's own documentation (handoff briefs, cheat sheet, project overview) - build history, design decisions, and rationale. Use for thematic or 'why'/'how' questions about the project itself, not the appdb database. Returns a message, not an error, if nothing is sufficiently relevant. Note: returns individual similar chunks, not an aggregated list - for 'list all X' questions (e.g. every file, every SQL migration), run_sql_query directly against docs.chunks works better than semantic search.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query_text": {
+                    "type": "string",
+                    "description": "A natural-language question about the project's history, design decisions, or documentation."
+                }
+            },
+            "required": ["query_text"]
+        }
     }
 ]
 
@@ -101,6 +116,8 @@ If asked to save or persist a computed result for later reuse, use save_datafram
 
 Anything you save with save_dataframe becomes a normal table you can rediscover later — use list_tables and describe_table to find and inspect it, the same way you would any other table, before assuming a past result isn't available.
 For questions about the general kind or theme of equipment (e.g. "camera gear", "audio equipment") rather than exact structured filters, use search_summaries instead of writing SQL yourself - it finds conceptually related items even without exact keyword matches.
+
+For questions about this project's own history, design decisions, or documentation, use search_docs; for "list every X" style questions about the documentation itself, prefer run_sql_query against docs.chunks instead.
 """
 MAX_TOOL_TURNS = 10
 
@@ -109,7 +126,8 @@ MAX_TOOL_TURNS = 10
 #user_question = "What's the average allocation duration, in hours, grouped by patron email domain?"
 #user_question = "What's the average allocation duration, in hours, grouped by patron email domain? Save this result for later as domain_avg_duration."
 #user_question = "Do you have a previously saved result about average allocation duration? If so, what did it find?"
-user_question = "What kind of camera equipment has been checked out recently?"
+#user_question = "What kind of camera equipment has been checked out recently?"
+user_question = "Why does agent_scratch have two separate database roles?"
 
 
 messages = [{"role": "user", "content": user_question}]
@@ -157,6 +175,8 @@ while turn < MAX_TOOL_TURNS:
                 )
             elif block.name == "search_summaries":
                 result = search_summaries(block.input["query_text"])
+            elif block.name == "search_docs":
+                result = search_docs(block.input["query_text"])
             else:
                 raise ValueError(f"Unknown tool name: {block.name}")
 

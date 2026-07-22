@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SQL_TEST_01 — Project Overview</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 48px 24px 72px; }
+  .eyebrow {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(26px, 4vw, 34px); margin: 0 0 18px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 68ch; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="eyebrow">SQL_TEST_01 · Project Overview</p>
+  <h1>What This Project Is</h1>
+  <p class="lede">SQL_TEST_01 is a five-build agent portfolio project demonstrating SQL, Docker, and Python agent-engineering skills for a placement track.</p>
+  <p class="lede">The project runs on a Dockerized PostgreSQL 17 and SQL Server 2019 lab.</p>
+  <p class="lede">Build 1 is a hand-rolled tool-use loop, no agent framework, that answers plain-English questions about a database by writing its own SQL behind a read-only role.</p>
+  <p class="lede">Build 2 built a real raw-to-clean data pipeline from a genuine equipment-checkout export, split into a raw staging schema and a typed clean schema.</p>
+  <p class="lede">Build 2.5 gave the agent a writable scratch workspace with its own narrowly-scoped role, so it can persist computed results instead of only reading.</p>
+  <p class="lede">Build 3 added semantic search with pgvector over the data, so the agent can answer thematic questions with no exact keyword match.</p>
+  <p class="lede">Build 3.5 extends that same semantic search to the project's own documentation, so the agent can answer questions about its own build history.</p>
+  <p class="lede">Build 4, planned, adds tool-call observability and an eval harness. Build 5, planned, adds live deployment with CI.</p>
+  <p class="lede">The build sequence is deliberately chosen to compound the same spine rather than sprawl into disconnected demos.</p>
+  <footer>Seed document for Build 3.5's documentation RAG corpus — written to answer whole-project "what is this" questions that no individual build's handoff brief scopes to.</footer>
+</div>
+</body>
+</html>

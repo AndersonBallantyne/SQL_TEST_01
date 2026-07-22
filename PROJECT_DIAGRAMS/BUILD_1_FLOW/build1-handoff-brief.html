@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ask-Your-Database Agent — Build 1 Handoff Brief</title>
+
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --paper-raised: #FFFFFF;
+    --ink: #101827;
+    --ink-muted: #4B5768;
+    --ink-faint: #7C8894;
+    --accent: #0F7A82;
+    --accent-deep: #0B5158;
+    --accent-tint: #E4F1F1;
+    --warn: #B5502B;
+    --warn-tint: #F7E9E2;
+    --ok: #3E7A3B;
+    --ok-tint: #E7F0E4;
+    --line: #D7DEE0;
+    --line-strong: #B9C4C7;
+    --code-bg: #0F1B22;
+    --code-ink: #D9EDEC;
+    --code-accent: #6FD3C7;
+    --code-warn: #E39A7A;
+    --shadow: 0 1px 2px rgba(16,24,39,0.06), 0 8px 24px rgba(16,24,39,0.05);
+
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0B1420;
+      --paper-raised: #101C29;
+      --ink: #E7EDEE;
+      --ink-muted: #9FB0B6;
+      --ink-faint: #6E7F86;
+      --accent: #3FBFC6;
+      --accent-deep: #1C8890;
+      --accent-tint: #10333330;
+      --warn: #E08A57;
+      --warn-tint: #2E1F16;
+      --ok: #7CB57A;
+      --ok-tint: #17281A;
+      --line: #223140;
+      --line-strong: #33475A;
+      --code-bg: #060B0F;
+      --code-ink: #CFEDEA;
+      --code-accent: #6FD3C7;
+      --code-warn: #E39A7A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0B1420;
+    --paper-raised: #101C29;
+    --ink: #E7EDEE;
+    --ink-muted: #9FB0B6;
+    --ink-faint: #6E7F86;
+    --accent: #3FBFC6;
+    --accent-deep: #1C8890;
+    --accent-tint: #10333330;
+    --warn: #E08A57;
+    --warn-tint: #2E1F16;
+    --ok: #7CB57A;
+    --ok-tint: #17281A;
+    --line: #223140;
+    --line-strong: #33475A;
+    --code-bg: #060B0F;
+    --code-ink: #CFEDEA;
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7;
+    --paper-raised: #FFFFFF;
+    --ink: #101827;
+    --ink-muted: #4B5768;
+    --ink-faint: #7C8894;
+    --accent: #0F7A82;
+    --accent-deep: #0B5158;
+    --accent-tint: #E4F1F1;
+    --warn: #B5502B;
+    --warn-tint: #F7E9E2;
+    --line: #D7DEE0;
+    --line-strong: #B9C4C7;
+    --code-bg: #0F1B22;
+    --code-ink: #D9EDEC;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 28px 96px;
+  }
+
+  .masthead {
+    padding: 56px 0 32px;
+    border-bottom: 3px solid var(--accent-deep);
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+  h1.doc-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 2.5rem;
+    line-height: 1.12;
+    margin: 0 0 10px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .doc-subtitle {
+    font-size: 1.05rem;
+    color: var(--ink-muted);
+    max-width: 62ch;
+    margin: 0 0 22px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+  }
+  .meta-row strong { color: var(--ink); font-weight: 600; }
+  .meta-row .k { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); display: block; margin-bottom: 2px; }
+
+  .continuity {
+    background: var(--accent-tint);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 3px;
+    padding: 18px 22px;
+    margin-bottom: 48px;
+    font-size: 0.95rem;
+  }
+  .continuity p { margin: 0 0 10px; }
+  .continuity p:last-child { margin-bottom: 0; }
+  .continuity strong { color: var(--accent-deep); }
+
+  section { margin-bottom: 56px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 10px;
+  }
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .section-dek {
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+    margin: 12px 0 22px;
+    max-width: 68ch;
+  }
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    font-weight: 600;
+    margin: 28px 0 10px;
+  }
+  p { margin: 0 0 12px; }
+  .lede { font-size: 1.02rem; color: var(--ink-muted); max-width: 70ch; }
+
+  .finding {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--warn);
+    border-radius: 3px;
+    padding: 20px 24px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  .finding-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .finding-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.08rem;
+    color: var(--ink);
+  }
+  .finding-tag {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--warn);
+    background: var(--warn-tint);
+    border: 1px solid var(--warn);
+    border-radius: 2px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    flex: none;
+  }
+  .finding-tag.resolved { color: var(--ok); background: var(--ok-tint); border-color: var(--ok); }
+  .finding dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 14px; margin: 14px 0 0; font-size: 0.92rem; }
+  .finding dt { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); padding-top: 2px; }
+  .finding dd { margin: 0; color: var(--ink); }
+
+  .table-wrap { overflow-x: auto; margin: 18px 0; border-radius: 3px; border: 1px solid var(--line); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: var(--paper-raised); }
+  thead th {
+    background: var(--accent-deep);
+    color: #F3F9F9;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody td { padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--accent-tint) 45%, transparent); }
+  td.mono, th.mono { font-family: var(--font-mono); font-size: 0.85rem; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  .file-tag {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--accent-deep);
+    background: var(--accent-tint);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+
+  .vlog { list-style: none; margin: 16px 0; padding: 0; border-left: 2px solid var(--line-strong); }
+  .vlog li { position: relative; padding: 2px 0 20px 24px; font-size: 0.92rem; }
+  .vlog li::before {
+    content: "";
+    position: absolute; left: -7px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--ok); border: 2px solid var(--paper);
+  }
+  .vlog .vtitle { font-weight: 600; color: var(--ink); }
+  .vlog .vresult { color: var(--ink-muted); font-family: var(--font-mono); font-size: 0.82rem; }
+
+  .diagram {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 20px 0 8px;
+    font-size: 0.85rem;
+  }
+  .dz {
+    flex: 1;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    padding: 14px 16px;
+    background: var(--paper-raised);
+  }
+  .dz h4 { margin: 0 0 6px; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-deep); }
+  .dz p { margin: 0; color: var(--ink-muted); font-size: 0.82rem; }
+  .dz.untrusted { border-style: dashed; }
+  .dz.trusted { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .darrow { flex: none; width: 40px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-family: var(--font-mono); }
+  @media (max-width: 640px) { .diagram { flex-direction: column; } .darrow { width: auto; height: 24px; transform: rotate(90deg); } }
+
+  ul.clean, ol.clean { margin: 0 0 14px; padding-left: 20px; }
+  ul.clean li, ol.clean li { margin-bottom: 6px; }
+
+  .risk {
+    background: var(--warn-tint);
+    border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+    border-radius: 3px;
+    padding: 16px 20px;
+    margin: 14px 0;
+    font-size: 0.92rem;
+  }
+  .risk .rtitle { font-weight: 700; color: var(--warn); font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+
+  .colophon {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .print-btn {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    background: var(--accent-deep);
+    color: #F3F9F9;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 20px;
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+  .print-btn:hover { background: var(--accent); }
+  .print-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  @media print {
+    .print-btn { display: none; }
+    body { background: #fff; color: #000; }
+    .continuity, .finding, .risk { box-shadow: none; }
+    section { break-inside: avoid-page; }
+    .table-wrap, .diff, .finding { break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow"><span class="dot"></span>Handoff Brief · Build 1 Complete</div>
+    <h1 class="doc-title">Ask-Your-Database Agent</h1>
+    <p class="doc-subtitle">Architecture, verified behavior, and forward plan for Build 1 of the five-build agent portfolio in <span class="file-tag">SQL_TEST_01</span> — handed off for Build 2.</p>
+    <div class="meta-row">
+      <div><span class="k">Prepared</span><strong>18 Jul 2026</strong></div>
+      <div><span class="k">Continues</span><strong>Dockerized SQL Learning Lab — Handoff Brief v2</strong></div>
+      <div><span class="k">Project folder</span><strong>C:\IMAGEBANK_2023\DOCKER_SQL\SQL_TEST_01</strong></div>
+      <div><span class="k">Status</span><strong>Build 1 complete · hardened · containerized</strong></div>
+    </div>
+  </header>
+
+  <div class="continuity">
+    <p><strong>What this brief covers.</strong> Handoff Brief v2 closed with the environment "live, seeded, and verified" and one concrete next target: the Ask-Your-Database agent. That agent is now built, in six phases plus a hardening pass, and Build 1 of the roadmap is complete. This brief documents what exists, what was verified and how, what's still rough around the edges, and what Build 2 (a raw-to-queryable data pipeline) should know before starting. It assumes the environment brief's setup — both Postgres and SQL Server containers, credential-in-.env discipline, idempotent seeds — and does not repeat it.</p>
+    <p><strong>How to use it.</strong> Section 01 is the architecture as it stands today. Section 02 is the fastest way to understand how it got there. Sections 03–04 are evidence, not narrative — read them if you need to trust a specific claim rather than take it on faith. Sections 05–07 are what actually matters for picking up the next build.</p>
+  </div>
+
+  <section id="architecture">
+    <div class="section-head"><span class="section-num">01</span><h2>What Was Built</h2></div>
+    <p class="section-dek">A hand-rolled tool-use loop — no agent framework — that answers plain-English questions about the <code>appdb</code> Postgres database by discovering its own schema and writing its own SQL.</p>
+
+    <p class="lede">The agent never has standing knowledge of the database's tables or columns. Given a question, it calls <code>list_tables</code> and <code>describe_table</code> to find out what exists, then writes and runs a <code>SELECT</code> query with <code>run_sql_query</code>, then answers in plain English. The loop keeps dispatching tool calls — one model turn can trigger several — until the model stops asking for tools or a 10-turn safety cap is hit.</p>
+
+    <h3>Trust boundary</h3>
+    <p>Unchanged in shape from the plan in Handoff Brief v2, now actually implemented and verified rather than sketched:</p>
+    <div class="diagram">
+      <div class="dz untrusted"><h4>LLM API</h4><p>Proposes SQL via tool calls. External, untrusted. Cannot execute anything itself.</p></div>
+      <div class="darrow">&#8594;</div>
+      <div class="dz trusted"><h4>Agent (Python)</h4><p>The gate. Rejects any non-SELECT statement before a connection even opens. Runs inside Docker.</p></div>
+      <div class="darrow">&#8594;</div>
+      <div class="dz"><h4>appdb_reader role</h4><p>SELECT-only grants at the database layer. Physically cannot write, even if the Python guard were bypassed.</p></div>
+    </div>
+
+    <h3>Files</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>File</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">agent.py</td><td>The tool-use loop, the three tool schemas, <code>SYSTEM_PROMPT</code> (contains zero hardcoded schema), the 10-turn cap, and API-error handling.</td></tr>
+          <tr><td class="mono">tools.py</td><td><code>run_sql_query</code> / <code>list_tables</code> / <code>describe_table</code> — every query passes through one SELECT-only guard and one timestamped log line, no matter which tool called it.</td></tr>
+          <tr><td class="mono">readonly_role.sql</td><td>Idempotent role creation for <code>appdb_reader</code> — no password in the file; the password is set interactively at a <code>psql</code> prompt, never committed.</td></tr>
+          <tr><td class="mono">docker-compose.yml</td><td>Three services: <code>postgres</code>, <code>sqlserver</code> (unchanged from the environment brief), and the new <code>agent</code> service — builds from the local <code>Dockerfile</code>, depends on <code>postgres</code>, reads <code>.env</code>.</td></tr>
+          <tr><td class="mono">Dockerfile</td><td><code>python:3.13-slim</code>, installs <code>requirements.txt</code>, copies only <code>agent.py</code> + <code>tools.py</code>, runs the agent as its entrypoint.</td></tr>
+          <tr><td class="mono">.env</td><td>Gitignored. Holds both credential pairs now: the original owner (<code class="mono">POSTGRES_USER</code>/<code class="mono">PASSWORD</code>) and this build's read-only pair (<code class="mono">POSTGRES_READER_USER</code>/<code class="mono">PASSWORD</code>).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="journey">
+    <div class="section-head"><span class="section-num">02</span><h2>Build Journey</h2></div>
+    <p class="section-dek">Six phases, in order, each one a working checkpoint before the next began — plus a hardening pass after Phase 6 surfaced real bugs under closer testing.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Phase</th><th>Delivered</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">1</td><td>Python connects to <code>appdb</code> via <code>psycopg</code>, runs one hardcoded query, prints rows. Proves the driver and credentials work before anything agentic enters the picture.</td></tr>
+          <tr><td class="mono">2</td><td>First raw Anthropic API call (<code class="mono">api_test.py</code>) — no tools yet. Establishes the client, reads content blocks, <code class="mono">stop_reason</code>, and token usage.</td></tr>
+          <tr><td class="mono">3</td><td>Hand-wired tool-use loop: the SQL executor becomes a registered tool, a single fixed round-trip (question &#8594; tool call &#8594; result &#8594; answer).</td></tr>
+          <tr><td class="mono">4</td><td>Schema discovery added (<code class="mono">list_tables</code>, <code class="mono">describe_table</code>); the fixed round-trip is generalized into a <code class="mono">while</code> loop that keeps dispatching tool calls until the model is done — required once discovery meant more than one tool call per question.</td></tr>
+          <tr><td class="mono">5</td><td>Hardening: the <code class="mono">appdb_reader</code> read-only role, a Python-side SELECT-only guard, per-query timestamped logging, and graceful <code class="mono">is_error</code> tool-result handling so a blocked action doesn't crash the loop.</td></tr>
+          <tr><td class="mono">6</td><td>Containerized as a third <code class="mono">docker-compose</code> service. DB host switches from <code class="mono">127.0.0.1</code> to the internal service name <code class="mono">postgres</code> — same Docker network as the database, no port exposure needed for the agent itself.</td></tr>
+          <tr><td class="mono">hardening pass</td><td>Closer testing after Phase 6 surfaced three real bugs (Section 03) — fixed, and Build 1 was <em>not</em> actually complete at the Phase 6 commit despite that phase's diagram originally claiming so.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="findings">
+    <div class="section-head"><span class="section-num">03</span><h2>Hardening-Pass Findings</h2></div>
+    <p class="section-dek">Bugs surfaced by testing the running system harder, not by inspection — the pattern this project has followed since the environment audit in Handoff Brief v2.</p>
+
+    <div class="finding">
+      <div class="finding-head">
+        <span class="finding-title">Finding 1 — Only the last tool call in a multi-tool turn ever got a result</span>
+        <span class="finding-tag resolved">Resolved</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt><dd>When the model called more than one tool in a single turn, only the final <code>tool_use</code> block in that turn received a matching <code>tool_result</code>.</dd>
+        <dt>Root cause</dt><dd>The <code>try/except</code> wrapping each tool dispatch was indented one level too shallow — sitting outside the <code>for block in response.content:</code> loop instead of inside it — so the append only ran once, for whichever block the loop last landed on.</dd>
+        <dt>Impact</dt><dd>The Anthropic API requires exactly one <code>tool_result</code> per <code>tool_use</code> from the prior turn. A missing one broke the next API call outright — a real failure mode, not a cosmetic one.</dd>
+        <dt>Fix</dt><dd>Moved the <code>try/except</code> back inside the loop; re-verified live against a question that genuinely required more than one tool call in a turn.</dd>
+      </dl>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <span class="finding-title">Finding 2 — No upper bound on the tool-use loop</span>
+        <span class="finding-tag resolved">Resolved</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt><dd>The loop was <code>while True</code>, exiting only on <code>stop_reason != "tool_use"</code> — nothing capped how many tool-call round-trips a single question could trigger.</dd>
+        <dt>Root cause</dt><dd>No ceiling was added when the loop was generalized in Phase 4; single-tool-call testing never exercised the gap.</dd>
+        <dt>Impact</dt><dd>An unusual exchange could loop indefinitely, accumulating API cost with no natural exit.</dd>
+        <dt>Fix</dt><dd><code>MAX_TOOL_TURNS = 10</code>, enforced via <code>while turn &lt; MAX_TOOL_TURNS</code> / <code>else</code>. Verified live by temporarily lowering the cap to <code>1</code> and confirming a clean <code>"Stopped after reaching the 1-turn limit."</code> message — no crash, no silent hang.</dd>
+      </dl>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <span class="finding-title">Finding 3 — An Anthropic API failure would crash with a raw traceback</span>
+        <span class="finding-tag resolved">Resolved</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt><dd><code>client.messages.create(...)</code> had no error handling at all.</dd>
+        <dt>Impact</dt><dd>A transient failure — rate limit, timeout, momentary outage — would surface as an unhandled Python exception instead of a usable message.</dd>
+        <dt>Fix</dt><dd>Wrapped the call in <code>try/except anthropic.APIError</code>; prints the error and exits the loop cleanly instead of crashing.</dd>
+      </dl>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <span class="finding-title">Finding 4 — A diagram fix regressed because it was verified against the wrong artifact</span>
+        <span class="finding-tag resolved">Resolved</span>
+      </div>
+      <dl>
+        <dt>Symptom</dt><dd>Phase 4 and Phase 6's checkpoint diamonds were overflowing their border again, despite this exact overflow bug already having been found and fixed once earlier in Build 1.</dd>
+        <dt>Root cause</dt><dd>The earlier round of fixes was confirmed by eye against rendered PNGs. That's the right instinct, but it wasn't paired with re-checking that every SVG/HTML source file actually matched what the PNG showed — one diagram's source never picked up the fix that its own rendered output appeared to confirm.</dd>
+        <dt>Impact</dt><dd>Cosmetic only — no functional risk. Included here because the lesson generalizes: a visual or behavioral fix is only confirmed once the artifact a user will actually open is the one that got checked, not a stand-in for it.</dd>
+        <dt>Fix</dt><dd>Shortened the offending question text on both diagrams; re-verified every diagram in the set by rendering and inspecting the PNG again, not by trusting the diff.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="verification">
+    <div class="section-head"><span class="section-num">04</span><h2>Verification Log</h2></div>
+    <p class="section-dek">What was actually exercised against the running system, not just read for plausibility.</p>
+    <ul class="vlog">
+      <li><span class="vtitle">Schema-discovery test</span><br><span class="vresult">"What's the total revenue from all orders?" against a system prompt with zero hardcoded schema &#8594; list_tables &#8594; describe_table("orders") &#8594; correct SQL &#8594; $438.48, identical across three separate runs</span></li>
+      <li><span class="vtitle">SQL guard, direct</span><br><span class="vresult">run_sql_query("DELETE FROM customers;") &#8594; ValueError raised before any DB connection opened</span></li>
+      <li><span class="vtitle">Destructive-attempt test, via the full agent</span><br><span class="vresult">two attempts (a soft request, then a directive "run this exact SQL: DELETE...") &#8594; both refused outright by the model &#8594; zero tool calls attempted, zero rows touched</span></li>
+      <li><span class="vtitle">Role privilege check</span><br><span class="vresult">\du appdb_reader &#8594; no Superuser / Createrole / Createdb attributes</span></li>
+      <li><span class="vtitle">Data integrity check</span><br><span class="vresult">SELECT count(*) FROM customers &#8594; 4, unchanged through every destructive attempt above</span></li>
+      <li><span class="vtitle">Loop-cap test</span><br><span class="vresult">MAX_TOOL_TURNS temporarily set to 1 &#8594; clean stop message, no crash, no hang</span></li>
+      <li><span class="vtitle">Containerization</span><br><span class="vresult">docker compose up -d --build &#8594; askdb_agent starts, reaches postgres over the internal Docker network (host: postgres, not localhost), answers a test question end-to-end</span></li>
+    </ul>
+  </section>
+
+  <section id="state">
+    <div class="section-head"><span class="section-num">05</span><h2>Current Environment State</h2></div>
+    <p class="section-dek">Continuity snapshot for whoever resumes this project next.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Containers</td><td class="mono">pg_local · mssql_local · askdb_agent (this build's addition, built from ./Dockerfile)</td></tr>
+          <tr><td>Database roles</td><td><code class="mono">devuser</code> (owner, full privileges) · <code class="mono">appdb_reader</code> (SELECT-only, used exclusively by the agent)</td></tr>
+          <tr><td>Credentials</td><td><code class="mono">.env</code> + <code class="mono">CREDENTIALS.local.md</code>, both gitignored. This build added the reader pair alongside the existing owner pair.</td></tr>
+          <tr><td>Agent entry point</td><td class="mono">agent.py — model claude-haiku-4-5, MAX_TOOL_TURNS=10</td></tr>
+          <tr><td>Tool surface</td><td class="mono">run_sql_query(sql) · list_tables() · describe_table(name)</td> </tr>
+          <tr><td>Diagrams</td><td class="mono">PROJECT_DIAGRAMS/BUILD_1_FLOW/ — 7 diagrams (Phases 2–6 + hardening pass), each as svg + html + png</td></tr>
+          <tr><td>Restart command</td><td class="mono">cd to project folder, then: docker compose up -d --build</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="limitations">
+    <div class="section-head"><span class="section-num">06</span><h2>Known Limitations &amp; Open Items</h2></div>
+    <p class="section-dek">Deliberately out of scope for Build 1, or carried forward unresolved — worth knowing before extending this spine.</p>
+
+    <div class="risk">
+      <div class="rtitle">No conversation persistence</div>
+      <p>Every run answers one question and exits — there's no memory of prior questions across invocations. Fine for Build 1's scope; worth a decision before any build that implies multi-turn use.</p>
+    </div>
+
+    <div class="risk">
+      <div class="rtitle">The SQL guard is a prefix check, not a parser</div>
+      <p><code>sql.strip().upper().startswith("SELECT")</code> blocks the obvious cases but isn't a real SQL parser — the database role's actual privilege boundary is what really enforces safety here; the guard is the cheaper, faster first line of defense, not the last one. Worth knowing if this pattern gets reused somewhere the DB-level protection isn't also present.</p>
+    </div>
+
+    <div class="risk">
+      <div class="rtitle">No automated test suite</div>
+      <p>Every verification in this build (Section 04) was manual and interactive. Nothing runs under <code>pytest</code> or in CI yet — that's explicitly Build 5's job ("Live deployment with CI"), not a Build 1 gap to backfill now.</p>
+    </div>
+
+    <div class="risk">
+      <div class="rtitle">Carried over from Handoff Brief v2 — old cleartext passwords still in git history</div>
+      <p>The two original hardcoded passwords from the environment's first two commits (<code class="mono">d80d058</code>, <code class="mono">2ef7dae</code>) are still readable in history. Rotation neutralized them going forward; they were never purged. Low risk while the repo stays local — purge with <code class="mono">git filter-repo</code> before any public push, as Rev. 2 already recommended.</p>
+    </div>
+  </section>
+
+  <section id="next">
+    <div class="section-head"><span class="section-num">07</span><h2>Recommended Focus — Build 2</h2></div>
+    <p class="section-dek">Per the roadmap: a raw-to-queryable data pipeline. A Phase 1 plan is already sketched in <span class="file-tag">PROJECT_DIAGRAMS/BUILD_2_FLOW/</span> — no code written against it yet.</p>
+
+    <p class="lede">Phase 1's shape, as already planned: pick a genuinely messy raw source, land it completely unmodified in a raw staging table, write the ingestion script, then verify the row count matches the source exactly. No transformation yet — that's deliberately a later phase.</p>
+
+    <div class="diagram">
+      <div class="dz"><h4>Raw source</h4><p>A CSV with real-world messiness — inconsistent casing, whitespace, mixed formats. The messiness is the point; nothing gets cleaned here.</p></div>
+      <div class="darrow">&#8594;</div>
+      <div class="dz"><h4>Ingestion script</h4><p>Reads the file, loads rows into the staging table unmodified. This is the E and the L — no T yet.</p></div>
+      <div class="darrow">&#8594;</div>
+      <div class="dz"><h4>raw.&lt;name&gt; table</h4><p>TEXT columns, no constraints, mirrors the source shape exactly. Correctness is measured by row count and spot-checked messiness, not by cleanliness.</p></div>
+    </div>
+
+    <h3>Tooling</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tool</th><th>What it's for</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">pandas</td><td>Profiling the raw source before deciding the staging schema — understand the mess before landing it.</td></tr>
+          <tr><td class="mono">pandera</td><td>Validates "nothing got silently cleaned" during ingestion — a direct fit for this phase's own verify step.</td></tr>
+          <tr><td class="mono">Faker</td><td>Generates a realistic messy CSV if a suitable real-world source isn't already on hand.</td></tr>
+          <tr><td class="mono">psycopg</td><td>Already the established driver from Build 1 — no reason to introduce SQLAlchemy this early.</td></tr>
+          <tr><td class="mono">dbt-core</td><td>Not yet. Phase 1 is E+L only; the T layer belongs to a later phase in this build.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="colophon">
+    <span>Build 1 complete — verified, hardened, containerized. Next concrete target: Build 2, Phase 1 — the raw ingestion layer.</span>
+    <span>SQL_TEST_01 · 18 Jul 2026</span>
+  </div>
+
+</div>
+
+<button class="print-btn" onclick="window.print()" aria-label="Save this brief as a PDF">Save as PDF ↓</button>
+
+</body>
+</html>

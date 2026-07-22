@@ -35,7 +35,7 @@ def list_tables() -> list[dict]:
     return run_sql_query("""
         SELECT table_schema, table_name
         FROM information_schema.tables
-        WHERE table_schema IN ('public', 'clean', 'agent_scratch')
+        WHERE table_schema IN ('public', 'clean', 'agent_scratch', 'docs')
         ORDER BY table_name;
     """)
 
@@ -43,7 +43,7 @@ def describe_table(name: str) -> list[dict]:
     return run_sql_query("""
         SELECT column_name, data_type
         FROM information_schema.columns
-        WHERE table_schema IN ('public', 'clean', 'agent_scratch') AND table_name = %s
+        WHERE table_schema IN ('public', 'clean', 'agent_scratch', 'docs') AND table_name = %s
         ORDER BY ordinal_position;
     """, [name])
 
@@ -84,6 +84,37 @@ def search_summaries(query_text: str, limit: int = 5) -> list[dict]:
         return [{"message": f"No sufficiently relevant results for {query_text!r} — nothing scored below the relevance threshold."}]
 
     return [{"allocation_id": aid, "summary": summary, "distance": round(float(dist), 4)} for aid, summary, dist in rows]
+
+
+DOCS_SIMILARITY_DISTANCE_THRESHOLD = 0.70  # provisional - not calibrated with Build 3's rigor (40 curated queries); revisit if this proves too loose or too strict
+
+def search_docs(query_text: str, limit: int = 5) -> list[dict]:
+    model = _get_embedding_model()
+    query_embedding = model.encode(query_text)
+
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_READER_USER"],
+        password=os.environ["POSTGRES_READER_PASSWORD"],
+    )
+    register_vector(conn)
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT source_file, chunk_text, embedding <=> %s AS distance
+            FROM docs.chunks
+            WHERE embedding <=> %s < %s
+            ORDER BY distance
+            LIMIT %s
+        """, (query_embedding, query_embedding, DOCS_SIMILARITY_DISTANCE_THRESHOLD, limit))
+        rows = cur.fetchall()
+    conn.close()
+
+    if not rows:
+        return [{"message": f"No sufficiently relevant documentation found for {query_text!r} — nothing scored below the relevance threshold."}]
+
+    return [{"source_file": sf, "chunk_text": ct, "distance": round(float(d), 4)} for sf, ct, d in rows]
 
 
 
