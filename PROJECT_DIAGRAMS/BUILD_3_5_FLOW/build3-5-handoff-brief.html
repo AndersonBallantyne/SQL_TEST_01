@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 3.5 Handoff Brief — Documentation RAG Agent</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  h3.phase-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px; font-weight: 600; margin: 32px 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.phase-title .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 700; flex: none;
+  }
+  p.phase-goal { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .kw { color: var(--teal); font-weight: 600; }
+  .str { color: var(--accent); }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+
+  table.ref-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); table-layout: fixed; }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; word-break: break-word; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: normal; }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 3.5 · Handoff Brief</p>
+  <h1>Documentation RAG Agent</h1>
+  <p class="lede">A standalone, deep-dive reference for Build 3.5 — every phase, every file, every verification result, and every real gap found along the way, in full. Complements (does not replace) the living cheat sheet and the Phase 1 flow diagram.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Complete — all 3 phases</dd></div>
+    <div><dt>Commits</dt><dd><code>d3fb77f</code> → <code>f12b732</code></dd></div>
+    <div><dt>Continues</dt><dd>Build 3 (retrieval-augmented agent)</dd></div>
+    <div><dt>Precedes</dt><dd>Build 4 (observability &amp; eval harness)</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#what">What &amp; Why</a>
+    <a href="#phase1">Phase 1</a>
+    <a href="#phase2">Phase 2</a>
+    <a href="#phase3">Phase 3</a>
+    <a href="#verification">Verification Log</a>
+    <a href="#limitations">Known Limitations</a>
+    <a href="#env">Environment State</a>
+  </nav>
+
+  <section class="doc-section" id="what">
+    <h2>What Was Built, and Why</h2>
+    <p class="section-note">
+      Build 3 gave the agent semantic search over <code>appdb</code>'s own data. Build 3.5 applies that exact same pattern — pgvector, sentence-transformers, a distance threshold — to a genuinely different corpus: this project's own documentation, so the agent can answer questions about its own build history and design decisions. Reusing the pattern rather than inventing a new one is deliberate, per this roadmap's own "compound, don't sprawl" principle — but the underlying problem (chunking prose instead of embedding single-row summaries) turned out to be a real, distinct challenge, not a repeat of Build 3.
+    </p>
+    <p class="section-note">
+      <b>Chunking strategy decided before building:</b> per-callout/code-block, not per-section (too uneven in length) and not fixed-size windows (risks splitting a decision from its own rationale). These docs were already written in small, self-contained decision/rationale units — reusing that existing structure rather than inventing a new one.
+    </p>
+  </section>
+
+  <section class="doc-section" id="phase1">
+    <h3 class="phase-title"><span class="badge">1</span>Chunk &amp; Embed the Docs</h3>
+    <p class="phase-goal">Goal: extract chunks from the project's own documentation, embed them, and prove raw similarity search works standalone — before touching the agent.</p>
+
+    <pre class="code"><span class="fn">010_docs_chunks_schema.sql</span><code><span class="kw">CREATE SCHEMA IF NOT EXISTS</span> docs;
+
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> docs.chunks (
+    chunk_id     <span class="kw">SERIAL PRIMARY KEY</span>,
+    source_file  <span class="kw">TEXT NOT NULL</span>,
+    chunk_text   <span class="kw">TEXT NOT NULL</span>,
+    embedding    vector(384)
+);
+
+<span class="kw">GRANT USAGE ON SCHEMA</span> docs <span class="kw">TO</span> appdb_reader;
+<span class="kw">GRANT SELECT ON ALL TABLES IN SCHEMA</span> docs <span class="kw">TO</span> appdb_reader;
+<span class="kw">ALTER DEFAULT PRIVILEGES IN SCHEMA</span> docs <span class="kw">GRANT SELECT ON TABLES TO</span> appdb_reader;</code></pre>
+
+    <div class="callout"><b><code>embedding</code> is nullable on purpose</b> — mirrors Build 3's split between adding a column and backfilling it. Grants go to <code>appdb_reader</code> only: this table is populated by an offline script running as the admin user (like <code>embed_summaries.py</code>), never written to by the agent at runtime.</div>
+
+    <p><b>Four extraction shapes, because the corpus actually has four</b> — this project's documentation spans two design eras:</p>
+    <pre class="code"><span class="fn">extract_doc_chunks.py — the four extractors</span><code><span class="kw">def</span> extract_callout_chunks(soup):      <span class="cmt"># .callout divs + pre.code blocks — Build 2/2.5/3 briefs</span>
+<span class="kw">def</span> extract_table_row_chunks(soup):   <span class="cmt"># table.ref rows — the cheat sheet</span>
+<span class="kw">def</span> extract_finding_chunks(soup):     <span class="cmt"># .finding/.risk/.vlog/.continuity — pre-Build-1 + Build 1 briefs</span>
+<span class="kw">def</span> extract_narrative_chunks(soup):   <span class="cmt"># .lede/.doc-subtitle/.section-note/.phase-goal — added after a real gap, below</span></code></pre>
+
+    <div class="callout warn"><b>Real gap found — Build 1's two handoff briefs existed only as published Artifacts, never as local files.</b> They couldn't be chunked because there was nothing on disk to parse. Fixed by fetching both via <code>WebFetch</code> — which, for <code>claude.ai/code/artifact/&lt;uuid&gt;</code> URLs the user owns, returns full raw HTML rather than the usual markdown conversion — and saving clean local copies in <code>PROJECT_DIAGRAMS/BUILD_1_FLOW/</code> (<code>build1-handoff-brief.html</code>, <code>environment-handoff-brief-v2.html</code>). Those two briefs use an older class scheme (<code>.finding</code>/<code>.risk</code>/<code>.vlog</code>/<code>.continuity</code>) that predates <code>.callout</code>/<code>pre.code</code> — hence the fourth extractor.</div>
+
+    <pre class="code"><span class="fn">embed_chunks.py</span><code><span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+    cur.execute(<span class="str">"SELECT chunk_id, chunk_text FROM docs.chunks WHERE embedding IS NULL"</span>)
+    rows = cur.fetchall()
+
+<span class="kw">if not</span> rows:
+    <span class="kw">print</span>(<span class="str">"No chunks need embedding - everything is already up to date."</span>)
+<span class="kw">else</span>:
+    embeddings = model.encode([text <span class="kw">for</span> _, text <span class="kw">in</span> rows], show_progress_bar=<span class="kw">True</span>)
+    <span class="cmt"># UPDATE ... WHERE chunk_id = %s, same idempotent pattern as Build 3's embed_summaries.py fix</span></code></pre>
+
+    <div class="callout warn"><b>The overview chunk failed twice, for two different reasons — worth walking through both.</b> A project-level "what is this" answer doesn't exist anywhere in the corpus by default; every brief's <code>.lede</code> is scoped to its own build. <b>First attempt:</b> one dense ~180-word paragraph covering all five builds, added as <code>PROJECT_DIAGRAMS/project-overview.html</code>. Direct measurement (<code>embedding &lt;=&gt; query</code>, checked in isolation, not assumed) showed it scored <b>0.8247</b> distance against <code>"What is this project about?"</code> — worse than 16 other chunks, including generic ones like "a reference for Build X." Root cause: <code>all-MiniLM-L6-v2</code> embeds long, multi-topic text as an average across topics, which stops matching short, generic queries well — chunk length/style needs to roughly match expected query length/style, not just be topically relevant. <b>Fix:</b> rewrote it as nine short, single-idea lines instead of one paragraph. The best-matching line then scored <b>0.6536</b> and ranked first.</div>
+
+    <p><b>Verified live:</b> 230 chunks across 6 source files, all embedded at 384 dimensions. A narrow question (<code>"why does agent_scratch have two roles?"</code>) scored 0.34-0.43 distance with precise, on-topic results — proving raw similarity search genuinely works before any agent wiring.</p>
+  </section>
+
+  <section class="doc-section" id="phase2">
+    <h3 class="phase-title"><span class="badge">2</span>Wire Into the Agent</h3>
+    <p class="phase-goal">Goal: expose the docs corpus as a real tool, and give the agent enough judgment to pick the right retrieval strategy per question type.</p>
+
+    <pre class="code"><span class="fn">tools.py — search_docs (new function)</span><code>DOCS_SIMILARITY_DISTANCE_THRESHOLD = 0.70  <span class="cmt"># provisional - not calibrated with Build 3's 40-query rigor; revisit if too loose/strict</span>
+
+<span class="kw">def</span> search_docs(query_text: <span class="kw">str</span>, limit: <span class="kw">int</span> = 5) -> <span class="kw">list</span>[<span class="kw">dict</span>]:
+    model = _get_embedding_model()  <span class="cmt"># shared cache, same model instance search_summaries already loaded</span>
+    query_embedding = model.encode(query_text)
+
+    conn = psycopg.connect(
+        host=os.environ.get(<span class="str">"POSTGRES_HOST"</span>, <span class="str">"127.0.0.1"</span>),
+        port=5432,
+        dbname=os.environ[<span class="str">"POSTGRES_DB"</span>],
+        user=os.environ[<span class="str">"POSTGRES_READER_USER"</span>],
+        password=os.environ[<span class="str">"POSTGRES_READER_PASSWORD"</span>],
+    )
+    register_vector(conn)
+    <span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+        cur.execute(<span class="str">"""
+            SELECT source_file, chunk_text, embedding &lt;=&gt; %s AS distance
+            FROM docs.chunks
+            WHERE embedding &lt;=&gt; %s &lt; %s
+            ORDER BY distance
+            LIMIT %s
+        """</span>, (query_embedding, query_embedding, DOCS_SIMILARITY_DISTANCE_THRESHOLD, limit))
+        rows = cur.fetchall()
+    conn.close()
+
+    <span class="kw">if not</span> rows:
+        <span class="kw">return</span> [{<span class="str">"message"</span>: <span class="str">f"No sufficiently relevant documentation found for {query_text!r} — nothing scored below the relevance threshold."</span>}]
+
+    <span class="kw">return</span> [{<span class="str">"source_file"</span>: sf, <span class="str">"chunk_text"</span>: ct, <span class="str">"distance"</span>: <span class="kw">round</span>(<span class="kw">float</span>(d), 4)} <span class="kw">for</span> sf, ct, d <span class="kw">in</span> rows]</code></pre>
+
+    <p><b>Why this shape, exactly:</b> deliberately identical to <code>search_summaries</code> — same threshold-cutoff pattern, same "message instead of empty list" behavior when nothing clears the bar, same connection-as-<code>appdb_reader</code> convention. No reason to invent a second retrieval shape when the first one already works and the corpus difference (allocations vs. doc chunks) doesn't change how similarity search itself needs to behave.</p>
+
+    <pre class="code"><span class="fn">tools.py — list_tables / describe_table (widened)</span><code><span class="cmt">-- before:</span>
+<span class="kw">WHERE</span> table_schema <span class="kw">IN</span> (<span class="str">'public'</span>, <span class="str">'clean'</span>, <span class="str">'agent_scratch'</span>)
+<span class="cmt">-- after, in both functions:</span>
+<span class="kw">WHERE</span> table_schema <span class="kw">IN</span> (<span class="str">'public'</span>, <span class="str">'clean'</span>, <span class="str">'agent_scratch'</span>, <span class="str">'docs'</span>)</code></pre>
+
+    <div class="callout"><b>Why this was necessary at all:</b> the <code>GRANT SELECT</code> on <code>docs.chunks</code> to <code>appdb_reader</code> already existed from Phase 1's migration — the role could technically query it. But <code>list_tables</code>/<code>describe_table</code> are the agent's <i>only</i> way of discovering what exists; a grant the discovery query never surfaces is invisible to the model regardless of what it's technically permitted to touch. Same pattern every prior build has followed (Build 2 added <code>clean</code>, Build 2.5 added <code>agent_scratch</code>) — permission and discoverability are two separate things, and both have to be extended together.</div>
+
+    <pre class="code"><span class="fn">agent.py — new tool schema</span><code>{
+    <span class="str">"name"</span>: <span class="str">"search_docs"</span>,
+    <span class="str">"description"</span>: <span class="str">"Semantic search over this project's own documentation (handoff briefs, cheat sheet, project overview) - build history, design decisions, and rationale. Use for thematic or 'why'/'how' questions about the project itself, not the appdb database. Returns a message, not an error, if nothing is sufficiently relevant. Note: returns individual similar chunks, not an aggregated list - for 'list all X' questions (e.g. every file, every SQL migration), run_sql_query directly against docs.chunks works better than semantic search."</span>,
+    <span class="str">"input_schema"</span>: {
+        <span class="str">"type"</span>: <span class="str">"object"</span>,
+        <span class="str">"properties"</span>: {
+            <span class="str">"query_text"</span>: {
+                <span class="str">"type"</span>: <span class="str">"string"</span>,
+                <span class="str">"description"</span>: <span class="str">"A natural-language question about the project's history, design decisions, or documentation."</span>
+            }
+        },
+        <span class="str">"required"</span>: [<span class="str">"query_text"</span>]
+    }
+}</code></pre>
+
+    <div class="callout warn"><b>The tool description itself carries the enumeration-vs-semantic guidance, not just the system prompt.</b> Tool descriptions are visible to the model at every turn it considers calling that tool, whereas the system prompt is one message among many by the time a multi-turn conversation runs long. Putting the "use run_sql_query instead for 'list all X'" guidance in both places was deliberate belt-and-suspenders, not redundant.</div>
+
+    <pre class="code"><span class="fn">agent.py — dispatch addition</span><code><span class="kw">elif</span> block.name == <span class="str">"search_docs"</span>:
+    result = search_docs(block.input[<span class="str">"query_text"</span>])</code></pre>
+
+    <pre class="code"><span class="fn">agent.py — SYSTEM_PROMPT addition</span><code><span class="cmt">For questions about this project's own history, design decisions, or documentation,
+use search_docs; for "list every X" style questions about the documentation itself,
+prefer run_sql_query against docs.chunks instead.</span></code></pre>
+
+    <div class="callout warn"><b>Real gap found via live agent testing — top-k similarity search cannot answer "list all X" questions, and no embedding model fixes that.</b> Enumeration ("list the files used in this project") is fundamentally an aggregation task, not a similarity-matching task — no single chunk (or top-5 set) constitutes "the complete list," so distance-based retrieval structurally cannot satisfy it regardless of embedding quality. Fixed via the tool-description and system-prompt guidance above, steering the agent toward <code>run_sql_query</code> directly against <code>docs.chunks</code> for enumeration-style questions instead — the same combine-tools pattern Build 3 already proved (<code>search_summaries</code> plus a follow-up SQL query for exact dates). Full design discussion below.</div>
+
+    <p><b>Verified live</b> — asked <code>"Why does agent_scratch have two separate database roles?"</code>. The model called <code>search_docs</code>, judged its own first query too broad, called it again with a more specific phrase, then answered correctly — directly quoting the real "why two roles, not one wider role" rationale from Build 2.5's own brief. <code>stop_reason: end_turn</code>, no errors, no missing-dispatch issues.</p>
+
+    <h3 class="phase-title" style="margin-top:40px;">Design Discussion — Would a Different Model Have Helped?</h3>
+    <p class="phase-goal">Raised directly during this phase: "not sure if we're happy with the tool. Would it be best to use another LLM for more meaningful results?" Worth resolving explicitly, since "another LLM" conflates two genuinely different models people often lump together.</p>
+
+    <table class="ref-table">
+      <thead><tr><th>Option</th><th>Pro</th><th>Con</th></tr></thead>
+      <tbody>
+        <tr><td>Bigger local embedding model (e.g. <code>all-mpnet-base-v2</code>)</td><td>Still free; generally better retrieval quality than MiniLM</td><td>Slower, larger; no evidence model quality (vs. chunk content) was the actual bottleneck</td></tr>
+        <tr><td>Paid embedding API (Voyage AI / OpenAI <code>text-embedding-3</code>)</td><td>Likely higher quality still</td><td>Real per-call cost; explicitly declined for the same reason back in Build 3</td></tr>
+        <tr><td>Keep the same embedding model, fix chunk content/length instead</td><td>Directly addresses the actual root causes found (chunk-length/style mismatch, then task-type mismatch); free, no new dependency</td><td>Iterative — took two rounds of real, measured testing to land on</td></tr>
+        <tr><td>Swap the generative LLM (the model answering, not retrieving)</td><td>Could improve answer synthesis quality once retrieval is already good</td><td>Doesn't touch retrieval at all — every "results feel off" test up to this point was <code>search_chunks.py</code>, a standalone script with zero generative LLM in the loop</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout good"><b>Decision: no model swap, either layer.</b> Diagnosis showed both real gaps found this build had specific, measurable, fixable root causes unrelated to model quality — the overview chunk's length/style mismatch (Phase 1, confirmed via direct <code>embedding &lt;=&gt; query</code> distance measurement) and the structural fact that top-k similarity search cannot enumerate (Phase 2, a task-type mismatch no embedding model changes). Fixing the actual causes resolved what testing could measure; swapping models would have added cost and complexity while leaving both root causes completely untouched.</div>
+  </section>
+
+  <section class="doc-section" id="phase3">
+    <h3 class="phase-title"><span class="badge">3</span>Automated Tests</h3>
+    <p class="phase-goal">Goal: codify the manual verification above as a real pytest suite, mirroring <code>test_semantic_search.py</code>'s exact shape.</p>
+
+    <pre class="code"><span class="fn">test_docs_search.py</span><code><span class="kw">def</span> test_all_chunks_have_embeddings_with_correct_dimensions(): ...
+<span class="kw">def</span> test_relevant_query_returns_real_results(): ...
+<span class="kw">def</span> test_irrelevant_query_returns_no_match_message(): ...
+<span class="kw">def</span> test_threshold_regression_guard(): ...
+<span class="kw">def</span> test_docs_schema_discoverable_via_list_tables(): ...</code></pre>
+
+    <div class="callout"><b>The "irrelevant query" test case was verified empirically before being hardcoded</b> — <code>"best chocolate chip cookie recipe"</code> was checked directly against <code>search_docs</code> first (confirmed it returns the no-match message) rather than assumed, avoiding a flaky test built on a guess.</div>
+
+    <p><b>Result:</b> all 5 new tests passing on first run. Full project suite: <b>19/19 passing</b> (14 prior across <code>test_data_quality.py</code>, <code>test_agent_scratch_boundary.py</code>, <code>test_semantic_search.py</code>, plus these 5).</p>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification Log</h2>
+    <p class="section-note">What was actually exercised against the running system, not just read for plausibility — same standard as every build in this project.</p>
+    <ul class="check-list">
+      <li><b>Extraction across all 6 source files</b><span class="detail">230 chunks total, spanning both the current (<code>.callout</code>/<code>pre.code</code>) and pre-Build-1 (<code>.finding</code>/<code>.risk</code>) design eras.</span></li>
+      <li><b>Embedding coverage</b><span class="detail">230/230 chunks embedded, all at 384 dimensions, verified with an unlimited (not sampled) query after a command typo accidentally removed the intended <code>LIMIT</code>.</span></li>
+      <li><b>Narrow-query relevance</b><span class="detail"><code>"why does agent_scratch have two roles?"</code> — distances 0.25-0.37 after the final threshold/agent wiring, precise on-topic chunks.</span></li>
+      <li><b>Overview-chunk fix, measured directly</b><span class="detail">Dense paragraph: 0.8247 distance, unranked in top 16. Nine short lines: best line at 0.6536, ranked first. Confirmed via isolated <code>embedding &lt;=&gt; query</code> distance checks, not inferred from top-5 output alone.</span></li>
+      <li><b>Enumeration-question gap, confirmed real</b><span class="detail">"List the files used in this project" scored worse and returned tangential chunks even post-fix — a genuine structural limit of similarity search, not an embedding-quality problem; addressed via agent tool-choice guidance instead of further retrieval tuning.</span></li>
+      <li><b>Live agent run, full round trip</b><span class="detail">Model self-corrected across two <code>search_docs</code> calls, then answered correctly with a direct, accurate quote from Build 2.5's brief.</span></li>
+      <li><b>Full automated suite</b><span class="detail">19/19 passing — 5 new in <code>test_docs_search.py</code>, alongside all 14 prior tests.</span></li>
+    </ul>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Known Limitations &amp; Open Items</h2>
+    <div class="callout warn"><b><code>DOCS_SIMILARITY_DISTANCE_THRESHOLD = 0.70</code> is provisional, not rigorously calibrated.</b> Build 3's <code>SIMILARITY_DISTANCE_THRESHOLD</code> came from a 40-query statistical calibration (20 in-domain, 20 out-of-domain). This threshold is instead grounded in the handful of real distances observed during this session's own testing — a reasonable first pass, but a proper <code>calibrate_docs_threshold.py</code> pass would be a legitimate follow-up if this proves too loose or too strict in practice.</div>
+    <div class="callout warn"><b>Enumeration/"list all X" questions remain a structural limitation, not a solved problem.</b> The agent can route around it via <code>run_sql_query</code> against <code>docs.chunks</code>, but that depends on the model's own judgment to choose the right tool each time — there's no hard guarantee it always will. Worth watching if this pattern gets exercised more heavily later.</div>
+    <div class="callout warn"><b>Build 1's two handoff briefs are now local copies, not a live sync with their source Artifacts.</b> If those Artifacts are ever edited again independently, the local copies (and therefore the chunked corpus) would silently go stale — no automated re-fetch exists.</div>
+    <div class="callout good"><b>Not done, deliberately — true hierarchical RAG (per-document summary chunks).</b> Flagged during this build's design discussion as a future-implementation item, not urgent: the single project-overview chunk turned out sufficient once its length/style was fixed, so a full per-document-summary layer isn't currently justified. Revisit if the doc corpus grows meaningfully past its current 6 files.</div>
+  </section>
+
+  <section class="doc-section" id="env">
+    <h2>Environment State</h2>
+    <table class="ref-table">
+      <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>New schema</td><td class="mono">docs</td></tr>
+        <tr><td>New SQL file</td><td class="mono">010_docs_chunks_schema.sql</td></tr>
+        <tr><td>New Python</td><td class="mono">extract_doc_chunks.py, embed_chunks.py, search_chunks.py, test_docs_search.py</td></tr>
+        <tr><td>New/changed Python</td><td class="mono">tools.py (+search_docs, widened discovery), agent.py (+tool, +dispatch, +prompt line)</td></tr>
+        <tr><td>New dependency</td><td class="mono">beautifulsoup4</td></tr>
+        <tr><td>New local files</td><td class="mono">PROJECT_DIAGRAMS/BUILD_1_FLOW/build1-handoff-brief.html, environment-handoff-brief-v2.html, PROJECT_DIAGRAMS/project-overview.html</td></tr>
+        <tr><td>Corpus size</td><td class="mono">230 chunks across 6 source files, all embedded at 384 dimensions</td></tr>
+        <tr><td>Role used</td><td class="mono">appdb_reader (no new role needed for this build)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Build 3.5 complete. Next: Build 4 — agent observability &amp; eval harness (JSON Lines tool-call logging decided as the Phase 1 approach). Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
+</body>
+</html>
