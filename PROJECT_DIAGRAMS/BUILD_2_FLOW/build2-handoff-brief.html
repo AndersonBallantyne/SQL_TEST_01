@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 2 Handoff Brief — Raw-to-Queryable Data Pipeline</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  h3.phase-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px; font-weight: 600; margin: 32px 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.phase-title .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 700; flex: none;
+  }
+  p.phase-goal { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .kw { color: var(--teal); font-weight: 600; }
+  .str { color: var(--accent); }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+
+  table.ref-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); table-layout: fixed; }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; word-break: break-word; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: normal; }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 2 · Handoff Brief</p>
+  <h1>Raw-to-Queryable Data Pipeline</h1>
+  <p class="lede">A standalone, deep-dive reference for Build 2 — every phase, every file, every verification result, in full. Written retroactively, per standing procedure, alongside the same standard as every other build's brief in this project. Complements (does not replace) the living cheat sheet and the phase diagrams.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Complete — all 3 phases</dd></div>
+    <div><dt>Commits</dt><dd><code>f5468e0</code> → <code>68b810c</code></dd></div>
+    <div><dt>Continues</dt><dd>Build 1 (Ask-Your-Database agent)</dd></div>
+    <div><dt>Precedes</dt><dd>Build 2.5 (agent scratch workspace)</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#what">What &amp; Why</a>
+    <a href="#phase1">Phase 1</a>
+    <a href="#phase2">Phase 2</a>
+    <a href="#phase3">Phase 3</a>
+    <a href="#verification">Verification Log</a>
+    <a href="#limitations">Known Limitations</a>
+    <a href="#env">Environment State</a>
+  </nav>
+
+  <section class="doc-section" id="what">
+    <h2>What Was Built, and Why</h2>
+    <p class="section-note">
+      Build 1 gave the agent a database to query, but that database was hand-seeded toy data (four customers, five orders). Build 2 gives it something real: a genuine equipment-checkout export, landed unmodified, then deliberately transformed in a separate, later step — the classic ELT split, done as two distinct schemas (<code>raw</code> then <code>clean</code>) rather than one script that ingests and cleans in the same breath.
+    </p>
+    <p class="section-note">
+      The two-schema split is the core design decision: <code>raw.allocations</code> is all-<code>TEXT</code>, no constraints, mirroring the source file exactly — its entire job is preserving what the source actually said before any decision gets made about what it means. <code>clean.allocations</code> is where those decisions happen: real types, a generated column, deliberate NULL handling. Keeping them as two tables (not one, cleaned in place) means the original import is always available to re-derive from if a transformation decision turns out wrong later.
+    </p>
+  </section>
+
+  <section class="doc-section" id="phase1">
+    <h3 class="phase-title"><span class="badge">1</span>The Raw Ingestion Layer</h3>
+    <p class="phase-goal">Goal: land a genuinely messy real-world CSV completely unmodified in a staging table, and verify the row count matches the source exactly. No transformation yet — that's deliberately a later phase.</p>
+
+    <p>The source: a real equipment-checkout export (<code>ALLOCATION-export-Oct_2024-2025.csv</code>, 1,535 rows) from an actual institution, kept outside this repo. Its <code>Patron Email</code> column was already exported as domain-only (e.g. <code>@artschool.edu</code>) rather than full addresses — a privacy choice made at export time, not something this project added. The real institution's domain was later masked to the fictional <code>artschool.edu</code> before this became a public-facing portfolio piece (see <code>project_agent-roadmap.md</code> memory for that masking pass in full).</p>
+
+    <pre class="code"><span class="fn">004_raw_schema.sql (originally raw_schema.sql, renamed when SQL files were numbered)</span><code><span class="kw">CREATE SCHEMA IF NOT EXISTS</span> raw;
+
+<span class="kw">DROP TABLE IF EXISTS</span> raw.allocations;
+
+<span class="kw">CREATE TABLE</span> raw.allocations (
+    allocation_id     <span class="kw">TEXT</span>,
+    patron_department <span class="kw">TEXT</span>,
+    patron_email       <span class="kw">TEXT</span>,
+    renewal_count      <span class="kw">TEXT</span>,
+    actual_start        <span class="kw">TEXT</span>,
+    scheduled_end       <span class="kw">TEXT</span>,
+    actual_end           <span class="kw">TEXT</span>,
+    duration             <span class="kw">TEXT</span>,
+    resource_count       <span class="kw">TEXT</span>,
+    summary              <span class="kw">TEXT</span>
+);
+
+<span class="kw">GRANT USAGE ON SCHEMA</span> raw <span class="kw">TO</span> appdb_reader;
+<span class="kw">GRANT SELECT ON ALL TABLES IN SCHEMA</span> raw <span class="kw">TO</span> appdb_reader;
+<span class="kw">ALTER DEFAULT PRIVILEGES IN SCHEMA</span> raw <span class="kw">GRANT SELECT ON TABLES TO</span> appdb_reader;</code></pre>
+
+    <div class="callout"><b>Every column is <code>TEXT</code>, on purpose.</b> Nothing here is cleaned or coerced — not even obviously numeric fields like <code>renewal_count</code>. Deciding what a value <i>means</i> (a number? a timestamp? a real NULL?) is explicitly Phase 2's job, not this one's. Mixing the two would make it impossible to tell, later, whether a "clean" value reflects the source or an ingestion-time assumption.</div>
+
+    <pre class="code"><span class="fn">ingest.py</span><code><span class="kw">import</span> csv
+<span class="kw">import</span> os
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="kw">import</span> psycopg
+
+load_dotenv(encoding=<span class="str">"utf-8-sig"</span>)
+
+CSV_PATH = <span class="str">r"C:\IMAGEBANK_2023\DOCKER_SQL\EMEC_AGENT_BUILD\ALLOCATION-export-Oct_2024-2025.csv"</span>
+
+conn = psycopg.connect(
+    host=os.environ.get(<span class="str">"POSTGRES_HOST"</span>, <span class="str">"127.0.0.1"</span>),
+    port=5432,
+    dbname=os.environ[<span class="str">"POSTGRES_DB"</span>],
+    user=os.environ[<span class="str">"POSTGRES_USER"</span>],
+    password=os.environ[<span class="str">"POSTGRES_PASSWORD"</span>],
+)
+
+<span class="kw">with open</span>(CSV_PATH, newline=<span class="str">""</span>, encoding=<span class="str">"utf-8-sig"</span>) <span class="kw">as</span> f:
+    reader = csv.DictReader(f)
+    rows = [
+        (row[<span class="str">"Allocation"</span>], row[<span class="str">"Patron Department"</span>], row[<span class="str">"Patron Email"</span>],
+         row[<span class="str">"Renewal Count"</span>], row[<span class="str">"Actual Start"</span>], row[<span class="str">"Scheduled End"</span>],
+         row[<span class="str">"Actual End"</span>], row[<span class="str">"Duration"</span>], row[<span class="str">"Resource Count"</span>], row[<span class="str">"Summary"</span>])
+        <span class="kw">for</span> row <span class="kw">in</span> reader
+    ]
+
+<span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+    cur.executemany(
+        <span class="str">"""INSERT INTO raw.allocations (
+            allocation_id, patron_department, patron_email, renewal_count,
+            actual_start, scheduled_end, actual_end, duration,
+            resource_count, summary
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""</span>,
+        rows,
+    )
+conn.commit()
+conn.close()
+<span class="kw">print</span>(<span class="str">f"Loaded {len(rows)} rows into raw.allocations"</span>)</code></pre>
+
+    <div class="callout"><b>Why <code>csv.DictReader</code>, not pandas, for ingestion specifically:</b> <code>csv.DictReader</code> guarantees every field arrives as a plain string, with nothing silently type-coerced. Pandas' automatic type inference is exactly the kind of decision this layer is designed to defer to Phase 2. Pandas still gets used — one phase later, for profiling.</div>
+
+    <p><b>Verified live:</b> <code>SELECT count(*) FROM raw.allocations;</code> → <code>1535</code>, matching the source CSV's row count exactly.</p>
+  </section>
+
+  <section class="doc-section" id="phase2">
+    <h3 class="phase-title"><span class="badge">2</span>Profile &amp; Transform</h3>
+    <p class="phase-goal">Goal: understand the raw data's actual messiness before deciding the clean schema, then write the transformation that turns text into real types — deliberately, not by pandas' automatic inference.</p>
+
+    <pre class="code"><span class="fn">profile_raw_data.py (named profile.py at the time — renamed during Build 3 after it was found silently shadowing Python's stdlib profile module)</span><code>print(<span class="str">"--- patron_department: blank rate + distinct values (repr shows hidden whitespace) ---"</span>)
+print(<span class="str">"Blank count:"</span>, (df[<span class="str">"patron_department"</span>] == <span class="str">""</span>).sum())
+print(sorted(repr(v) <span class="kw">for</span> v <span class="kw">in</span> df[<span class="str">"patron_department"</span>].unique()))
+
+print(<span class="str">"--- date format consistency: actual_start / scheduled_end / actual_end ---"</span>)
+<span class="kw">for</span> col <span class="kw">in</span> [<span class="str">"actual_start"</span>, <span class="str">"scheduled_end"</span>, <span class="str">"actual_end"</span>]:
+    parsed = pd.to_datetime(df[col], format=<span class="str">"%m/%d/%Y %I:%M %p"</span>, errors=<span class="str">"coerce"</span>)
+    print(<span class="str">f"{col}: {parsed.isna().sum()} rows failed to parse"</span>)
+
+print(<span class="str">"--- duration sanity check ---"</span>)
+computed_seconds = (ends - starts).dt.total_seconds()
+mismatch = computed_seconds.astype(<span class="str">"Int64"</span>) != df[<span class="str">"duration"</span>].astype(<span class="str">"int64"</span>)
+print(<span class="str">"Rows where computed != stored duration:"</span>, mismatch.sum())</code></pre>
+
+    <div class="callout good"><b>What profiling actually found, and why each finding mattered:</b> <code>patron_department</code> had real blank strings mixed with real values — not garbage, a genuine "not applicable" case that needed to become a true <code>NULL</code>, not stay as <code>''</code>. All three date columns parsed cleanly against one exact format (<code>MM/DD/YYYY H:MM AM/PM</code>) with zero failures. The stored <code>duration</code> column's values matched a freshly computed <code>actual_end − actual_start</code> exactly — meaning <code>clean.allocations</code> could <i>compute</i> duration instead of trusting a redundant stored field, closing off an entire class of future drift between the two.</div>
+
+    <pre class="code"><span class="fn">005_clean_schema.sql</span><code><span class="kw">CREATE SCHEMA IF NOT EXISTS</span> clean;
+
+<span class="kw">DROP TABLE IF EXISTS</span> clean.allocations;
+
+<span class="kw">CREATE TABLE</span> clean.allocations (
+    allocation_id        <span class="kw">TEXT PRIMARY KEY</span>,
+    patron_department    <span class="kw">TEXT</span>,
+    patron_email_domain  <span class="kw">TEXT NOT NULL</span>,
+    renewal_count         <span class="kw">INTEGER NOT NULL</span>,
+    actual_start           <span class="kw">TIMESTAMP NOT NULL</span>,
+    scheduled_end           <span class="kw">TIMESTAMP NOT NULL</span>,
+    actual_end               <span class="kw">TIMESTAMP NOT NULL</span>,
+    duration_seconds          <span class="kw">INTEGER GENERATED ALWAYS AS</span>
+        (<span class="kw">EXTRACT</span>(<span class="kw">EPOCH FROM</span> (actual_end - actual_start))::<span class="kw">INTEGER</span>) <span class="kw">STORED</span>,
+    resource_count             <span class="kw">INTEGER NOT NULL</span>,
+    summary                     <span class="kw">TEXT</span>
+);
+
+<span class="kw">GRANT USAGE ON SCHEMA</span> clean <span class="kw">TO</span> appdb_reader;
+<span class="kw">GRANT SELECT ON ALL TABLES IN SCHEMA</span> clean <span class="kw">TO</span> appdb_reader;
+<span class="kw">ALTER DEFAULT PRIVILEGES IN SCHEMA</span> clean <span class="kw">GRANT SELECT ON TABLES TO</span> appdb_reader;</code></pre>
+
+    <div class="callout"><b><code>duration_seconds</code> is <code>GENERATED ALWAYS AS (...) STORED</code>, not a plain inserted column.</b> Postgres computes and locks it from <code>actual_start</code>/<code>actual_end</code> in the same row — structurally impossible for it to drift out of sync, unlike the raw layer's separately-stored <code>duration</code> field that profiling proved (for this dataset) happened to already agree.</div>
+
+    <pre class="code"><span class="fn">transform.py</span><code>DATE_FORMAT = <span class="str">"%m/%d/%Y %I:%M %p"</span>
+
+<span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+    cur.execute(<span class="str">"SELECT * FROM raw.allocations"</span>)
+    columns = [desc[0] <span class="kw">for</span> desc <span class="kw">in</span> cur.description]
+    raw_rows = cur.fetchall()
+
+rows = []
+<span class="kw">for</span> row <span class="kw">in</span> raw_rows:
+    record = <span class="kw">dict</span>(<span class="kw">zip</span>(columns, row))
+    rows.append((
+        record[<span class="str">"allocation_id"</span>],
+        record[<span class="str">"patron_department"</span>] <span class="kw">or</span> <span class="kw">None</span>,
+        record[<span class="str">"patron_email"</span>],
+        <span class="kw">int</span>(record[<span class="str">"renewal_count"</span>]),
+        datetime.strptime(record[<span class="str">"actual_start"</span>], DATE_FORMAT),
+        datetime.strptime(record[<span class="str">"scheduled_end"</span>], DATE_FORMAT),
+        datetime.strptime(record[<span class="str">"actual_end"</span>], DATE_FORMAT),
+        <span class="kw">int</span>(record[<span class="str">"resource_count"</span>]),
+        record[<span class="str">"summary"</span>],
+    ))
+
+<span class="kw">with</span> conn.cursor() <span class="kw">as</span> cur:
+    cur.executemany(
+        <span class="str">"""INSERT INTO clean.allocations (
+            allocation_id, patron_department, patron_email_domain, renewal_count,
+            actual_start, scheduled_end, actual_end,
+            resource_count, summary
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""</span>,
+        rows,
+    )
+conn.commit()</code></pre>
+
+    <div class="callout warn"><b><code>record["patron_department"] or None</code> is the one deliberate cleaning decision in this whole script.</b> Python treats an empty string as falsy, so a blank department becomes a real SQL <code>NULL</code> instead of staying an empty string — the exact gap profiling surfaced. Every other field is a direct type conversion (<code>int()</code>, <code>datetime.strptime()</code>), not a judgment call.</div>
+
+    <p><b>Verified live:</b> <code>SELECT count(*) FROM clean.allocations;</code> → <code>1535</code>, matching <code>raw.allocations</code> exactly. <code>patron_email_domain</code> distinct values: <code>@inside.artschool.edu</code> (946), <code>@artschool.edu</code> (571), <code>@alumni.artschool.edu</code> (9), <code>@gmail.com</code> (9) — real categorical signal, confirming the domain-only export wasn't lossy for this dataset's purposes.</p>
+
+    <div class="callout"><b>Also delivered this phase:</b> the SQL files were numbered (<code>001</code>–<code>005</code>) to encode their run order explicitly, and <code>sql-test-01-cheatsheet.html</code> — the command-reference living document every later build has appended to since — was started.</div>
+  </section>
+
+  <section class="doc-section" id="phase3">
+    <h3 class="phase-title"><span class="badge">3</span>Agent Integration &amp; Data Quality</h3>
+    <p class="phase-goal">Goal: let the agent actually see <code>clean.allocations</code>, and codify what "correct" means for that table as real, automated tests — the first automated test suite in this project.</p>
+
+    <pre class="code"><span class="fn">tools.py — schema discovery widened</span><code>WHERE table_schema IN (<span class="str">'public'</span>, <span class="str">'clean'</span>)</code></pre>
+
+    <div class="callout"><b>Deliberately not <code>raw</code>.</b> <code>appdb_reader</code>'s grants extend across <code>public</code>, <code>raw</code>, and <code>clean</code>, but <code>tools.py</code>'s schema-discovery query only surfaces <code>public</code> and <code>clean</code> to the agent. <code>raw</code> stays internal-only — a real distinction between what a role is <i>permitted</i> to touch and what the agent is actually told exists.</div>
+
+    <p><b>Real gap found and fixed mid-phase:</b> the first cross-table question exposed a real self-correction moment — the model tried an unqualified table name, got a genuine Postgres error back, and retried with the <code>clean.</code> prefix on its own without being told to. Not a bug, but the first live proof that graceful error recovery (not just error <i>handling</i>) was actually working end to end.</p>
+
+    <pre class="code"><span class="fn">test_data_quality.py</span><code><span class="kw">import</span> pandera.pandas <span class="kw">as</span> pa
+
+CLEAN_SCHEMA = pa.DataFrameSchema({
+    <span class="str">"allocation_id"</span>: pa.Column(<span class="kw">str</span>, unique=<span class="kw">True</span>, nullable=<span class="kw">False</span>),
+    <span class="str">"patron_department"</span>: pa.Column(<span class="kw">str</span>, nullable=<span class="kw">True</span>),
+    <span class="str">"patron_email_domain"</span>: pa.Column(<span class="kw">str</span>, nullable=<span class="kw">False</span>),
+    <span class="str">"renewal_count"</span>: pa.Column(<span class="kw">int</span>, pa.Check.ge(0), nullable=<span class="kw">False</span>),
+    <span class="str">"resource_count"</span>: pa.Column(<span class="kw">int</span>, pa.Check.ge(0), nullable=<span class="kw">False</span>),
+    <span class="str">"duration_seconds"</span>: pa.Column(<span class="kw">int</span>, pa.Check.ge(0), nullable=<span class="kw">False</span>),
+})
+
+<span class="kw">def</span> test_raw_row_count():
+    <span class="kw">assert len</span>(_query(<span class="str">"SELECT * FROM raw.allocations"</span>)) == 1535
+
+<span class="kw">def</span> test_clean_row_count_matches_raw():
+    raw = _query(<span class="str">"SELECT COUNT(*) AS n FROM raw.allocations"</span>)
+    clean = _query(<span class="str">"SELECT COUNT(*) AS n FROM clean.allocations"</span>)
+    <span class="kw">assert</span> raw[<span class="str">"n"</span>][0] == clean[<span class="str">"n"</span>][0]
+
+<span class="kw">def</span> test_clean_department_has_real_nulls():
+    clean = _query(<span class="str">"SELECT patron_department FROM clean.allocations"</span>)
+    <span class="kw">assert</span> clean[<span class="str">"patron_department"</span>].isna().sum() > 0
+
+<span class="kw">def</span> test_clean_schema_types_and_constraints():
+    clean = _query(<span class="str">"SELECT allocation_id, patron_department, patron_email_domain, "</span>
+                   <span class="str">"renewal_count, resource_count, duration_seconds FROM clean.allocations"</span>)
+    CLEAN_SCHEMA.validate(clean)</code></pre>
+
+    <div class="callout good"><b>Why <code>pandera</code>, not scattered <code>assert</code>s:</b> <code>DataFrameSchema</code> declares an entire table's expected shape — types, nullability, value constraints — as one piece of data rather than a pile of ad hoc checks. <code>test_clean_department_has_real_nulls</code> is the direct regression guard for Phase 2's blank→NULL decision: if a future change ever silently reverted to storing empty strings, this test would fail loudly instead of the gap going unnoticed.</div>
+
+    <p><b>Result:</b> all 4 tests passing on first run, connecting as <code>appdb_reader</code> (not the owner role) — the same read-only credential the agent itself uses.</p>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification Log</h2>
+    <p class="section-note">What was actually exercised against the running system, not just read for plausibility — same standard as every build in this project.</p>
+    <ul class="check-list">
+      <li><b>Raw row count</b><span class="detail"><code>raw.allocations</code> — 1,535 rows, matching the source CSV exactly.</span></li>
+      <li><b>Clean row count</b><span class="detail"><code>clean.allocations</code> — 1,535 rows, matching <code>raw.allocations</code> exactly; no rows silently dropped during transform.</span></li>
+      <li><b>Profiling findings, each acted on</b><span class="detail">Blank <code>patron_department</code> values confirmed real (→ NULL handling); all three date columns parsed cleanly against one exact format; stored <code>duration</code> matched a freshly computed value exactly (→ became a <code>GENERATED</code> column instead of a trusted stored one).</span></li>
+      <li><b>Domain distribution, post-transform</b><span class="detail"><code>@inside.artschool.edu</code> (946), <code>@artschool.edu</code> (571), <code>@alumni.artschool.edu</code> (9), <code>@gmail.com</code> (9) — real categorical signal preserved through the transform.</span></li>
+      <li><b>Agent self-correction, live</b><span class="detail">First cross-schema question: model tried an unqualified table name, got a real Postgres error, retried with the <code>clean.</code> prefix unprompted, then answered correctly.</span></li>
+      <li><b>Automated test suite</b><span class="detail">4/4 <code>test_data_quality.py</code> tests passing, run as <code>appdb_reader</code> — the first automated tests in this project, replacing what had been entirely manual verification through Build 1.</span></li>
+    </ul>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Known Limitations &amp; Open Items</h2>
+    <div class="callout warn"><b><code>list_tables</code>/<code>describe_table</code> as two separate calls, not one.</b> The first real cross-table question triggered 3 separate <code>describe_table</code> calls in one turn — the model exploring every discovered table, not just the one the question needed. Not a bug (the agent still answered correctly, token cost negligible on Haiku-tier), but a genuine, low-priority efficiency idea: merging the two tools into one "describe everything" call would cut round-trips without changing how much schema information the model receives. Flagged for later, not fixed now — carried forward into Build 2.5's brief, still unaddressed as of that build too.</div>
+    <div class="callout"><b><code>raw</code> excluded from agent-visible schema discovery, by design.</b> <code>appdb_reader</code> can technically <code>SELECT</code> from <code>raw.allocations</code> (the grant is there), but <code>tools.py</code>'s discovery query never surfaces it to the model. Intentional, not a gap — worth remembering if a future build ever needs the agent to reason about data provenance, since today it structurally cannot see the raw layer exists.</div>
+    <div class="callout good"><b>Resolved during this build — no automated tests, at all, through Build 1.</b> Every Build 1 verification was manual and interactive. Build 2 Phase 3's <code>test_data_quality.py</code> is the first automated suite in the project, establishing the <code>pandera</code> + <code>pytest</code> pattern every later build's own test suite has since followed.</div>
+  </section>
+
+  <section class="doc-section" id="env">
+    <h2>Environment State</h2>
+    <table class="ref-table">
+      <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>New schemas</td><td class="mono">raw, clean</td></tr>
+        <tr><td>New SQL files</td><td class="mono">004_raw_schema.sql, 005_clean_schema.sql (numbered from raw_schema.sql this phase)</td></tr>
+        <tr><td>New/changed Python</td><td class="mono">ingest.py, profile.py (later renamed profile_raw_data.py), transform.py, tools.py (widened discovery), test_data_quality.py</td></tr>
+        <tr><td>New dependency</td><td class="mono">pandas, pandera</td></tr>
+        <tr><td>Real source data</td><td class="mono">ALLOCATION-export-Oct_2024-2025.csv, 1,535 rows, outside this repo</td></tr>
+        <tr><td>Living doc started</td><td class="mono">sql-test-01-cheatsheet.html</td></tr>
+        <tr><td>Role used</td><td class="mono">appdb_reader (grants extended to raw + clean; no new role needed for this build)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Build 2 complete. Next (chronologically): Build 2.5 — agent scratch workspace. This brief was written retroactively per standing procedure, reconstructed from git history (<code>f5468e0</code>→<code>68b810c</code>), the actual current files, and <code>project_agent-roadmap.md</code> memory — not from a live session transcript, unlike Builds 2.5/3's briefs. Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
+</body>
+</html>
