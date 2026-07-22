@@ -1,8 +1,11 @@
 import os
+import json
 from dotenv import load_dotenv
 import anthropic
 #from tools import run_sql_query, list_tables, describe_table, save_dataframe
 from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries, search_docs
+import time
+from logging_utils import log_tool_call
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -147,8 +150,11 @@ while turn < MAX_TOOL_TURNS:
         break
 
     for block in response.content:
-        print(block)
-    print("stop_reason:", response.stop_reason)
+        if block.type == "text":
+            print(f"[TEXT] {block.text}")
+        elif block.type == "tool_use":
+            print(f"[TOOL CALL] {block.name}({block.input})")
+    print(f"[stop_reason: {response.stop_reason}]")
 
     messages.append({"role": "assistant", "content": response.content})
 
@@ -161,6 +167,7 @@ while turn < MAX_TOOL_TURNS:
             continue
 
         try:
+            start = time.perf_counter()
             if block.name == "run_sql_query":
                 result = run_sql_query(block.input["sql"])
             elif block.name == "list_tables":
@@ -180,7 +187,11 @@ while turn < MAX_TOOL_TURNS:
             else:
                 raise ValueError(f"Unknown tool name: {block.name}")
 
-            print(result)
+            latency_ms = (time.perf_counter() - start) * 1000
+            log_tool_call(block.name, block.input, result, latency_ms, turn)
+
+            print(f"[TOOL RESULT] {block.name}:")
+            print(json.dumps(result, indent=2, default=str))
 
             tool_results.append({
                 "type": "tool_result",
@@ -188,7 +199,10 @@ while turn < MAX_TOOL_TURNS:
                 "content": str(result)
             })
         except Exception as e:
-            print(f"Tool error: {e}")
+            latency_ms = (time.perf_counter() - start) * 1000
+            log_tool_call(block.name, block.input, None, latency_ms, turn, error=str(e))
+
+            print(f"[TOOL ERROR] {block.name}: {e}")
             tool_results.append({
                 "type": "tool_result",
                 "tool_use_id": block.id,
@@ -197,10 +211,6 @@ while turn < MAX_TOOL_TURNS:
             })
 
     messages.append({"role": "user", "content": tool_results})
-    
-    for block in response.content:
-        if block.type == "text":
-            print(block.text)
 
 else:
     print(f"Stopped after reaching the {MAX_TOOL_TURNS}-turn limit.")
