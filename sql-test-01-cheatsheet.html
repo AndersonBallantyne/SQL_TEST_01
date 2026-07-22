@@ -266,7 +266,7 @@
 
   <p class="eyebrow">SQL_TEST_01 · Command Reference · Living Document</p>
   <h1>Everything you've typed so far</h1>
-  <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized — plus a project-wide file map for orientation. Appended at the end of each build, not written once and frozen.</p>
+  <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized — plus a project-wide file map, and a running list of Claude's own working commands. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
     <div><dt>Covers</dt><dd>Build 1 (agent), Build 2 (pipeline), Build 2.5 (scratch workspace) &amp; Build 3 (semantic search) — all complete</dd></div>
@@ -287,6 +287,7 @@
     <a href="#pytest">pytest</a>
     <a href="#vector-search">pgvector &amp; embeddings</a>
     <a href="#stdlib">Python stdlib</a>
+    <a href="#claude-commands">Claude's Commands</a>
   </nav>
 
   <section class="group" id="files">
@@ -627,6 +628,25 @@
           <tr><td class="cmd">os.environ["KEY"]</td><td class="desc">Read a required env var — raises immediately if it's missing, rather than continuing with a silent gap.</td></tr>
           <tr><td class="cmd">os.environ.get("KEY", default)</td><td class="desc">Read an optional env var, falling back to a default (e.g. <code>POSTGRES_HOST</code> defaulting to <code>127.0.0.1</code> outside Docker).</td></tr>
           <tr><td class="cmd">load_dotenv(encoding="utf-8-sig")</td><td class="desc">Load .env into the process environment — BOM-safe, matching how Windows tools often save that file.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="claude-commands">
+    <div class="group-head"><h2>Claude's Commands</h2><span class="group-tag">Diagrams · verification · publishing</span></div>
+    <p class="group-note">A separate running list from everything above — not what <i>you've</i> typed, but the commands Claude actually runs behind the scenes while building diagrams, verifying renders, and publishing docs for this project. Appended to as new patterns come up, same as every other section.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">msedge --headless --disable-gpu --window-size=W,H --screenshot=out.png file:///path.html</td><td class="desc">Renders an HTML file exactly as a browser would and saves it as a PNG — the first of two required checks before any diagram or doc is considered verified.</td></tr>
+          <tr><td class="cmd">msedge --headless --disable-gpu --print-to-pdf=out.pdf --print-to-pdf-no-header --no-pdf-header-footer file:///path.html</td><td class="desc">Renders the same page through Chromium's separate print pipeline — a genuinely different code path that has caught real bugs (<code>&lt;img&gt;</code> references silently failing to render) the screenshot path alone missed.</td></tr>
+          <tr><td class="cmd">pdftoppm -png -r 100 file.pdf prefix</td><td class="desc">Rasterizes every page of a generated PDF into numbered PNGs, so each page can actually be looked at instead of trusting file size alone.</td></tr>
+          <tr><td class="cmd">pdfinfo file.pdf | grep -i pages</td><td class="desc">Quick page-count check before rasterizing — confirms whether a doc paginated the way it was expected to.</td></tr>
+          <tr><td class="cmd">git commit -m "$(cat &lt;&lt;'EOF' ... EOF)"</td><td class="desc">Heredoc commit-message convention — explains <b>why</b> a change happened in the body, and avoids hand-escaping quotes/newlines. Every commit message ends with a <code>Co-Authored-By</code> line.</td></tr>
+          <tr><td class="cmd">Image.open(path).convert("RGB").getpixel((x, y))</td><td class="desc">Samples an exact on-screen pixel's RGB value with Pillow — confirms a color rendered exactly as CSS specified, rather than trusting a visual impression at small/compressed scale. Caught a false alarm (anti-aliasing fringe mistaken for a real color bug) during this cheat sheet's own verification.</td></tr>
         </tbody>
       </table>
     </div>
