@@ -266,7 +266,7 @@
 
   <p class="eyebrow">SQL_TEST_01 · Command Reference · Living Document</p>
   <h1>Everything you've typed so far</h1>
-  <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized. Appended at the end of each build, not written once and frozen.</p>
+  <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized — plus a project-wide file map for orientation. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
     <div><dt>Covers</dt><dd>Build 1 (agent), Build 2 (pipeline), Build 2.5 (scratch workspace) &amp; Build 3 (semantic search) — all complete</dd></div>
@@ -275,6 +275,7 @@
   </dl>
 
   <nav class="toc" aria-label="Jump to section">
+    <a href="#files">Project Files</a>
     <a href="#docker">Docker</a>
     <a href="#psql">psql</a>
     <a href="#powershell">PowerShell</a>
@@ -287,6 +288,127 @@
     <a href="#vector-search">pgvector &amp; embeddings</a>
     <a href="#stdlib">Python stdlib</a>
   </nav>
+
+  <section class="group" id="files">
+    <div class="group-head"><h2>Project Files</h2><span class="group-tag">What's actually in this folder</span></div>
+    <p class="group-note">A map of the project root as of Build 3.5's start — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">SQL migrations — run in order, numbered for reproducibility</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">001_schema.sql</td><td class="desc">Original <code>appdb</code> schema — <code>customers</code>/<code>orders</code>, the seed data every later build extends.</td></tr>
+          <tr><td class="cmd">002_seed.sql</td><td class="desc">Idempotent seed data for <code>customers</code>/<code>orders</code>.</td></tr>
+          <tr><td class="cmd">003_readonly_role.sql</td><td class="desc"><code>appdb_reader</code> — the read-only role Build 1's agent runs as.</td></tr>
+          <tr><td class="cmd">004_raw_schema.sql</td><td class="desc">Build 2 Phase 1 — <code>raw.allocations</code>, all-<code>TEXT</code> ingestion target.</td></tr>
+          <tr><td class="cmd">005_clean_schema.sql</td><td class="desc">Build 2 Phase 2 — <code>clean.allocations</code>, real types plus the computed <code>duration_seconds</code> column.</td></tr>
+          <tr><td class="cmd">006_agent_scratch_role.sql</td><td class="desc">Build 2.5 Phase 1 — <code>appdb_agent_writer</code>, the agent's write-scoped role.</td></tr>
+          <tr><td class="cmd">007_agent_scratch_schema.sql</td><td class="desc">Build 2.5 Phase 1 — the <code>agent_scratch</code> schema and its grants.</td></tr>
+          <tr><td class="cmd">008_add_summary_embedding.sql</td><td class="desc">Build 3 Phase 1 — adds <code>clean.allocations.summary_embedding vector(384)</code>.</td></tr>
+          <tr><td class="cmd">009_add_summary_embedding_hnsw_index.sql</td><td class="desc">Build 3 follow-up — HNSW index on <code>summary_embedding</code> for indexed similarity search.</td></tr>
+          <tr><td class="cmd">schema_mssql.sql</td><td class="desc">The SQL Server counterpart to <code>001_schema.sql</code> — same <code>appdb</code> shape, T-SQL dialect.</td></tr>
+          <tr><td class="cmd">seed_mssql.sql</td><td class="desc">SQL Server counterpart to <code>002_seed.sql</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — the agent itself</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">agent.py</td><td class="desc">The hand-built tool-use loop — calls the Anthropic API, dispatches tool calls, enforces <code>MAX_TOOL_TURNS</code>.</td></tr>
+          <tr><td class="cmd">tools.py</td><td class="desc">Every tool the agent can call: <code>run_sql_query</code>, <code>list_tables</code>, <code>describe_table</code>, <code>save_dataframe</code>, <code>search_summaries</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — data pipeline (Build 2)</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">ingest.py</td><td class="desc">Loads the source CSV into <code>raw.allocations</code>, one <code>executemany</code> call.</td></tr>
+          <tr><td class="cmd">profile_raw_data.py</td><td class="desc">Pandas exploration of <code>raw.allocations</code> that informed <code>005_clean_schema.sql</code>'s design. Renamed from <code>profile.py</code> — it silently shadowed Python's stdlib <code>profile</code> module.</td></tr>
+          <tr><td class="cmd">transform.py</td><td class="desc">Raw → clean transform: type coercion, blank→NULL handling, populates <code>clean.allocations</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — semantic search (Build 3)</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">embed_summaries.py</td><td class="desc">Idempotent backfill — embeds every <code>summary</code> row still missing a <code>summary_embedding</code>.</td></tr>
+          <tr><td class="cmd">search_summaries.py</td><td class="desc">Standalone script proving raw cosine-distance search works, before any agent wiring.</td></tr>
+          <tr><td class="cmd">calibrate_threshold.py</td><td class="desc">Statistical calibration of the 0.63 relevance-distance cutoff, from 40 curated in-/out-of-domain queries.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — early sanity checks (pre-Build-1)</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">db_test_py.py</td><td class="desc">The very first Postgres connectivity check — plain <code>psycopg</code>, no agent involved.</td></tr>
+          <tr><td class="cmd">api_test.py</td><td class="desc">The very first Anthropic API call — confirms auth and a real response, before any tool-use loop existed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Tests</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">test_data_quality.py</td><td class="desc">Build 2 — <code>pandera</code> schema checks against <code>clean.allocations</code>.</td></tr>
+          <tr><td class="cmd">test_agent_scratch_boundary.py</td><td class="desc">Build 2.5 — role-boundary tests plus the <code>MAX_SCRATCH_TABLES</code> cap test.</td></tr>
+          <tr><td class="cmd">test_semantic_search.py</td><td class="desc">Build 3 — embedding coverage, relevant/irrelevant query behavior, HNSW index existence.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Configuration &amp; infrastructure</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">docker-compose.yml</td><td class="desc">Defines <code>pg_local</code>, <code>mssql_local</code>, and the <code>agent</code> service; Postgres image is <code>pgvector/pgvector:pg17</code>.</td></tr>
+          <tr><td class="cmd">Dockerfile</td><td class="desc">Builds the <code>agent</code> service's image.</td></tr>
+          <tr><td class="cmd">requirements.txt</td><td class="desc">Pinned Python dependencies — <code>anthropic</code>, <code>psycopg</code>, <code>pgvector</code>, <code>sentence-transformers</code>, <code>pandas</code>, <code>pandera</code>, <code>pytest</code>, <code>python-dotenv</code>.</td></tr>
+          <tr><td class="cmd">.env</td><td class="desc">Real local secrets (DB passwords) — gitignored, never committed.</td></tr>
+          <tr><td class="cmd">.env.example</td><td class="desc">Template shape of <code>.env</code> with placeholder values, safe to commit.</td></tr>
+          <tr><td class="cmd">.gitignore</td><td class="desc">Excludes secrets (<code>.env</code>, <code>CREDENTIALS.local.md</code>), OS/editor cruft, <code>__pycache__/</code>, logs/dumps.</td></tr>
+          <tr><td class="cmd">.gitattributes</td><td class="desc">Forces consistent line endings for <code>.sql</code>/<code>.yml</code>/<code>.md</code> across Windows/Unix.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Docs, secrets &amp; generated artifacts</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">CREDENTIALS.local.md</td><td class="desc">Unredacted local companion to <code>.env</code> — gitignored, never shared or committed.</td></tr>
+          <tr><td class="cmd">sql-test-01-cheatsheet.html / .pdf</td><td class="desc">This living document — every command actually typed, plus this file map.</td></tr>
+          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_3_5_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>).</td></tr>
+          <tr><td class="cmd">Local Postgres.session.sql</td><td class="desc">Empty scratch file created by a VS Code SQL client extension — not authored content.</td></tr>
+          <tr><td class="cmd">.vscode/, .pytest_cache/</td><td class="desc">Editor settings and pytest's own cache — auto-generated, not source.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   <section class="group" id="docker">
     <div class="group-head"><h2>Docker</h2><span class="group-tag">Container orchestration</span></div>
