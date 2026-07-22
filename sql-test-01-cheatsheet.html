@@ -269,7 +269,7 @@
   <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized — plus a project-wide file map, and a running list of Claude's own working commands. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
-    <div><dt>Covers</dt><dd>Build 1 (agent), Build 2 (pipeline), Build 2.5 (scratch workspace) &amp; Build 3 (semantic search) — all complete</dd></div>
+    <div><dt>Covers</dt><dd>Build 1 (agent), Build 2 (pipeline), Build 2.5 (scratch workspace), Build 3 (semantic search) &amp; Build 3.5 (docs RAG) — all complete</dd></div>
     <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop</dd></div>
     <div><dt>Databases</dt><dd>pg_local (appdb)</dd></div>
   </dl>
@@ -286,13 +286,14 @@
     <a href="#pandera">pandera</a>
     <a href="#pytest">pytest</a>
     <a href="#vector-search">pgvector &amp; embeddings</a>
+    <a href="#beautifulsoup">BeautifulSoup</a>
     <a href="#stdlib">Python stdlib</a>
     <a href="#claude-commands">Claude's Commands</a>
   </nav>
 
   <section class="group" id="files">
     <div class="group-head"><h2>Project Files</h2><span class="group-tag">What's actually in this folder</span></div>
-    <p class="group-note">A map of the project root as of Build 3.5's start — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
+    <p class="group-note">A map of the project root as of Build 3.5's completion — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
 
     <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">SQL migrations — run in order, numbered for reproducibility</p>
     <div class="ref-table-wrap">
@@ -309,6 +310,7 @@
           <tr><td class="cmd">007_agent_scratch_schema.sql</td><td class="desc">Build 2.5 Phase 1 — the <code>agent_scratch</code> schema and its grants.</td></tr>
           <tr><td class="cmd">008_add_summary_embedding.sql</td><td class="desc">Build 3 Phase 1 — adds <code>clean.allocations.summary_embedding vector(384)</code>.</td></tr>
           <tr><td class="cmd">009_add_summary_embedding_hnsw_index.sql</td><td class="desc">Build 3 follow-up — HNSW index on <code>summary_embedding</code> for indexed similarity search.</td></tr>
+          <tr><td class="cmd">010_docs_chunks_schema.sql</td><td class="desc">Build 3.5 Phase 1 — the <code>docs.chunks</code> table (<code>vector(384)</code>) for the documentation RAG corpus.</td></tr>
           <tr><td class="cmd">schema_mssql.sql</td><td class="desc">The SQL Server counterpart to <code>001_schema.sql</code> — same <code>appdb</code> shape, T-SQL dialect.</td></tr>
           <tr><td class="cmd">seed_mssql.sql</td><td class="desc">SQL Server counterpart to <code>002_seed.sql</code>.</td></tr>
         </tbody>
@@ -353,6 +355,19 @@
       </table>
     </div>
 
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — documentation RAG (Build 3.5)</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">extract_doc_chunks.py</td><td class="desc">Parses this project's own docs into embeddable chunks — four extraction shapes across two design eras, plus narrative prose.</td></tr>
+          <tr><td class="cmd">embed_chunks.py</td><td class="desc">Idempotent backfill for <code>docs.chunks</code> — same <code>WHERE embedding IS NULL</code> pattern as <code>embed_summaries.py</code>.</td></tr>
+          <tr><td class="cmd">search_chunks.py</td><td class="desc">Standalone script proving raw similarity search over the docs corpus works, before any agent wiring.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — early sanity checks (pre-Build-1)</p>
     <div class="ref-table-wrap">
       <table class="ref">
@@ -374,6 +389,7 @@
           <tr><td class="cmd">test_data_quality.py</td><td class="desc">Build 2 — <code>pandera</code> schema checks against <code>clean.allocations</code>.</td></tr>
           <tr><td class="cmd">test_agent_scratch_boundary.py</td><td class="desc">Build 2.5 — role-boundary tests plus the <code>MAX_SCRATCH_TABLES</code> cap test.</td></tr>
           <tr><td class="cmd">test_semantic_search.py</td><td class="desc">Build 3 — embedding coverage, relevant/irrelevant query behavior, HNSW index existence.</td></tr>
+          <tr><td class="cmd">test_docs_search.py</td><td class="desc">Build 3.5 — same shape as <code>test_semantic_search.py</code>, applied to the documentation corpus.</td></tr>
         </tbody>
       </table>
     </div>
@@ -386,7 +402,7 @@
         <tbody>
           <tr><td class="cmd">docker-compose.yml</td><td class="desc">Defines <code>pg_local</code>, <code>mssql_local</code>, and the <code>agent</code> service; Postgres image is <code>pgvector/pgvector:pg17</code>.</td></tr>
           <tr><td class="cmd">Dockerfile</td><td class="desc">Builds the <code>agent</code> service's image.</td></tr>
-          <tr><td class="cmd">requirements.txt</td><td class="desc">Pinned Python dependencies — <code>anthropic</code>, <code>psycopg</code>, <code>pgvector</code>, <code>sentence-transformers</code>, <code>pandas</code>, <code>pandera</code>, <code>pytest</code>, <code>python-dotenv</code>.</td></tr>
+          <tr><td class="cmd">requirements.txt</td><td class="desc">Pinned Python dependencies — <code>anthropic</code>, <code>beautifulsoup4</code>, <code>psycopg</code>, <code>pgvector</code>, <code>sentence-transformers</code>, <code>pandas</code>, <code>pandera</code>, <code>pytest</code>, <code>python-dotenv</code>.</td></tr>
           <tr><td class="cmd">.env</td><td class="desc">Real local secrets (DB passwords) — gitignored, never committed.</td></tr>
           <tr><td class="cmd">.env.example</td><td class="desc">Template shape of <code>.env</code> with placeholder values, safe to commit.</td></tr>
           <tr><td class="cmd">.gitignore</td><td class="desc">Excludes secrets (<code>.env</code>, <code>CREDENTIALS.local.md</code>), OS/editor cruft, <code>__pycache__/</code>, logs/dumps.</td></tr>
@@ -403,7 +419,8 @@
         <tbody>
           <tr><td class="cmd">CREDENTIALS.local.md</td><td class="desc">Unredacted local companion to <code>.env</code> — gitignored, never shared or committed.</td></tr>
           <tr><td class="cmd">sql-test-01-cheatsheet.html / .pdf</td><td class="desc">This living document — every command actually typed, plus this file map.</td></tr>
-          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_3_5_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>).</td></tr>
+          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_3_5_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
+          <tr><td class="cmd">PROJECT_DIAGRAMS/project-overview.html</td><td class="desc">Build 3.5 — a seed document written to answer whole-project overview questions, so the docs-RAG corpus has something to match against.</td></tr>
           <tr><td class="cmd">Local Postgres.session.sql</td><td class="desc">Empty scratch file created by a VS Code SQL client extension — not authored content.</td></tr>
           <tr><td class="cmd">.vscode/, .pytest_cache/</td><td class="desc">Editor settings and pytest's own cache — auto-generated, not source.</td></tr>
         </tbody>
@@ -423,6 +440,7 @@
           <tr><td class="cmd">docker ps</td><td class="desc">List running containers — the first check when a connection unexpectedly fails.</td></tr>
           <tr><td class="cmd">docker exec -it pg_local psql -U devuser -d appdb</td><td class="desc">Open a <b>live, interactive</b> psql session inside the Postgres container.</td></tr>
           <tr><td class="cmd">Get-Content file.sql -Raw | docker exec -i pg_local psql -U devuser -d appdb</td><td class="desc">Run a whole .sql file inside the container <b>non-interactively</b>, PowerShell-style — <code>&lt;</code> redirection doesn't exist in PowerShell, so the file gets piped in instead. (Bash/cmd would use <code>docker exec -i ... &lt; file.sql</code>.)</td></tr>
+          <tr><td class="cmd">docker exec pg_local psql -U devuser -d appdb -c "SELECT ..."</td><td class="desc">Run a single one-off SQL command non-interactively, no piped file needed. <b>No <code>-it</code></b> — that flag requires a real terminal attached to stdin and fails with <code>"cannot attach stdin to a TTY-enabled container"</code> in non-interactive contexts (e.g. run from a script/tool rather than a live shell).</td></tr>
           <tr><td class="cmd">docker compose down -v</td><td class="desc">Stop everything and delete volumes too — next start re-initializes DB passwords from .env. Used deliberately, not casually.</td></tr>
         </tbody>
       </table>
@@ -615,6 +633,24 @@
     </div>
   </section>
 
+  <section class="group" id="beautifulsoup">
+    <div class="group-head"><h2>Python — BeautifulSoup</h2><span class="group-tag">HTML parsing &amp; chunk extraction</span></div>
+    <p class="group-note">Turning this project's own handoff briefs/cheat sheet into embeddable chunks — <code>extract_doc_chunks.py</code>, Build 3.5.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">from bs4 import BeautifulSoup</td><td class="desc">The HTML parsing library — reads real markup instead of treating a doc as one flat blob of text.</td></tr>
+          <tr><td class="cmd">BeautifulSoup(html_text, "html.parser")</td><td class="desc">Parses a string of HTML into a navigable tree, using Python's built-in parser (no extra system dependency like <code>lxml</code>).</td></tr>
+          <tr><td class="cmd">soup.select(".callout")</td><td class="desc">CSS-selector search — returns every element matching a class/tag, the same selector syntax as the CSS already written for these docs.</td></tr>
+          <tr><td class="cmd">soup.select_one(".fn")</td><td class="desc">Like <code>select</code>, but returns just the first match (or <code>None</code>) — used when a chunk has at most one label element.</td></tr>
+          <tr><td class="cmd">element.get_text(" ", strip=True)</td><td class="desc">Pulls plain text out of an element and its children, joining pieces with a space and trimming whitespace — turns nested markup into one clean string to embed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="group" id="stdlib">
     <div class="group-head"><h2>Python — standard library</h2><span class="group-tag">csv · os · dotenv</span></div>
     <p class="group-note">No extra install required — these ship with Python itself, or python-dotenv.</p>
@@ -647,13 +683,14 @@
           <tr><td class="cmd">pdfinfo file.pdf | grep -i pages</td><td class="desc">Quick page-count check before rasterizing — confirms whether a doc paginated the way it was expected to.</td></tr>
           <tr><td class="cmd">git commit -m "$(cat &lt;&lt;'EOF' ... EOF)"</td><td class="desc">Heredoc commit-message convention — explains <b>why</b> a change happened in the body, and avoids hand-escaping quotes/newlines. Every commit message ends with a <code>Co-Authored-By</code> line.</td></tr>
           <tr><td class="cmd">Image.open(path).convert("RGB").getpixel((x, y))</td><td class="desc">Samples an exact on-screen pixel's RGB value with Pillow — confirms a color rendered exactly as CSS specified, rather than trusting a visual impression at small/compressed scale. Caught a false alarm (anti-aliasing fringe mistaken for a real color bug) during this cheat sheet's own verification.</td></tr>
+          <tr><td class="cmd">WebFetch(url="claude.ai/code/artifact/&lt;uuid&gt;", ...)</td><td class="desc">For Artifacts the user owns, this returns full raw HTML rather than the usual markdown conversion — used to recover Build 1's two handoff briefs, which had only ever been published as Artifacts, never saved as local files.</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <footer>
-    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 3, including its follow-up hardening pass (idempotent re-embedding, HNSW index) — all complete. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 3.5 (documentation RAG agent) — all complete, including Build 3's follow-up hardening pass (idempotent re-embedding, HNSW index). Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
   </footer>
 
 </div>
