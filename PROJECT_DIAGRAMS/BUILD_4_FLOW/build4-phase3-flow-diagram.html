@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 4, Phase 3 Flow — The Metrics Rollup</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #F3F6F7; }
+  body { display: flex; justify-content: center; padding: 32px 16px 56px; }
+  .frame { width: 100%; max-width: 700px; }
+  svg { display: block; width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<div class="frame">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 1300" width="680" height="1300" role="img" aria-labelledby="title desc">
+  <title id="title">Build 4, Phase 3 flow: the metrics rollup</title>
+  <desc id="desc">Flowchart: start, a checkpoint confirming Phase 2's eval harness is passing and committed, deciding what to measure (tool-usage frequency, average turns per question, error rate), writing a metrics rollup script that parses the tool-call log into per-tool and per-turn aggregates, computing the three core metrics, printing a plain-text metrics report, a decision checking whether the numbers look sane with no obvious anomalies, a verify step confirming the report was reviewed by hand and spot-checked against the raw log, then continue to Build 4 complete.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #101827; }
+    .heading    { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 22px; font-weight: 600; }
+    .subheading { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 11px; fill: #7C8894; letter-spacing: 0.12em; }
+    .step-label { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; }
+    .step-desc  { font-size: 13px; fill: #4B5768; }
+    .step-mono  { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px; fill: #7C8894; }
+    .decision-title { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; text-anchor: middle; }
+    .decision-q     { font-size: 12.5px; fill: #B5502B; text-anchor: middle; font-weight: 600; }
+    .legend-text { font-size: 11px; fill: #7C8894; }
+    .rect-node   { fill: #FFFFFF; stroke: #B9C4C7; stroke-width: 1.5; }
+    .diamond-node{ fill: #F7E9E2; stroke: #B5502B; stroke-width: 1.5; }
+    .pill-node   { fill: #0B5158; }
+    .pill-text   { fill: #F3F9F9; font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13.5px; font-weight: 700; text-anchor: middle; letter-spacing: 0.04em; }
+    .badge       { fill: #0B5158; }
+    .badge-text  { fill: #F3F9F9; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+    .arrow-line  { stroke: #B9C4C7; stroke-width: 2; }
+    .arrow-head  { fill: #B9C4C7; }
+  </style>
+
+  <rect x="0" y="0" width="680" height="1300" fill="#F3F6F7"/>
+
+  <text x="340" y="40" class="heading" text-anchor="middle">Build 4, Phase 3 — The Metrics Rollup</text>
+  <text x="340" y="60" class="subheading" text-anchor="middle">OBSERVABILITY &amp; EVAL HARNESS · BUILD 4</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="120" y="76" width="20" height="12" rx="6" class="pill-node"/>
+    <text x="146" y="86" class="legend-text">start / end</text>
+    <polygon points="234,73 250,82 234,91 218,82" class="diamond-node"/>
+    <text x="256" y="86" class="legend-text">checkpoint</text>
+    <rect x="330" y="76" width="20" height="12" rx="3" class="rect-node"/>
+    <text x="356" y="86" class="legend-text">step</text>
+    <line x1="410" y1="82" x2="440" y2="82" class="arrow-line"/>
+    <polygon points="446,82 438,78 438,86" class="arrow-head"/>
+    <text x="452" y="86" class="legend-text">flow</text>
+  </g>
+
+  <!-- connectors -->
+  <g>
+    <line class="arrow-line" x1="340" y1="170" x2="340" y2="210"/>
+    <polygon class="arrow-head" points="340,216 334,206 346,206"/>
+
+    <line class="arrow-line" x1="340" y1="346" x2="340" y2="386"/>
+    <polygon class="arrow-head" points="340,392 334,382 346,382"/>
+
+    <line class="arrow-line" x1="340" y1="470" x2="340" y2="510"/>
+    <polygon class="arrow-head" points="340,516 334,506 346,506"/>
+
+    <line class="arrow-line" x1="340" y1="594" x2="340" y2="634"/>
+    <polygon class="arrow-head" points="340,640 334,630 346,630"/>
+
+    <line class="arrow-line" x1="340" y1="718" x2="340" y2="758"/>
+    <polygon class="arrow-head" points="340,764 334,754 346,754"/>
+
+    <line class="arrow-line" x1="340" y1="842" x2="340" y2="882"/>
+    <polygon class="arrow-head" points="340,888 334,878 346,878"/>
+
+    <line class="arrow-line" x1="340" y1="1018" x2="340" y2="1058"/>
+    <polygon class="arrow-head" points="340,1064 334,1054 346,1054"/>
+
+    <line class="arrow-line" x1="340" y1="1142" x2="340" y2="1182"/>
+    <polygon class="arrow-head" points="340,1188 334,1178 346,1178"/>
+  </g>
+
+  <!-- Start pill -->
+  <g>
+    <rect class="pill-node" x="180" y="110" width="320" height="60" rx="30"/>
+    <text class="pill-text" x="340" y="145">START — BUILD 4, PHASE 3</text>
+  </g>
+
+  <!-- Decision: Phase 2 checkpoint -->
+  <g>
+    <polygon class="diamond-node" points="340,216 500,281 340,346 180,281"/>
+    <circle class="badge" cx="96" cy="281" r="16"/>
+    <text class="badge-text" x="96" y="282">0</text>
+    <text class="decision-title" x="340" y="275">Phase 2 check</text>
+    <text class="decision-q" x="340" y="296">eval harness passing &amp; committed?</text>
+  </g>
+
+  <!-- Step 1 -->
+  <g>
+    <rect class="rect-node" x="60" y="392" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="428" r="16"/>
+    <text class="badge-text" x="96" y="429">1</text>
+    <text class="step-label" x="126" y="422">Decide what to measure</text>
+    <text class="step-mono" x="126" y="444">tool-usage frequency, average turns per question, error rate</text>
+  </g>
+
+  <!-- Step 2 -->
+  <g>
+    <rect class="rect-node" x="60" y="516" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="552" r="16"/>
+    <text class="badge-text" x="96" y="553">2</text>
+    <text class="step-label" x="126" y="546">Write a metrics rollup script</text>
+    <text class="step-mono" x="126" y="568">parses logs/tool_calls.jsonl into per-tool and per-turn aggregates</text>
+  </g>
+
+  <!-- Step 3 -->
+  <g>
+    <rect class="rect-node" x="60" y="640" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="676" r="16"/>
+    <text class="badge-text" x="96" y="677">3</text>
+    <text class="step-label" x="126" y="670">Compute the three core metrics</text>
+    <text class="step-desc" x="126" y="692">per-tool call counts, average turns to an answer, and overall error rate</text>
+  </g>
+
+  <!-- Step 4 -->
+  <g>
+    <rect class="rect-node" x="60" y="764" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="800" r="16"/>
+    <text class="badge-text" x="96" y="801">4</text>
+    <text class="step-label" x="126" y="794">Print a metrics report</text>
+    <text class="step-mono" x="126" y="816">plain text summary, not a Grafana-style dashboard</text>
+  </g>
+
+  <!-- Decision: metrics results -->
+  <g>
+    <polygon class="diamond-node" points="340,888 500,953 340,1018 180,953"/>
+    <circle class="badge" cx="96" cy="953" r="16"/>
+    <text class="badge-text" x="96" y="954">5</text>
+    <text class="decision-title" x="340" y="947">Metrics check</text>
+    <text class="decision-q" x="340" y="968">no obvious anomalies in the numbers?</text>
+  </g>
+
+  <!-- Step 6 -->
+  <g>
+    <rect class="rect-node" x="60" y="1064" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="1100" r="16"/>
+    <text class="badge-text" x="96" y="1101">6</text>
+    <text class="step-label" x="126" y="1094">Verify</text>
+    <text class="step-desc" x="126" y="1116">review the report by hand, spot-check one stat against the raw log</text>
+  </g>
+
+  <!-- End pill -->
+  <g>
+    <rect class="pill-node" x="180" y="1188" width="320" height="66" rx="33"/>
+    <text class="pill-text" x="340" y="1218">BUILD 4</text>
+    <text class="pill-text" x="340" y="1238">COMPLETE</text>
+  </g>
+</svg>
+</div>
+</body>
+</html>
