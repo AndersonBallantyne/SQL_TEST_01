@@ -208,6 +208,14 @@ log_tool_call(block.name, block.input, result, latency_ms, turn, question_id)
     <p><b>Verified live</b> against <code>"Why does agent_scratch have two separate database roles?"</code> — the model called <code>search_docs</code> twice (a broad first query, then a sharper reformulation once the first results proved too general) before synthesizing a correct answer. Every log entry checked out: <code>timestamp</code>/<code>turn</code>/<code>tool_name</code>/<code>input</code>/<code>output</code>/<code>error: null</code>/<code>latency_ms</code> all present and correct.</p>
 
     <div class="callout good"><b>A genuinely new observability finding, surfaced only because this logging now existed:</b> the first <code>search_docs</code> call in a process takes ~2.4-3.0 seconds; the second call in the same run takes ~33ms — a ~90x difference, the one-time cost of lazily loading the embedding model into its module-level cache. Visible latency data that print-only logging never exposed — a concrete example of Phase 1 paying for itself before Phase 2 even started.</div>
+
+    <pre class="code"><span class="fn">Sample — real logs/tool_calls.jsonl lines reproducing this same finding (output truncated for length)</span><code>{"timestamp": "2026-07-23T13:27:28.628848", "question_id": "1c2ed444016c", "turn": 1,
+ "tool_name": "search_docs", "input": {"query_text": "agent_scratch database roles..."},
+ "output": [...], "error": null, "latency_ms": 2980.59}
+{"timestamp": "2026-07-23T13:27:29.979725", "question_id": "1c2ed444016c", "turn": 2,
+ "tool_name": "search_docs", "input": {"query_text": "appdb_reader appdb_agent_writer..."},
+ "output": [...], "error": null, "latency_ms": 109.97}</code></pre>
+    <p class="section-note" style="margin:-4px 0 18px;">Same <code>question_id</code>, turn 1 vs. turn 2: 2980.59ms &#8594; 109.97ms (~27x here) - the exact multiplier varies run to run, but the lazy-load pattern reproduces consistently on every fresh process.</p>
   </section>
 
   <section class="doc-section" id="phase2">
@@ -260,6 +268,49 @@ log_tool_call(block.name, block.input, result, latency_ms, turn, question_id)
     <div class="callout"><b><code>run_eval.py</code> generalized to accept multiple case files:</b> <code>sys.argv[1]</code> (default <code>"eval_cases"</code>) selects which module's <code>EVAL_CASES</code> to run — <code>python run_eval.py eval_cases_round2</code> runs the new file with no runner edits. Also hardened against numeric-formatting variance: <code>answer_lower</code> strips commas before the keyword check, confirmed necessary live when a round-2 answer used <code>"1,243"</code> against an expected keyword of <code>"1243"</code>.</div>
 
     <p><b>Result: 7/7 and 5/5 passing</b> — 12/12 across both rounds, after the turn-budget and keyword-robustness fixes above.</p>
+
+    <pre class="code"><span class="fn">Sample — real EVAL REPORT output, round 1 (3 of 7 cases shown; full output in logs/eval_round1_output.log)</span><code>[PASS] Why does agent_scratch have two separate database roles?
+  tools called: ['search_docs'] (tool_ok=True)
+  keywords_ok: True
+  answer: Based on the project documentation, **agent_scratch has two separate
+  database roles for permission isolation and scope control**: 1. `appdb_agent_writer`...
+
+[PASS] List all the SQL migration files used in this project.
+  tools called: ['run_sql_query'] (tool_ok=True)
+  keywords_ok: True
+  answer: Based on the project's cheat sheet, here are all the SQL migration files
+  used in this project: ## PostgreSQL Migrations 1. **001_schema.sql** - Original...
+
+[PASS] What's the total revenue from all orders?
+  tools called: ['describe_table', 'list_tables', 'run_sql_query'] (tool_ok=True)
+  keywords_ok: True
+  answer: The **total revenue from all orders is $438.48**.
+
+======================================================================
+7/7 passed
+======================================================================</code></pre>
+
+    <pre class="code"><span class="fn">Sample — real EVAL REPORT output, round 2 (3 of 5 cases shown; full output in logs/eval_round2_output.log)</span><code>[PASS] Which named patron department has the most recorded allocations?
+  tools called: ['describe_table', 'list_tables', 'run_sql_query'] (tool_ok=True)
+  keywords_ok: True
+  answer: **The named patron department with the most recorded allocations is ILLU
+  with 128 allocations.**
+
+[PASS] How many allocations were never renewed (a renewal_count of zero)?
+  tools called: ['describe_table', 'list_tables', 'run_sql_query'] (tool_ok=True)
+  keywords_ok: True
+  answer: **Answer: There are 1,243 allocations that were never renewed
+  (renewal_count = 0).**
+
+[PASS] Is there any scuba diving equipment among the allocations?
+  tools called: ['search_summaries'] (tool_ok=True)
+  keywords_ok: True
+  answer: Based on the semantic search results, there does not appear to be any
+  scuba diving equipment among the allocations in the database...
+
+======================================================================
+5/5 passed
+======================================================================</code></pre>
   </section>
 
   <section class="doc-section" id="phase3">
@@ -294,6 +345,39 @@ log_tool_call(block.name, block.input, result, latency_ms, turn, question_id)
 
     <div class="callout good"><b>Verified live, and it surfaced something worth explaining: 52 tool calls across 21 questions, not the ~14 expected.</b> Investigation traced it to two independent, legitimate invocations of the 7-case round — one run manually by the user, one run separately via this session — both appending to the same shared log, plus the 5-case round once and the 2 earlier verification questions (7+7+5+2 = 21). Not a bug: the report is correctly reflecting exactly what happened. It's also a quiet confirmation that <code>question_id</code> holds up even across genuinely separate process invocations sharing one log file — every question's turns grouped and averaged cleanly, with zero cross-contamination between the two runs. (Sequential, not concurrent, so this doesn't fully exercise the Build 5/6 scenario the field was added for — but it's a good sign nothing about the grouping is fragile.)</div>
 
+    <pre class="code"><span class="fn">Sample — full real console output from a single metrics_rollup.py run (post follow-up: includes Trend and Log rotation, not part of Phase 3's original scope)</span><code>======================================================================
+METRICS REPORT
+======================================================================
+
+Total tool calls logged: 52
+Total questions asked:   21
+
+--- Tool-usage frequency ---
+  run_sql_query: 16
+  list_tables: 14
+  describe_table: 13
+  search_docs: 4
+  search_summaries: 3
+  save_dataframe: 2
+
+--- Average turns per question ---
+  2.29
+
+--- Error rate ---
+  1/52 calls errored (1.9%)
+
+--- Trend vs previous run ---
+  Previous run: 2026-07-23T22:21:11.629534+00:00
+  Total calls:      52 -> 52 (+0)
+  Total questions:  21 -> 21 (+0)
+  Avg turns/question: 2.29 -> 2.29 (+0.00)
+  Error rate:       1.9% -> 1.9% (+0.0%)
+
+--- Log rotation ---
+  52/1000 lines - no rotation needed yet.
+
+======================================================================</code></pre>
+
     <table class="ref-table">
       <thead><tr><th>Metric</th><th>Result (52 calls / 21 questions)</th></tr></thead>
       <tbody>
@@ -315,12 +399,43 @@ log_tool_call(block.name, block.input, result, latency_ms, turn, question_id)
       <li><b>Phase 3 diagram amendment</b><span class="detail">Re-verified via both <code>--screenshot</code> and <code>--print-to-pdf</code> + <code>pdftoppm</code> after Step 2's text changed — no overflow in either render.</span></li>
       <li><b>Full pytest suite, post project-wide comment sweep</b><span class="detail">19/19 still passing — confirms the comment-only pass across every project file (tools.py, the eval harness, Build 2/3/3.5 scripts, all 4 test files) changed no behavior.</span></li>
     </ul>
+
+    <pre class="code"><span class="fn">Sample — real pytest -v output (5 of 19 tests shown)</span><code>test_agent_scratch_boundary.py::test_writer_has_no_elevated_privileges PASSED [  5%]
+test_agent_scratch_boundary.py::test_scratch_table_cap_blocks_new_tables_but_not_existing_ones PASSED [ 26%]
+test_data_quality.py::test_clean_department_has_real_nulls PASSED        [ 42%]
+test_docs_search.py::test_threshold_regression_guard PASSED              [ 68%]
+test_semantic_search.py::test_hnsw_index_exists_on_summary_embedding PASSED [ 78%]
+
+============================= 19 passed in 11.18s =============================</code></pre>
   </section>
 
   <section class="doc-section" id="limitations">
     <h2>Known Limitations &amp; Open Items</h2>
-    <div class="callout warn"><b><code>metrics_rollup.py</code> is a one-shot snapshot, not a tracked time series.</b> Every run reports on whatever's currently in <code>logs/tool_calls.jsonl</code> in full — there's no historical rollup-over-rollup comparison, no "how has error rate trended since last week." Fine at this project's scale; would need real persistence (its own table, or timestamped report files) to track trends.</div>
-    <div class="callout warn"><b>Log growth is unbounded — no rotation or archival strategy beyond this build's one manual archive.</b> <code>logs/tool_calls.jsonl</code> will keep growing indefinitely across every future session; nothing rotates or trims it automatically.</div>
+    <div class="callout good"><b>Resolved, 2026-07-23 — <code>metrics_rollup.py</code> now persists a tracked time series, not just a one-shot snapshot.</b> A new migration (<code>011_metrics_history_schema.sql</code>) adds <code>observability.metrics_history</code> — a dedicated schema, deliberately separate from <code>agent_scratch</code>, since this is written by a human-run maintenance script connecting as the admin role (same pattern as <code>ingest.py</code>/<code>embed_summaries.py</code>), not the agent itself at runtime. Each run inserts one row (<code>total_calls</code>, <code>total_questions</code>, <code>avg_turns_per_question</code>, <code>error_count</code>, <code>error_rate</code>, <code>tool_usage</code> as <code>JSONB</code>) and, critically, also queries the previous row and prints an explicit "Trend vs previous run" delta — storage alone wouldn't have answered "how has error rate trended since last week" without something surfacing the comparison. Verified live across 4 real runs, including catching and fixing a real cosmetic bug along the way: a <code>Decimal</code>→<code>float</code> precision mismatch produced a tiny epsilon that displayed as <code>-0.00</code> for a truly unchanged value, misleadingly reading as a regression — fixed by rounding to display precision <i>before</i> the zero-check, not after (rounding after checking never catches an epsilon that isn't exactly zero).</div>
+
+    <pre class="code"><span class="fn">Sample — observability.metrics_history, real rows from this session's verification (psql)</span><code> id |            run_at             | total_calls | avg_turns_per_question | error_rate
+----+-------------------------------+-------------+------------------------+------------
+  1 | 2026-07-23 22:19:59.07071+00  |          52 |                   2.29 |     0.0192
+  2 | 2026-07-23 22:20:08.781081+00 |          52 |                   2.29 |     0.0192
+  3 | 2026-07-23 22:20:45.281438+00 |          52 |                   2.29 |     0.0192
+  4 | 2026-07-23 22:21:11.629534+00 |          52 |                   2.29 |     0.0192
+(4 rows)</code></pre>
+
+    <pre class="code"><span class="fn">Sample — metrics_rollup.py's "Trend vs previous run" section, real output</span><code>--- Trend vs previous run ---
+  Previous run: 2026-07-23T22:21:11.629534+00:00
+  Total calls:      52 -> 52 (+0)
+  Total questions:  21 -> 21 (+0)
+  Avg turns/question: 2.29 -> 2.29 (+0.00)
+  Error rate:       1.9% -> 1.9% (+0.0%)</code></pre>
+
+    <div class="callout good"><b>Resolved, 2026-07-23 — <code>metrics_rollup.py</code> now rotates the log automatically instead of letting it grow forever.</b> A <code>LOG_ROTATION_THRESHOLD_LINES</code> constant (1000 - an arbitrary safety cap, not a real capacity limit, same spirit as <code>MAX_SCRATCH_TABLES</code>) is checked after this run's rollup is already persisted to <code>observability.metrics_history</code> - rotation only ever happens once the data it would discard is already durably captured elsewhere, so nothing analytically valuable is lost. Past the threshold, <code>logs/tool_calls.jsonl</code> is renamed to a timestamped archive (<code>logs/tool_calls.&lt;YYYYMMDD-HHMMSS&gt;.jsonl</code>); <code>logging_utils.py</code> already creates the file fresh on the next call with no changes needed there. Verified live with a temporarily-lowered threshold (monkeypatch-style override, same pattern as the <code>MAX_SCRATCH_TABLES</code> boundary test) rather than generating 1000 real log lines to trigger it - confirmed the rotation fires, archives correctly, and the real log/history data was restored afterward rather than left in an artificially-rotated state.</div>
+
+    <pre class="code"><span class="fn">Sample — real output, both outcomes observed this session</span><code>--- Log rotation ---
+  52/1000 lines - no rotation needed yet.
+
+--- Log rotation ---   (LOG_ROTATION_THRESHOLD_LINES temporarily overridden to 10, to exercise the path)
+  52 lines >= 10 threshold - archived to logs/tool_calls.20260723-153329.jsonl
+  logs/tool_calls.jsonl will start fresh on the next tool call.</code></pre>
     <div class="callout warn"><b>The turn-budget/enumeration fix depends on the model actually following the system-prompt steer each time — no hard guarantee.</b> Same category of limitation Build 3.5 already flagged for its own enumeration fix; worth watching if this pattern gets exercised more heavily later.</div>
     <div class="callout good"><b><code>question_id</code>'s concurrency-safety is currently unexercised, not unverified-by-design.</b> Every real test this build ran was sequential (one process, one invocation at a time, or two separate sequential invocations sharing a log). The design is sound for genuine concurrency (a fresh random ID per call, no shared mutable state), but nothing in this build actually ran two <code>ask_agent()</code> calls at the same literal moment — that real test only becomes possible once Build 5 or Build 6 exists.</div>
   </section>
@@ -336,6 +451,7 @@ log_tool_call(block.name, block.input, result, latency_ms, turn, question_id)
         <tr><td>New dependency</td><td class="mono">none (uuid is stdlib)</td></tr>
         <tr><td>Diagram folder</td><td class="mono">PROJECT_DIAGRAMS/BUILD_4_FLOW/ — phase1/phase2/phase3 flow diagrams, this brief</td></tr>
         <tr><td>Role used</td><td class="mono">no new DB roles this build — appdb_reader / appdb_agent_writer, unchanged from Build 2.5</td></tr>
+        <tr><td>New SQL (follow-up, 2026-07-23)</td><td class="mono">011_metrics_history_schema.sql — observability.metrics_history, addressing the one-shot-snapshot limitation above</td></tr>
         <tr><td>Eval suite total</td><td class="mono">12 cases across 2 rounds, 12/12 passing</td></tr>
         <tr><td>Project test suite</td><td class="mono">19/19 passing (unchanged from Build 3.5 — this build's tests are the eval harness, deliberately separate from pytest)</td></tr>
       </tbody>
