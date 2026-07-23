@@ -269,7 +269,7 @@
   <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized — plus a project-wide file map, and a running list of Claude's own working commands. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
-    <div><dt>Covers</dt><dd>Build 1 (agent), Build 2 (pipeline), Build 2.5 (scratch workspace), Build 3 (semantic search) &amp; Build 3.5 (docs RAG) — all complete</dd></div>
+    <div><dt>Covers</dt><dd>Build 1 (agent), Build 2 (pipeline), Build 2.5 (scratch workspace), Build 3 (semantic search), Build 3.5 (docs RAG) &amp; Build 4 (observability &amp; eval harness) — all complete</dd></div>
     <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop</dd></div>
     <div><dt>Databases</dt><dd>pg_local (appdb)</dd></div>
   </dl>
@@ -293,7 +293,7 @@
 
   <section class="group" id="files">
     <div class="group-head"><h2>Project Files</h2><span class="group-tag">What's actually in this folder</span></div>
-    <p class="group-note">A map of the project root as of Build 3.5's completion — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
+    <p class="group-note">A map of the project root as of Build 4's completion — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
 
     <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">SQL migrations — run in order, numbered for reproducibility</p>
     <div class="ref-table-wrap">
@@ -323,8 +323,22 @@
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">agent.py</td><td class="desc">The hand-built tool-use loop — calls the Anthropic API, dispatches tool calls, enforces <code>MAX_TOOL_TURNS</code>.</td></tr>
-          <tr><td class="cmd">tools.py</td><td class="desc">Every tool the agent can call: <code>run_sql_query</code>, <code>list_tables</code>, <code>describe_table</code>, <code>save_dataframe</code>, <code>search_summaries</code>.</td></tr>
+          <tr><td class="cmd">agent.py</td><td class="desc">The hand-built tool-use loop, wrapped in a callable <code>ask_agent()</code> since Build 4 — calls the Anthropic API, dispatches tool calls, enforces <code>MAX_TOOL_TURNS</code>, tags every logged call with a <code>question_id</code>.</td></tr>
+          <tr><td class="cmd">tools.py</td><td class="desc">Every tool the agent can call: <code>run_sql_query</code>, <code>list_tables</code>, <code>describe_table</code>, <code>save_dataframe</code>, <code>search_summaries</code>, <code>search_docs</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — observability &amp; eval harness (Build 4)</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">logging_utils.py</td><td class="desc">Structured JSON Lines tool-call logging — one line per call: timestamp, <code>question_id</code>, turn, tool name, input, output, error, latency.</td></tr>
+          <tr><td class="cmd">eval_cases.py / eval_cases_round2.py</td><td class="desc">Fixed sets of test questions with an expected tool and expected answer keywords — run end-to-end against the live agent, not tested in isolation.</td></tr>
+          <tr><td class="cmd">run_eval.py</td><td class="desc">Drives every case through <code>ask_agent()</code>, checks the tool-call log and answer text, reports pass/fail per question. Accepts an optional case-module argument.</td></tr>
+          <tr><td class="cmd">metrics_rollup.py</td><td class="desc">Plain-text report over the tool-call log — tool-usage frequency, average turns per question (grouped by <code>question_id</code>), error rate.</td></tr>
         </tbody>
       </table>
     </div>
@@ -419,8 +433,9 @@
         <tbody>
           <tr><td class="cmd">CREDENTIALS.local.md</td><td class="desc">Unredacted local companion to <code>.env</code> — gitignored, never shared or committed.</td></tr>
           <tr><td class="cmd">sql-test-01-cheatsheet.html / .pdf</td><td class="desc">This living document — every command actually typed, plus this file map.</td></tr>
-          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_3_5_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
+          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_4_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
           <tr><td class="cmd">PROJECT_DIAGRAMS/project-overview.html</td><td class="desc">Build 3.5 — a seed document written to answer whole-project overview questions, so the docs-RAG corpus has something to match against.</td></tr>
+          <tr><td class="cmd">logs/</td><td class="desc">Build 4 — gitignored directory holding <code>tool_calls.jsonl</code> (live, JSON Lines) and <code>tool_calls.pre-question-id.jsonl</code> (archived). Durable, queryable tool-call tracing — not a Postgres table, deliberately.</td></tr>
           <tr><td class="cmd">Local Postgres.session.sql</td><td class="desc">Empty scratch file created by a VS Code SQL client extension — not authored content.</td></tr>
           <tr><td class="cmd">.vscode/, .pytest_cache/</td><td class="desc">Editor settings and pytest's own cache — auto-generated, not source.</td></tr>
         </tbody>
@@ -664,6 +679,14 @@
           <tr><td class="cmd">os.environ["KEY"]</td><td class="desc">Read a required env var — raises immediately if it's missing, rather than continuing with a silent gap.</td></tr>
           <tr><td class="cmd">os.environ.get("KEY", default)</td><td class="desc">Read an optional env var, falling back to a default (e.g. <code>POSTGRES_HOST</code> defaulting to <code>127.0.0.1</code> outside Docker).</td></tr>
           <tr><td class="cmd">load_dotenv(encoding="utf-8-sig")</td><td class="desc">Load .env into the process environment — BOM-safe, matching how Windows tools often save that file.</td></tr>
+          <tr><td class="cmd">json.dumps(entry, default=str)</td><td class="desc">Serialize a dict to a JSON string, falling back to <code>str()</code> for anything the default encoder can't handle (e.g. <code>datetime</code>) — how <code>logging_utils.py</code> keeps every logged line valid JSON regardless of what a tool result contains.</td></tr>
+          <tr><td class="cmd">open(path, "a") as f: f.write(json.dumps(entry) + "\n")</td><td class="desc">The JSON Lines pattern — one independent JSON object per line, appended, never rewriting the whole file. Read back with <code>json.loads(line)</code> per line, not one big <code>json.load()</code>.</td></tr>
+          <tr><td class="cmd">uuid.uuid4().hex[:12]</td><td class="desc">A short random ID with no coordination needed across processes — how each <code>ask_agent()</code> call gets a distinct <code>question_id</code>. Not a counter: a shared counter would itself need synchronization once calls can run concurrently.</td></tr>
+          <tr><td class="cmd">time.perf_counter()</td><td class="desc">A monotonic, high-resolution clock for measuring elapsed time — call before and after, subtract, multiply by 1000 for milliseconds. Not <code>time.time()</code>, which can jump if the system clock adjusts.</td></tr>
+          <tr><td class="cmd">sys.argv[1] if len(sys.argv) &gt; 1 else default</td><td class="desc">Read an optional CLI argument, falling back to a default — how <code>run_eval.py</code> picks which eval-case module to run.</td></tr>
+          <tr><td class="cmd">importlib.import_module(name)</td><td class="desc">Import a module by its name as a string, decided at runtime — lets <code>run_eval.py</code> load <code>eval_cases</code> or <code>eval_cases_round2</code> (or any future round) with no if/elif import chain.</td></tr>
+          <tr><td class="cmd">from collections import Counter; Counter(items).most_common()</td><td class="desc">Count occurrences of each distinct value and list them ranked most-to-least frequent — <code>metrics_rollup.py</code>'s tool-usage frequency.</td></tr>
+          <tr><td class="cmd">n = len(open(path).readlines()); ... ; f.readlines()[n:]</td><td class="desc">Checkpoint-based tailing — count existing lines before an action, then re-read only the lines appended after. How <code>run_eval.py</code> isolates one <code>ask_agent()</code> call's new log entries without <code>ask_agent()</code> needing to return that data itself.</td></tr>
         </tbody>
       </table>
     </div>
@@ -684,13 +707,16 @@
           <tr><td class="cmd">git commit -m "$(cat &lt;&lt;'EOF' ... EOF)"</td><td class="desc">Heredoc commit-message convention — explains <b>why</b> a change happened in the body, and avoids hand-escaping quotes/newlines. Every commit message ends with a <code>Co-Authored-By</code> line.</td></tr>
           <tr><td class="cmd">Image.open(path).convert("RGB").getpixel((x, y))</td><td class="desc">Samples an exact on-screen pixel's RGB value with Pillow — confirms a color rendered exactly as CSS specified, rather than trusting a visual impression at small/compressed scale. Caught a false alarm (anti-aliasing fringe mistaken for a real color bug) during this cheat sheet's own verification.</td></tr>
           <tr><td class="cmd">WebFetch(url="claude.ai/code/artifact/&lt;uuid&gt;", ...)</td><td class="desc">For Artifacts the user owns, this returns full raw HTML rather than the usual markdown conversion — used to recover Build 1's two handoff briefs, which had only ever been published as Artifacts, never saved as local files.</td></tr>
+          <tr><td class="cmd">cygpath -m "$(pwd)/file.html"</td><td class="desc">Converts a Git Bash path to a Windows-style forward-slash path (<code>C:/...</code>) — necessary before building a <code>file:///</code> URL for headless Edge, since Git Bash's own <code>/c/...</code> path style isn't a valid Windows path and silently fails to load.</td></tr>
+          <tr><td class="cmd">git log --oneline &lt;hash&gt;^..&lt;hash&gt;</td><td class="desc">The exact commit range between two specific commits (the leading <code>^</code> makes it inclusive of the first one) — used to pin down a build's full commit range for its handoff brief, rather than <code>-n</code>'s "last N commits."</td></tr>
         </tbody>
       </table>
     </div>
+    <div class="callout" style="border:1px solid var(--rule); border-left:4px solid var(--accent); background:var(--surface); border-radius:8px; padding:14px 18px; margin:14px 0; font-size:13.5px;"><b>Headless Edge sometimes needs a command run twice.</b> The first invocation can exit with code 2 and no output file at all; an identical second call then succeeds. Observed repeatedly across both screenshot and print-to-pdf renders — not project-specific, a Windows/Chromium quirk. Always confirm the output file actually exists (and, for PDFs, that <code>pdfinfo</code> reports the expected page count) after a render — never assume the first call worked.</div>
   </section>
 
   <footer>
-    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 3.5 (documentation RAG agent) — all complete, including Build 3's follow-up hardening pass (idempotent re-embedding, HNSW index). Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 4 (agent observability &amp; eval harness) — all complete, including Build 3's follow-up hardening pass (idempotent re-embedding, HNSW index). Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
   </footer>
 
 </div>
