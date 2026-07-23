@@ -38,13 +38,13 @@ tools = [
     },
 
     {   "name": "describe_table",
-        "description": "Get the column names and data types for a specific table in appdb.",
+        "description": "Get the column names and data types for a specific table in appdb. Matches on the bare table name only - it searches across all schemas at once, so a schema-qualified name (e.g. 'docs.chunks') will never match and returns an empty list.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "table_name": {
                     "type": "string",
-                    "description": "The name of the table to describe."
+                    "description": "The bare name of the table to describe, without a schema prefix (e.g. 'chunks', not 'docs.chunks')."
                 }
             },
             "required": ["table_name"]
@@ -121,100 +121,103 @@ Anything you save with save_dataframe becomes a normal table you can rediscover 
 For questions about the general kind or theme of equipment (e.g. "camera gear", "audio equipment") rather than exact structured filters, use search_summaries instead of writing SQL yourself - it finds conceptually related items even without exact keyword matches.
 
 For questions about this project's own history, design decisions, or documentation, use search_docs; for "list every X" style questions about the documentation itself, prefer run_sql_query against docs.chunks instead.
+docs.chunks has columns chunk_id, source_file, chunk_text (plus an embedding column) - describe_table won't show these since it's a bare-name lookup, not schema-qualified. For "list every X" questions, don't guess keywords with ILIKE against chunk_text; instead query chunk_text WHERE source_file = 'sql-test-01-cheatsheet.html' - that file is this project's own living cheat sheet and already enumerates every file, command, and SQL migration used, in order.
 """
-MAX_TOOL_TURNS = 10
+MAX_TOOL_TURNS = 15
 
-#user_question = "Delete the customer named Ada Lovelace"
-#user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
-#user_question = "What's the average allocation duration, in hours, grouped by patron email domain?"
-#user_question = "What's the average allocation duration, in hours, grouped by patron email domain? Save this result for later as domain_avg_duration."
-#user_question = "Do you have a previously saved result about average allocation duration? If so, what did it find?"
-#user_question = "What kind of camera equipment has been checked out recently?"
-user_question = "Why does agent_scratch have two separate database roles?"
-
-
-messages = [{"role": "user", "content": user_question}]
-turn = 0
-while turn < MAX_TOOL_TURNS:
-    turn += 1
-    try:
-        response = client.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            tools=tools,
-            messages=messages
-        )
-    except anthropic.APIError as e:
-        print(f"Anthropic API error: {e}")
-        break
-
-    for block in response.content:
-        if block.type == "text":
-            print(f"[TEXT] {block.text}")
-        elif block.type == "tool_use":
-            print(f"[TOOL CALL] {block.name}({block.input})")
-    print(f"[stop_reason: {response.stop_reason}]")
-
-    messages.append({"role": "assistant", "content": response.content})
-
-    if response.stop_reason != "tool_use":
-        break
-
-    tool_results = []
-    for block in response.content:
-        if block.type != "tool_use":
-            continue
-
+def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
+    messages = [{"role": "user", "content": user_question}]
+    turn = 0
+    answer = ""
+    while turn < max_tool_turns:
+        turn += 1
         try:
-            start = time.perf_counter()
-            if block.name == "run_sql_query":
-                result = run_sql_query(block.input["sql"])
-            elif block.name == "list_tables":
-                result = list_tables()
-            elif block.name == "describe_table":
-                result = describe_table(block.input["table_name"])
-            elif block.name == "save_dataframe":
-                result = save_dataframe(
-                    block.input["table_name"],
-                    block.input["columns"],
-                    [tuple(row) for row in block.input["rows"]],
-                )
-            elif block.name == "search_summaries":
-                result = search_summaries(block.input["query_text"])
-            elif block.name == "search_docs":
-                result = search_docs(block.input["query_text"])
-            else:
-                raise ValueError(f"Unknown tool name: {block.name}")
+            response = client.messages.create(
+                model="claude-haiku-4-5",
+                max_tokens=1024,
+                system=SYSTEM_PROMPT,
+                tools=tools,
+                messages=messages
+            )
+        except anthropic.APIError as e:
+            print(f"Anthropic API error: {e}")
+            return {"answer": answer, "error": str(e)}
 
-            latency_ms = (time.perf_counter() - start) * 1000
-            log_tool_call(block.name, block.input, result, latency_ms, turn)
+        for block in response.content:
+            if block.type == "text":
+                print(f"[TEXT] {block.text}")
+                answer = block.text
+            elif block.type == "tool_use":
+                print(f"[TOOL CALL] {block.name}({block.input})")
+        print(f"[stop_reason: {response.stop_reason}]")
 
-            print(f"[TOOL RESULT] {block.name}:")
-            print(json.dumps(result, indent=2, default=str))
+        messages.append({"role": "assistant", "content": response.content})
 
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": str(result)
-            })
-        except Exception as e:
-            latency_ms = (time.perf_counter() - start) * 1000
-            log_tool_call(block.name, block.input, None, latency_ms, turn, error=str(e))
+        if response.stop_reason != "tool_use":
+            return {"answer": answer, "error": None}
 
-            print(f"[TOOL ERROR] {block.name}: {e}")
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": str(e),
-                "is_error": True
-            })
+        tool_results = []
+        for block in response.content:
+            if block.type != "tool_use":
+                continue
 
-    messages.append({"role": "user", "content": tool_results})
+            try:
+                start = time.perf_counter()
+                if block.name == "run_sql_query":
+                    result = run_sql_query(block.input["sql"])
+                elif block.name == "list_tables":
+                    result = list_tables()
+                elif block.name == "describe_table":
+                    result = describe_table(block.input["table_name"])
+                elif block.name == "save_dataframe":
+                    result = save_dataframe(
+                        block.input["table_name"],
+                        block.input["columns"],
+                        [tuple(row) for row in block.input["rows"]],
+                    )
+                elif block.name == "search_summaries":
+                    result = search_summaries(block.input["query_text"])
+                elif block.name == "search_docs":
+                    result = search_docs(block.input["query_text"])
+                else:
+                    raise ValueError(f"Unknown tool name: {block.name}")
 
-else:
-    print(f"Stopped after reaching the {MAX_TOOL_TURNS}-turn limit.")
+                latency_ms = (time.perf_counter() - start) * 1000
+                log_tool_call(block.name, block.input, result, latency_ms, turn)
+
+                print(f"[TOOL RESULT] {block.name}:")
+                print(json.dumps(result, indent=2, default=str))
+
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": str(result)
+                })
+            except Exception as e:
+                latency_ms = (time.perf_counter() - start) * 1000
+                log_tool_call(block.name, block.input, None, latency_ms, turn, error=str(e))
+
+                print(f"[TOOL ERROR] {block.name}: {e}")
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": str(e),
+                    "is_error": True
+                })
+
+        messages.append({"role": "user", "content": tool_results})
+
+    print(f"Stopped after reaching the {max_tool_turns}-turn limit.")
+    return {"answer": answer, "error": "max_turns_reached"}
 
 
+if __name__ == "__main__":
+    #user_question = "Delete the customer named Ada Lovelace"
+    #user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
+    #user_question = "What's the average allocation duration, in hours, grouped by patron email domain?"
+    #user_question = "What's the average allocation duration, in hours, grouped by patron email domain? Save this result for later as domain_avg_duration."
+    #user_question = "Do you have a previously saved result about average allocation duration? If so, what did it find?"
+    #user_question = "What kind of camera equipment has been checked out recently?"
+    user_question = "Why does agent_scratch have two separate database roles?"
 
-
+    ask_agent(user_question)
