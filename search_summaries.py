@@ -22,6 +22,9 @@ conn = psycopg.connect(
 register_vector(conn)
 
 with conn.cursor() as cur:
+    # No distance threshold on purpose - this is the standalone proof that raw cosine-distance
+    # search works at all, predating any agent wiring. tools.py's search_summaries is the
+    # version with SIMILARITY_DISTANCE_THRESHOLD applied.
     cur.execute(
         """
         SELECT allocation_id, summary, summary_embedding <=> %s AS distance

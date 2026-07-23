@@ -34,6 +34,8 @@ CLEAN_SCHEMA = pa.DataFrameSchema({
 
 
 def test_raw_row_count():
+    # 1535 is the real source CSV's row count, not a round/arbitrary number - a regression
+    # guard against ingest.py silently dropping or duplicating rows on a re-run.
     raw = _query("SELECT * FROM raw.allocations")
     assert len(raw) == 1535
 
@@ -45,6 +47,8 @@ def test_clean_row_count_matches_raw():
 
 
 def test_clean_department_has_real_nulls():
+    # Guards transform.py's blank-string-to-NULL conversion - if this ever regressed back to
+    # storing "" instead of NULL, isna() would find zero and this test would catch it.
     clean = _query("SELECT patron_department FROM clean.allocations")
     assert clean["patron_department"].isna().sum() > 0
 

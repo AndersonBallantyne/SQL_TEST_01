@@ -21,6 +21,10 @@ query_text = input("Question about project history: ")
 query_embedding = model.encode(query_text)
 
 with conn.cursor() as cur:
+    # Deliberately no distance threshold here, unlike tools.py's search_docs - this is the
+    # standalone proof script for inspecting raw top-5 distances directly, which is exactly
+    # what surfaced the "top-k always returns something, even when nothing is relevant" gap
+    # that led to search_docs/search_summaries needing a cutoff at all.
     cur.execute("""
         SELECT source_file, chunk_text, embedding <=> %s AS distance
         FROM docs.chunks

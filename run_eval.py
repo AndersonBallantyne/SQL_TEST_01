@@ -9,6 +9,8 @@ from agent import ask_agent
 
 load_dotenv(encoding="utf-8-sig")
 
+# Lets a new round of cases (e.g. eval_cases_round2) run via `python run_eval.py <module>`
+# without editing this file - see eval_cases_round2.py for the first case added this way.
 CASES_MODULE = sys.argv[1] if len(sys.argv) > 1 else "eval_cases"
 EVAL_CASES = importlib.import_module(CASES_MODULE).EVAL_CASES
 
@@ -23,6 +25,9 @@ def _log_line_count():
 
 
 def _new_log_entries(start_line):
+    # Reuses Phase 1's tool-call log as the source of truth for "what did the agent actually
+    # call," rather than having ask_agent() return tool-call metadata itself - avoids
+    # duplicating tracking logic that already exists, and proves Phase 1 pays for itself.
     with open(LOG_PATH) as f:
         lines = f.readlines()[start_line:]
     return [json.loads(line) for line in lines]
@@ -37,6 +42,10 @@ def _cleanup(table_name):
         password=os.environ["POSTGRES_AGENT_WRITER_PASSWORD"],
     )
     with conn.cursor() as cur:
+        # table_name only ever comes from trusted eval_cases.py, so this isn't defending
+        # against a real injection risk here - it matches tools.py's save_dataframe
+        # convention on purpose, so this project doesn't have two different ways to
+        # build a dynamic identifier safely.
         cur.execute(sql.SQL("DROP TABLE IF EXISTS agent_scratch.{}").format(sql.Identifier(table_name)))
     conn.commit()
     conn.close()
@@ -51,6 +60,8 @@ for case in EVAL_CASES:
     tools_called = sorted({entry["tool_name"] for entry in new_entries})
     tool_ok = case["expected_tool"] in tools_called
 
+    # Strips commas so "1,243" still matches an expected_keywords entry of "1243" - found
+    # necessary live when a round-2 case's real answer used comma-formatted numbers.
     answer_lower = response["answer"].lower().replace(",", "")
     keywords_ok = all(kw.lower() in answer_lower for kw in case["expected_keywords"])
 

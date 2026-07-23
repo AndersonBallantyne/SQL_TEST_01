@@ -87,3 +87,7 @@ if gap_low < gap_high:
     print(f"Clean separation - midpoint threshold ~{(gap_low + gap_high) / 2:.4f}")
 else:
     print("Overlap between groups - no clean separation; threshold involves a real tradeoff.")
+
+# This run's midpoint is where tools.py's SIMILARITY_DISTANCE_THRESHOLD (0.63) came from -
+# it's the one threshold in this project actually backed by curated in-/out-of-domain
+# measurement, not a provisional guess (contrast DOCS_SIMILARITY_DISTANCE_THRESHOLD there).

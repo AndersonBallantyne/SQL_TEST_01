@@ -98,6 +98,8 @@ for path in SOURCE_FILES:
     )
 
     with conn.cursor() as cur:
+        # Delete this file's old chunks first so re-running after editing a source doc
+        # replaces its chunks instead of accumulating duplicates alongside them.
         cur.execute("DELETE FROM docs.chunks WHERE source_file = %s", (path,))
         cur.executemany(
             "INSERT INTO docs.chunks (source_file, chunk_text) VALUES (%s, %s)",

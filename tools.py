@@ -10,6 +10,9 @@ from sentence_transformers import SentenceTransformer
 load_dotenv(encoding="utf-8-sig")
 
 def run_sql_query(sql: str, params: list | None = None) -> list[dict]:
+    # App-level guard, not the real boundary - a model that ignored this entirely still
+    # can't write anything, since this connects as appdb_reader (read-only at the DB level).
+    # This check exists to fail fast/loud rather than rely solely on the DB rejecting the write.
     if not sql.strip().upper().startswith("SELECT"):
         raise ValueError(f"Only SELECT statments are allowed. Got: {sql!r}")
     print(f"[{datetime.now().isoformat()}] SQL: {sql.strip()}")
@@ -40,6 +43,10 @@ def list_tables() -> list[dict]:
     """)
 
 def describe_table(name: str) -> list[dict]:
+    # Matches on bare table_name only, across all schemas at once - a schema-qualified
+    # name like "docs.chunks" never matches and silently returns []. Cost the agent a
+    # whole eval run's turn budget in Build 4 Phase 2 before this was documented in
+    # agent.py's tool description.
     return run_sql_query("""
         SELECT column_name, data_type
         FROM information_schema.columns
@@ -55,6 +62,8 @@ def _get_embedding_model():
         _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
     return _embedding_model
 
+# Calibrated in Build 3 against 40 curated in-/out-of-domain queries (see calibrate_threshold.py) -
+# unlike DOCS_SIMILARITY_DISTANCE_THRESHOLD below, this one isn't a placeholder.
 SIMILARITY_DISTANCE_THRESHOLD = 0.63
 
 def search_summaries(query_text: str, limit: int = 5) -> list[dict]:
@@ -81,6 +90,9 @@ def search_summaries(query_text: str, limit: int = 5) -> list[dict]:
     conn.close()
 
     if not rows:
+        # A message dict, not an empty list or a raised error - lets the agent tell "genuinely
+        # nothing relevant" apart from a real tool failure, and answer honestly instead of
+        # either crashing or hallucinating a match. Confirmed live in Build 4 Phase 2's eval.
         return [{"message": f"No sufficiently relevant results for {query_text!r} — nothing scored below the relevance threshold."}]
 
     return [{"allocation_id": aid, "summary": summary, "distance": round(float(dist), 4)} for aid, summary, dist in rows]
@@ -112,12 +124,16 @@ def search_docs(query_text: str, limit: int = 5) -> list[dict]:
     conn.close()
 
     if not rows:
+        # Same reasoning as search_summaries's no-match branch above.
         return [{"message": f"No sufficiently relevant documentation found for {query_text!r} — nothing scored below the relevance threshold."}]
 
     return [{"source_file": sf, "chunk_text": ct, "distance": round(float(d), 4)} for sf, ct, d in rows]
 
 
 
+# Identifiers (table/column names) can't be parameterized like values (%s) - psycopg has no
+# equivalent placeholder for them - so this whitelist regex is what actually blocks a malicious
+# table_name/column name, ahead of sql.Identifier() below doing the safe quoting.
 SAFE_NAME = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 
 # Order matters: bool must come before int, since isinstance(True, int) is True in Python.
@@ -135,6 +151,9 @@ def _infer_type(value):
             return pg_type
     raise TypeError(f"Unsupported value type: {type(value)}")
 
+# Arbitrary safety cap, not a real capacity limit - stops an unbounded number of scratch
+# tables from accumulating unnoticed. Tested at its exact boundary via monkeypatch in
+# test_agent_scratch_boundary.py rather than by actually creating 50 real tables.
 MAX_SCRATCH_TABLES = 50
 
 def save_dataframe(table_name: str, columns: list[str], rows: list[tuple]) -> dict:
@@ -183,6 +202,10 @@ def save_dataframe(table_name: str, columns: list[str], rows: list[tuple]) -> di
             sql.SQL("{} {}").format(sql.Identifier(col), sql.SQL(pg_type))
             for col, pg_type in zip(columns, column_types)
         )
+        # "agent_scratch" is a literal in this template, never a parameter - the model has no
+        # way to make this write land in any other schema, even if table_name validation above
+        # were somehow wrong. The appdb_agent_writer role (granted CREATE/USAGE on agent_scratch
+        # only) is the last backstop behind that.
         create_stmt = sql.SQL("CREATE TABLE IF NOT EXISTS agent_scratch.{} ({})").format(
             sql.Identifier(table_name), col_defs
         )

@@ -1,4 +1,6 @@
 -- 003_readonly_role.sql — read-only role for the LLM agent. Idempotent: safe to re-run. (renamed from readonly_role.sql)
+-- Postgres has no CREATE ROLE IF NOT EXISTS (unlike CREATE TABLE/SCHEMA) - this DO block's
+-- manual existence check is what makes re-running this file safe instead of erroring.
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'appdb_reader') THEN

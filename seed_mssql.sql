@@ -11,6 +11,9 @@ INSERT INTO customers (name, email) VALUES
     ('Grace Hopper',      'grace@example.com'),
     ('Katherine Johnson', 'katherine@example.com');
 GO
+-- Joins on email rather than hardcoding customer_id literals (unlike 002_seed.sql's Postgres
+-- version) - this is the fix for a real FK-pairing bug where hardcoded IDs silently paired
+-- orders with the wrong customer if IDENTITY reseeding didn't land in the exact order expected.
 INSERT INTO orders (customer_id, product, amount)
 SELECT c.id, v.product, v.amount
 FROM (VALUES

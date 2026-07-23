@@ -51,6 +51,8 @@ def test_all_rows_have_embeddings_with_correct_dimensions():
         dims = cur.fetchone()[0]
     conn.close()
     assert total == with_embedding
+    # 384 matches the all-MiniLM-L6-v2 model in use (tools.py) - not an arbitrary number,
+    # a mismatch here would mean the column and the model have drifted apart.
     assert dims == 384
 
 
@@ -63,6 +65,8 @@ def test_relevant_query_returns_real_results():
 
 
 def test_irrelevant_query_returns_no_match_message():
+    # "office desk chair" is one of calibrate_threshold.py's curated out-of-domain queries,
+    # not a random pick - it's the one confirmed to score well past the threshold.
     results = tools.search_summaries("office desk chair")
     assert len(results) == 1
     assert "message" in results[0]

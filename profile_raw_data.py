@@ -1,3 +1,7 @@
+# Named profile_raw_data.py, not profile.py, on purpose - a file named profile.py in this
+# same directory once silently shadowed Python's stdlib "profile" module (imported deep
+# inside torch/transformers' own import chain), crashing an unrelated script with a
+# confusing traceback. Don't rename this back to profile.py.
 import os
 from dotenv import load_dotenv
 import psycopg

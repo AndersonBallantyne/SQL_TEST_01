@@ -35,6 +35,8 @@ def test_all_chunks_have_embeddings_with_correct_dimensions():
         dims = cur.fetchone()[0]
     conn.close()
     assert total == with_embedding
+    # 384 matches the all-MiniLM-L6-v2 model in use (tools.py), same as clean.allocations'
+    # summary_embedding - both embedding columns share one model, so one dimension count.
     assert dims == 384
 
 
@@ -54,6 +56,9 @@ def test_irrelevant_query_returns_no_match_message():
 
 
 def test_threshold_regression_guard():
+    # DOCS_SIMILARITY_DISTANCE_THRESHOLD (tools.py) is still provisional, not calibrated with
+    # Build 3's 40-query rigor - if it ever gets tightened/loosened, this is the test that
+    # would need its own reference points revisited too.
     relevant = tools.search_docs("why does agent_scratch have two separate database roles")
     assert relevant[0]["distance"] < tools.DOCS_SIMILARITY_DISTANCE_THRESHOLD
 

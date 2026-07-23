@@ -8,6 +8,8 @@ def log_tool_call(tool_name, input_data, output_data, latency_ms, turn, question
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
     entry = {
         "timestamp": datetime.now().isoformat(),
+        # Groups a question's turns back together - "turn" alone resets to 1 for every
+        # ask_agent() call, so it can't disambiguate two conversations logging at once.
         "question_id": question_id,
         "turn": turn,
         "tool_name": tool_name,

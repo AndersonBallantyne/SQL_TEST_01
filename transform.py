@@ -25,7 +25,12 @@ for row in raw_rows:
     record = dict(zip(columns, row))
     rows.append((
         record["allocation_id"],
+        # Blank string from the raw TEXT-only layer becomes a real NULL here, not "" -
+        # raw.allocations stores every column as TEXT including blanks-as-empty-string.
         record["patron_department"] or None,
+        # No domain extraction happens here - the source export's "Patron Email" column
+        # already contains only the domain (e.g. "@gmail.com"), never a full address,
+        # which is why this maps straight across into patron_email_domain unchanged.
         record["patron_email"],
         int(record["renewal_count"]),
         datetime.strptime(record["actual_start"], DATE_FORMAT),

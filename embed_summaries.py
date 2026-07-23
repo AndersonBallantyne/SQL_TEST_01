@@ -18,6 +18,9 @@ conn = psycopg.connect(
 register_vector(conn)
 
 with conn.cursor() as cur:
+    # IS NULL makes this idempotent/incremental - originally re-embedded all 1535 rows on
+    # every run regardless of what changed. Verified live by nulling 2 real rows and
+    # confirming only those 2 got reprocessed, not the full table.
     cur.execute("SELECT allocation_id, summary FROM clean.allocations WHERE summary_embedding IS NULL")
     rows = cur.fetchall()
 

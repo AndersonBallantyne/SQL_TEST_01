@@ -127,6 +127,8 @@ docs.chunks has columns chunk_id, source_file, chunk_text (plus an embedding col
 MAX_TOOL_TURNS = 15
 
 def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
+    # Random, not a counter - a shared counter would itself need synchronization once
+    # Build 5/6 make concurrent ask_agent() calls possible, defeating the point of this ID.
     question_id = uuid.uuid4().hex[:12]
     messages = [{"role": "user", "content": user_question}]
     turn = 0

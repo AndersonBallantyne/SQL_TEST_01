@@ -16,6 +16,9 @@ conn = psycopg.connect(
 )
 
 with open(CSV_PATH, newline="", encoding="utf-8-sig") as f:
+    # csv.DictReader, not pandas, is deliberate here even though pandas is used elsewhere in
+    # this project (transform.py, profile_raw_data.py) - this is the raw ingestion layer, and
+    # the whole point is loading source data with nothing silently type-coerced along the way.
     reader = csv.DictReader(f)
     rows = [
         (

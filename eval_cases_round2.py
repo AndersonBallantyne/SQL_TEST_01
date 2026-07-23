@@ -1,5 +1,11 @@
+# Every expected_keywords value here was pulled via a direct run_sql_query against the DB
+# before being written, not copied from the agent's own first answer - a stronger,
+# independent check than eval_cases.py mostly used, since it doesn't risk the eval and the
+# agent being wrong the same way.
 EVAL_CASES = [
     {
+        # "named" steers toward excluding NULL patron_department - raw ground truth has 787
+        # NULL rows outranking every real department; the question is about a real one.
         "question": "Which named patron department has the most recorded allocations?",
         "expected_tool": "run_sql_query",
         "expected_keywords": ["ILLU"],
@@ -20,6 +26,10 @@ EVAL_CASES = [
         "expected_keywords": ["1243"],
     },
     {
+        # Deliberately equipment that doesn't exist in the dataset - tests that
+        # search_summaries' graceful "no match" message survives into the final answer
+        # instead of the model hallucinating a fake result. expected_keywords is empty on
+        # purpose: the exact "no match" phrasing isn't the point, tool_ok + no error is.
         "question": "Is there any scuba diving equipment among the allocations?",
         "expected_tool": "search_summaries",
         "expected_keywords": [],

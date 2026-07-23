@@ -68,6 +68,8 @@ def test_writer_can_create_and_reader_can_see_it_in_agent_scratch():
 
 
 def test_scratch_table_cap_blocks_new_tables_but_not_existing_ones(monkeypatch):
+    # monkeypatch, not 50 real tables, to hit the cap's exact boundary - auto-restored after
+    # this test, so it never actually costs the real limit's protection elsewhere.
     monkeypatch.setattr(tools, "MAX_SCRATCH_TABLES", 0)
 
     with pytest.raises(RuntimeError):
@@ -75,6 +77,9 @@ def test_scratch_table_cap_blocks_new_tables_but_not_existing_ones(monkeypatch):
 
     # An existing table should still accept new rows even "at" the cap -
     # the cap only ever blocks creating a brand-new table.
+    # Reuses the real domain_avg_duration table (from Build 2.5), not a fresh pytest-only
+    # one - a new table name here would hit the "doesn't exist yet" branch and test the
+    # wrong path entirely. Only the inserted test row gets cleaned up below, not the table.
     result = tools.save_dataframe(
         "domain_avg_duration", ["patron_email_domain", "avg_duration_hours"], [("@pytest.test", 0.0)]
     )

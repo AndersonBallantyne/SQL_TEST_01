@@ -18,6 +18,8 @@ conn = psycopg.connect(
 register_vector(conn)
 
 with conn.cursor() as cur:
+    # IS NULL makes this idempotent by design from the start, reusing the fix
+    # embed_summaries.py needed to have retrofitted in (see that file).
     cur.execute("SELECT chunk_id, chunk_text FROM docs.chunks WHERE embedding IS NULL")
     rows = cur.fetchall()
 

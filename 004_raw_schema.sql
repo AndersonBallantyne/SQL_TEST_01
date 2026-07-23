@@ -7,6 +7,9 @@ CREATE SCHEMA IF NOT EXISTS raw;
 
 DROP TABLE IF EXISTS raw.allocations;
 
+-- Every column is TEXT on purpose, even the numeric/date-looking ones - this layer's only
+-- job is preserving source data exactly as exported, before any decision about its real
+-- type gets made. See 005_clean_schema.sql for the typed version transform.py produces.
 CREATE TABLE raw.allocations (
     allocation_id     TEXT,
     patron_department TEXT,
