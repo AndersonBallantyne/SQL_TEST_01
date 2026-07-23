@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 4 Handoff Brief — Agent Observability &amp; Eval Harness</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  h3.phase-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px; font-weight: 600; margin: 32px 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.phase-title .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 700; flex: none;
+  }
+  p.phase-goal { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .kw { color: var(--teal); font-weight: 600; }
+  .str { color: var(--accent); }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+
+  table.ref-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); table-layout: fixed; }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; word-break: break-word; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: normal; }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 4 · Handoff Brief</p>
+  <h1>Agent Observability &amp; Eval Harness</h1>
+  <p class="lede">A standalone, deep-dive reference for Build 4 — every phase, every file, every verification result, and every real gap found along the way, in full. Complements (does not replace) the living cheat sheet and the three per-phase flow diagrams.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Complete — all 3 phases</dd></div>
+    <div><dt>Commits</dt><dd><code>a10e9cd</code> → <code>6b79732</code></dd></div>
+    <div><dt>Continues</dt><dd>Build 3.5 (documentation RAG agent)</dd></div>
+    <div><dt>Precedes</dt><dd>Build 5 (live deployment with CI)</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#what">What &amp; Why</a>
+    <a href="#phase1">Phase 1</a>
+    <a href="#phase2">Phase 2</a>
+    <a href="#phase3">Phase 3</a>
+    <a href="#verification">Verification Log</a>
+    <a href="#limitations">Known Limitations</a>
+    <a href="#env">Environment State</a>
+  </nav>
+
+  <section class="doc-section" id="what">
+    <h2>What Was Built, and Why</h2>
+    <p class="section-note">
+      Every prior build added a new capability to the agent. Build 4 adds nothing the agent can <i>do</i> — it adds the ability to know, in detail, what the agent already did. The real gap: Build 1 Phase 5's "logging" is just a <code>print()</code> of each SQL statement with a timestamp — not durable, not queryable, and only ever covered <code>run_sql_query</code>, never <code>list_tables</code>, <code>describe_table</code>, <code>save_dataframe</code>, <code>search_summaries</code>, or <code>search_docs</code>.
+    </p>
+    <p class="section-note">
+      Three phases: <b>(1)</b> structured tool-call tracing — every call logged with tool name, input, output, latency, turn number, timestamp; <b>(2)</b> an eval harness — a fixed set of test questions with expected criteria, run end-to-end against the live agent and reported pass/fail, genuinely different from the existing pytest suite (which tests tool functions in isolation, never agent behavior); <b>(3)</b> a metrics rollup over the log — tool-usage frequency, average turns per question, error rate. Deliberately not a Grafana-style dashboard, disproportionate at this project's scale.
+    </p>
+    <div class="callout"><b>Phase 1's foundational design decision: a JSON Lines file, not a new Postgres table.</b> <code>logs/tool_calls.jsonl</code> (gitignored) breaks from this project's "everything lives in Postgres" pattern on purpose — logs kept separate from operational data is the realistic production observability pattern (closer to what ships to Datadog/CloudWatch/Loki), and a genuinely distinct portfolio skill rather than "another Postgres table." Analyzing it later means a small Python script reading the file line-by-line, not a <code>SELECT</code> — exactly what Phase 2 and Phase 3 both do.</div>
+  </section>
+
+  <section class="doc-section" id="phase1">
+    <h3 class="phase-title"><span class="badge">1</span>Structured Tool-Call Tracing</h3>
+    <p class="phase-goal">Goal: every tool call the agent makes gets logged — tool name, input, output, latency, turn number, timestamp — durable and queryable, covering all 5 tools, not just SQL.</p>
+
+    <pre class="code"><span class="fn">logging_utils.py — log_tool_call()</span><code><span class="kw">def</span> log_tool_call(tool_name, input_data, output_data, latency_ms, turn, question_id, error=<span class="kw">None</span>):
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=<span class="kw">True</span>)
+    entry = {
+        <span class="str">"timestamp"</span>: datetime.now().isoformat(),
+        <span class="str">"question_id"</span>: question_id,  <span class="cmt"># added in Phase 3 — see that section</span>
+        <span class="str">"turn"</span>: turn,
+        <span class="str">"tool_name"</span>: tool_name,
+        <span class="str">"input"</span>: input_data,
+        <span class="str">"output"</span>: output_data <span class="kw">if</span> error <span class="kw">is None</span> <span class="kw">else None</span>,
+        <span class="str">"error"</span>: error,
+        <span class="str">"latency_ms"</span>: <span class="kw">round</span>(latency_ms, 2),
+    }
+    <span class="kw">with</span> open(LOG_PATH, <span class="str">"a"</span>) <span class="kw">as</span> f:
+        f.write(json.dumps(entry, default=<span class="kw">str</span>) + <span class="str">"\n"</span>)</code></pre>
+    <div class="callout"><b><code>default=str</code> in <code>json.dumps</code> is load-bearing, not decoration</b> — <code>run_sql_query</code> results can contain <code>datetime</code> objects straight from Postgres, which the stdlib <code>json</code> module can't serialize natively.</div>
+
+    <pre class="code"><span class="fn">agent.py — wiring (success + error paths)</span><code>start = time.perf_counter()
+result = run_sql_query(block.input[<span class="str">"sql"</span>])  <span class="cmt"># (or whichever tool matched)</span>
+latency_ms = (time.perf_counter() - start) * 1000
+log_tool_call(block.name, block.input, result, latency_ms, turn, question_id)
+<span class="cmt"># ...</span>
+<span class="kw">except</span> Exception <span class="kw">as</span> e:
+    latency_ms = (time.perf_counter() - start) * 1000
+    log_tool_call(block.name, block.input, <span class="kw">None</span>, latency_ms, turn, question_id, error=<span class="kw">str</span>(e))</code></pre>
+
+    <div class="callout warn"><b>A real bug surfaced mid-edit — logging calls landed in the wrong branch entirely.</b> An auto-applied edit inserted <code>log_tool_call(...)</code> inside the dispatch chain's <code>else:</code> branch, right before <code>raise ValueError</code> — wrong twice over. That branch only ever fires for an <i>unknown</i> tool name, never the real success path, and it references <code>result</code>, which is never assigned there — so it would itself throw <code>NameError</code> and mask the intended error entirely. Caught by reading the actual current file state rather than assuming a prior instruction had already been applied correctly. Fixed by moving the calls to the real success path (after the dispatch chain) and the real error path (inside <code>except Exception as e</code>).</div>
+
+    <div class="callout"><b>Readability follow-up, same day:</b> console output was raw Python object reprs (<code>TextBlock(...)</code>, <code>ToolUseBlock(...)</code>), plus a duplicate text-print — the same response's text printed twice, once via a labeled loop and again via a leftover unlabeled one lower down. Fixed with labeled <code>[TEXT]</code>/<code>[TOOL CALL]</code>/<code>[TOOL RESULT]</code>/<code>[TOOL ERROR]</code> prints, <code>json.dumps(result, indent=2, default=str)</code> instead of a raw <code>print(result)</code>, and the redundant loop deleted outright.</div>
+
+    <p><b>Verified live</b> against <code>"Why does agent_scratch have two separate database roles?"</code> — the model called <code>search_docs</code> twice (a broad first query, then a sharper reformulation once the first results proved too general) before synthesizing a correct answer. Every log entry checked out: <code>timestamp</code>/<code>turn</code>/<code>tool_name</code>/<code>input</code>/<code>output</code>/<code>error: null</code>/<code>latency_ms</code> all present and correct.</p>
+
+    <div class="callout good"><b>A genuinely new observability finding, surfaced only because this logging now existed:</b> the first <code>search_docs</code> call in a process takes ~2.4-3.0 seconds; the second call in the same run takes ~33ms — a ~90x difference, the one-time cost of lazily loading the embedding model into its module-level cache. Visible latency data that print-only logging never exposed — a concrete example of Phase 1 paying for itself before Phase 2 even started.</div>
+  </section>
+
+  <section class="doc-section" id="phase2">
+    <h3 class="phase-title"><span class="badge">2</span>The Eval Harness</h3>
+    <p class="phase-goal">Goal: a fixed set of test questions with expected criteria (which tool should fire, what the answer should contain), run end-to-end against the live agent — genuinely different from the pytest suite, which never exercises agent behavior at all.</p>
+
+    <pre class="code"><span class="fn">agent.py — refactored into a callable ask_agent()</span><code><span class="kw">def</span> ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
+    question_id = uuid.uuid4().hex[:12]  <span class="cmt"># added later, in Phase 3</span>
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: user_question}]
+    turn = 0
+    answer = <span class="str">""</span>
+    <span class="kw">while</span> turn &lt; max_tool_turns:
+        <span class="cmt"># ... unchanged tool-use loop ...</span>
+        <span class="kw">if</span> response.stop_reason != <span class="str">"tool_use"</span>:
+            <span class="kw">return</span> {<span class="str">"answer"</span>: answer, <span class="str">"error"</span>: <span class="kw">None</span>}
+    <span class="kw">return</span> {<span class="str">"answer"</span>: answer, <span class="str">"error"</span>: <span class="str">"max_turns_reached"</span>}
+
+<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
+    <span class="cmt"># old hardcoded question, preserved — still runnable directly for manual testing</span>
+    ask_agent(<span class="str">"Why does agent_scratch have two separate database roles?"</span>)</code></pre>
+    <div class="callout"><b>Every <code>break</code>/loop-fallthrough became a <code>return</code> in the same spot</b> — behaviorally identical, since returning exits the function exactly like <code>break</code> exited the loop. <code>answer = block.text</code> on every text block means the returned answer is the <i>last</i> text block seen, not an intermediate "I'll search for..." message. The <code>if __name__ == "__main__":</code> guard preserves the old CLI behavior exactly, so <code>agent.py</code> stayed both directly runnable and safely importable. Verified two ways: <code>py_compile</code>, and a full live run confirming identical behavior to the pre-refactor version.</div>
+
+    <pre class="code"><span class="fn">eval_cases.py — the case schema</span><code>{
+    <span class="str">"question"</span>: <span class="str">"..."</span>,
+    <span class="str">"expected_tool"</span>: <span class="str">"..."</span>,        <span class="cmt"># must appear among tools the agent actually called</span>
+    <span class="str">"expected_keywords"</span>: [<span class="str">"..."</span>],  <span class="cmt"># all must appear in the final answer text (case-insensitive)</span>
+    <span class="str">"cleanup_table"</span>: <span class="str">"..."</span>,     <span class="cmt"># optional — dropped after the case runs</span>
+}</code></pre>
+    <p>7 cases, covering all 5 tools plus the enumeration-vs-thematic edge case Build 3.5 surfaced. The <code>save_dataframe</code> case uses a distinct eval-only table name (<code>eval_domain_avg_duration</code>, not the real <code>domain_avg_duration</code> from Build 2.5) plus a <code>cleanup_table</code> field, mirroring <code>test_agent_scratch_boundary.py</code>'s create-verify-drop pattern so the suite stays rerunnable.</p>
+
+    <pre class="code"><span class="fn">run_eval.py — the core loop</span><code><span class="kw">for</span> case <span class="kw">in</span> EVAL_CASES:
+    start_line = _log_line_count()
+    response = ask_agent(case[<span class="str">"question"</span>])
+    new_entries = _new_log_entries(start_line)  <span class="cmt"># reuses Phase 1's log as the source of truth</span>
+
+    tools_called = <span class="kw">sorted</span>({entry[<span class="str">"tool_name"</span>] <span class="kw">for</span> entry <span class="kw">in</span> new_entries})
+    tool_ok = case[<span class="str">"expected_tool"</span>] <span class="kw">in</span> tools_called
+
+    answer_lower = response[<span class="str">"answer"</span>].lower().replace(<span class="str">","</span>, <span class="str">""</span>)
+    keywords_ok = <span class="kw">all</span>(kw.lower() <span class="kw">in</span> answer_lower <span class="kw">for</span> kw <span class="kw">in</span> case[<span class="str">"expected_keywords"</span>])
+    passed = tool_ok <span class="kw">and</span> keywords_ok <span class="kw">and</span> response[<span class="str">"error"</span>] <span class="kw">is None</span></code></pre>
+    <div class="callout"><b>Design choice: reuse Phase 1's log instead of having <code>ask_agent()</code> return tool-call metadata directly.</b> Avoids duplicating tracking logic that already exists, and is a direct, concrete payoff of Phase 1's investment. Cleanup uses <code>psycopg.sql.Identifier</code>, matching <code>save_dataframe</code>'s safe-identifier convention — not defending against a real injection risk here (the name only ever comes from trusted <code>eval_cases.py</code>), but no reason to break the project's own established pattern.</div>
+
+    <div class="callout warn"><b>First live run found a real turn-budget bug, not just a bad test.</b> The "list all SQL migration files" case hit <code>max_turns_reached</code> before ever answering. Root cause, traced turn by turn: <code>describe_table('docs.chunks')</code> silently returned <code>[]</code>, because <code>describe_table</code> matches on bare table name only across all schemas at once — a schema-qualified name never matches, and nothing said so. That sent the agent down several dead-end <code>ILIKE '%migration%'</code> / <code>ILIKE '%.sql'</code> queries (the docs never use the literal word "migration"; the un-anchored <code>%.sql</code> pattern only matches text <i>ending</i> in <code>.sql</code>) before it ever found the right query — burning the entire 10-turn budget along the way.</div>
+    <div class="callout good"><b>Fix, applied and re-verified live:</b> <code>MAX_TOOL_TURNS</code> raised <code>10</code>→<code>15</code>; <code>describe_table</code>'s tool description now states plainly it's a bare-name match; <code>SYSTEM_PROMPT</code> gained a concrete steer — query <code>chunk_text WHERE source_file = 'sql-test-01-cheatsheet.html'</code> directly for "list all X" questions, since that file already enumerates everything. Re-run: the same question now converges in a single <code>run_sql_query</code> call with a complete, correct answer.</div>
+
+    <div class="callout warn"><b>Keyword-robustness lesson, found twice in the same build.</b> After the turn-budget fix, the migration case's <code>expected_keywords: ["docs.chunks"]</code> still failed — not an agent bug, a bad eval guess (an internal table name a correct prose answer would never say back to the user). Separately, a previously-passing role-boundary case failed on a later re-run whose answer was fully correct but phrased differently — free-text paraphrase varies run to run even when the underlying reasoning is right. <b>Both fixed the same way:</b> swap paraphrase-dependent keywords for stable identifiers the answer is structurally required to contain — <code>["001_schema.sql", "009_add_summary_embedding_hnsw_index.sql"]</code> (real filenames, first/last in sequence, catches truncation too) and <code>["appdb_reader", "appdb_agent_writer"]</code> (the actual role names) respectively.</div>
+
+    <p><b>Round 2 — <code>eval_cases_round2.py</code>, 5 new cases</b>, each verified against ground truth queried directly from the DB before being written (a stronger, independent check than round 1 mostly used, since it doesn't risk the eval and the agent being wrong the same way): department aggregation (<code>ILLU</code>, 128 named-department allocations, <code>NULL</code> departments excluded), the previously-untested <code>customers</code> table (4 rows), rediscovering a scratch table saved back in Build 2.5, an exact-filter discrimination case (<code>renewal_count = 0</code> → 1243 rows, testing that the agent picks <code>run_sql_query</code> over <code>search_summaries</code> for a structured question), and a graceful-no-match case for <code>search_summaries</code> (equipment that doesn't exist in the dataset — confirms the "no sufficiently relevant results" message survives into the final answer without the model hallucinating a match).</p>
+    <div class="callout"><b><code>run_eval.py</code> generalized to accept multiple case files:</b> <code>sys.argv[1]</code> (default <code>"eval_cases"</code>) selects which module's <code>EVAL_CASES</code> to run — <code>python run_eval.py eval_cases_round2</code> runs the new file with no runner edits. Also hardened against numeric-formatting variance: <code>answer_lower</code> strips commas before the keyword check, confirmed necessary live when a round-2 answer used <code>"1,243"</code> against an expected keyword of <code>"1243"</code>.</div>
+
+    <p><b>Result: 7/7 and 5/5 passing</b> — 12/12 across both rounds, after the turn-budget and keyword-robustness fixes above.</p>
+  </section>
+
+  <section class="doc-section" id="phase3">
+    <h3 class="phase-title"><span class="badge">3</span>The Metrics Rollup</h3>
+    <p class="phase-goal">Goal: a plain-text report over the tool-call log — tool-usage frequency, average turns per question, error rate. Deliberately not a dashboard.</p>
+
+    <div class="callout warn"><b>A real design fork surfaced before any rollup code was written.</b> Two of the three metrics are simple counts. The third, "average turns per question," is not — <code>logs/tool_calls.jsonl</code> had no session/question boundary field, only a <code>turn</code> number that restarts at 1 per <code>ask_agent()</code> call. Two options: <b>(1)</b> infer question boundaries by watching for <code>turn</code> resetting to 1 — zero schema change, but silently wrong the moment two conversations log concurrently and their lines interleave (two different conversations both starting at turn 1 around the same moment are indistinguishable without an explicit ID); <b>(2)</b> add a real <code>question_id</code> field now.</div>
+    <div class="callout good"><b>Decision: option 2, explicitly because Build 5 and Build 6 are real, still-planned future states of this project, not hypotheticals.</b> Build 5 (a live deployed API) and Build 6 (a multi-user Streamlit front end) will eventually make concurrent <code>ask_agent()</code> calls possible — this was judged the right point to build for that, rather than retrofitting once real concurrent traffic exists.</div>
+
+    <pre class="code"><span class="fn">agent.py — question_id generation</span><code><span class="kw">def</span> ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
+    <span class="cmt"># Random, not a counter - a shared counter would itself need synchronization once</span>
+    <span class="cmt"># Build 5/6 make concurrent ask_agent() calls possible, defeating the point of this ID.</span>
+    question_id = uuid.uuid4().hex[:12]</code></pre>
+    <p>Threaded through both <code>log_tool_call</code> call sites (success and error paths). The pre-existing <code>logs/tool_calls.jsonl</code> (hundreds of lines from Phase 1/2 testing, no <code>question_id</code> at all) was archived locally as <code>tool_calls.pre-question-id.jsonl</code> rather than taught to the rollup as a second schema to branch on — the historical latency-lazy-load finding from Phase 1 is already captured in this brief, so nothing real was lost.</p>
+    <p><b>Verified live:</b> two sequential <code>ask_agent()</code> calls produced distinct <code>question_id</code>s, with both turns of the first call correctly sharing one ID. The already-committed Phase 3 diagram's Step 2 was then amended (not left silently stale) to name this schema extension as a prerequisite of writing the rollup script — re-verified via both <code>--screenshot</code> and <code>--print-to-pdf</code> + <code>pdftoppm</code> before re-committing.</p>
+
+    <pre class="code"><span class="fn">metrics_rollup.py</span><code><span class="kw">def</span> main():
+    entries = load_entries()
+    tool_counts = Counter(e[<span class="str">"tool_name"</span>] <span class="kw">for</span> e <span class="kw">in</span> entries)
+
+    <span class="cmt"># turn is 1-indexed and increments once per round-trip within one question, so the</span>
+    <span class="cmt"># highest turn value seen for a question_id IS the total turns that question took.</span>
+    turns_per_question = {}
+    <span class="kw">for</span> e <span class="kw">in</span> entries:
+        qid = e[<span class="str">"question_id"</span>]
+        turns_per_question[qid] = <span class="kw">max</span>(turns_per_question.get(qid, 0), e[<span class="str">"turn"</span>])
+    avg_turns = <span class="kw">sum</span>(turns_per_question.values()) / <span class="kw">len</span>(turns_per_question)
+
+    error_count = <span class="kw">sum</span>(1 <span class="kw">for</span> e <span class="kw">in</span> entries <span class="kw">if</span> e[<span class="str">"error"</span>] <span class="kw">is not None</span>)
+    error_rate = error_count / <span class="kw">len</span>(entries)
+    <span class="cmt"># ... prints the three sections as a plain-text report ...</span></code></pre>
+
+    <div class="callout good"><b>Verified live, and it surfaced something worth explaining: 52 tool calls across 21 questions, not the ~14 expected.</b> Investigation traced it to two independent, legitimate invocations of the 7-case round — one run manually by the user, one run separately via this session — both appending to the same shared log, plus the 5-case round once and the 2 earlier verification questions (7+7+5+2 = 21). Not a bug: the report is correctly reflecting exactly what happened. It's also a quiet confirmation that <code>question_id</code> holds up even across genuinely separate process invocations sharing one log file — every question's turns grouped and averaged cleanly, with zero cross-contamination between the two runs. (Sequential, not concurrent, so this doesn't fully exercise the Build 5/6 scenario the field was added for — but it's a good sign nothing about the grouping is fragile.)</div>
+
+    <table class="ref-table">
+      <thead><tr><th>Metric</th><th>Result (52 calls / 21 questions)</th></tr></thead>
+      <tbody>
+        <tr><td>Tool-usage frequency</td><td class="mono">run_sql_query: 16, list_tables: 14, describe_table: 13, search_docs: 4, search_summaries: 3, save_dataframe: 2</td></tr>
+        <tr><td>Average turns per question</td><td class="mono">2.29</td></tr>
+        <tr><td>Error rate</td><td class="mono">1/52 (1.9%)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification Log</h2>
+    <p class="section-note">What was actually exercised against the running system, not just read for plausibility — same standard as every build in this project.</p>
+    <ul class="check-list">
+      <li><b>Phase 1 live run</b><span class="detail">Two <code>search_docs</code> calls (self-corrected reformulation), every log field present and correct, ~90x lazy-load latency gap discovered directly from the new data.</span></li>
+      <li><b>Phase 2, round 1</b><span class="detail">7/7 passing after the turn-budget and keyword-robustness fixes; migration-files case confirmed converging in a single tool call with a complete, correct answer.</span></li>
+      <li><b>Phase 2, round 2</b><span class="detail">5/5 passing on first run, every keyword pulled from a direct DB query, not copied from the agent's own output.</span></li>
+      <li><b>Phase 3, question_id grouping</b><span class="detail">Two sequential <code>ask_agent()</code> calls verified to produce distinct IDs with correct per-call turn grouping; later, 21 real questions across two independent invocations grouped with zero cross-contamination.</span></li>
+      <li><b>Phase 3 diagram amendment</b><span class="detail">Re-verified via both <code>--screenshot</code> and <code>--print-to-pdf</code> + <code>pdftoppm</code> after Step 2's text changed — no overflow in either render.</span></li>
+      <li><b>Full pytest suite, post project-wide comment sweep</b><span class="detail">19/19 still passing — confirms the comment-only pass across every project file (tools.py, the eval harness, Build 2/3/3.5 scripts, all 4 test files) changed no behavior.</span></li>
+    </ul>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Known Limitations &amp; Open Items</h2>
+    <div class="callout warn"><b><code>metrics_rollup.py</code> is a one-shot snapshot, not a tracked time series.</b> Every run reports on whatever's currently in <code>logs/tool_calls.jsonl</code> in full — there's no historical rollup-over-rollup comparison, no "how has error rate trended since last week." Fine at this project's scale; would need real persistence (its own table, or timestamped report files) to track trends.</div>
+    <div class="callout warn"><b>Log growth is unbounded — no rotation or archival strategy beyond this build's one manual archive.</b> <code>logs/tool_calls.jsonl</code> will keep growing indefinitely across every future session; nothing rotates or trims it automatically.</div>
+    <div class="callout warn"><b>The turn-budget/enumeration fix depends on the model actually following the system-prompt steer each time — no hard guarantee.</b> Same category of limitation Build 3.5 already flagged for its own enumeration fix; worth watching if this pattern gets exercised more heavily later.</div>
+    <div class="callout good"><b><code>question_id</code>'s concurrency-safety is currently unexercised, not unverified-by-design.</b> Every real test this build ran was sequential (one process, one invocation at a time, or two separate sequential invocations sharing a log). The design is sound for genuine concurrency (a fresh random ID per call, no shared mutable state), but nothing in this build actually ran two <code>ask_agent()</code> calls at the same literal moment — that real test only becomes possible once Build 5 or Build 6 exists.</div>
+  </section>
+
+  <section class="doc-section" id="env">
+    <h2>Environment State</h2>
+    <table class="ref-table">
+      <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>New Python</td><td class="mono">logging_utils.py, eval_cases.py, eval_cases_round2.py, run_eval.py, metrics_rollup.py</td></tr>
+        <tr><td>Changed Python</td><td class="mono">agent.py (ask_agent() refactor, question_id, MAX_TOOL_TURNS 10→15, describe_table/docs.chunks guidance), tools.py (comment-only)</td></tr>
+        <tr><td>New log directory</td><td class="mono">logs/ (gitignored) — tool_calls.jsonl (live), tool_calls.pre-question-id.jsonl (archived)</td></tr>
+        <tr><td>New dependency</td><td class="mono">none (uuid is stdlib)</td></tr>
+        <tr><td>Diagram folder</td><td class="mono">PROJECT_DIAGRAMS/BUILD_4_FLOW/ — phase1/phase2/phase3 flow diagrams, this brief</td></tr>
+        <tr><td>Role used</td><td class="mono">no new DB roles this build — appdb_reader / appdb_agent_writer, unchanged from Build 2.5</td></tr>
+        <tr><td>Eval suite total</td><td class="mono">12 cases across 2 rounds, 12/12 passing</td></tr>
+        <tr><td>Project test suite</td><td class="mono">19/19 passing (unchanged from Build 3.5 — this build's tests are the eval harness, deliberately separate from pytest)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Build 4 complete. Next: Build 5 — live deployment with CI (GitHub Actions). Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
+</body>
+</html>
