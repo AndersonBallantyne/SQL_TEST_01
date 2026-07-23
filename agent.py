@@ -1,5 +1,6 @@
 import os
 import json
+import uuid
 from dotenv import load_dotenv
 import anthropic
 #from tools import run_sql_query, list_tables, describe_table, save_dataframe
@@ -126,6 +127,7 @@ docs.chunks has columns chunk_id, source_file, chunk_text (plus an embedding col
 MAX_TOOL_TURNS = 15
 
 def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
+    question_id = uuid.uuid4().hex[:12]
     messages = [{"role": "user", "content": user_question}]
     turn = 0
     answer = ""
@@ -183,7 +185,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
                     raise ValueError(f"Unknown tool name: {block.name}")
 
                 latency_ms = (time.perf_counter() - start) * 1000
-                log_tool_call(block.name, block.input, result, latency_ms, turn)
+                log_tool_call(block.name, block.input, result, latency_ms, turn, question_id)
 
                 print(f"[TOOL RESULT] {block.name}:")
                 print(json.dumps(result, indent=2, default=str))
@@ -195,7 +197,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
                 })
             except Exception as e:
                 latency_ms = (time.perf_counter() - start) * 1000
-                log_tool_call(block.name, block.input, None, latency_ms, turn, error=str(e))
+                log_tool_call(block.name, block.input, None, latency_ms, turn, question_id, error=str(e))
 
                 print(f"[TOOL ERROR] {block.name}: {e}")
                 tool_results.append({
