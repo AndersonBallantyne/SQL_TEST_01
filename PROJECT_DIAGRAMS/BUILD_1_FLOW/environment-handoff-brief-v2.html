@@ -412,7 +412,7 @@
       </div>
       <dl>
         <dt>Symptom</dt><dd>Rev. 1 stated: "Moved passwords into a Git-ignored <code>.env</code>; compose reads them via <code>${VAR}</code> substitution." Reading <code>docker-compose.yml</code> directly showed literal values instead.</dd>
-        <dt>Root cause</dt><dd><code>POSTGRES_PASSWORD: REDACTED_PG_DEV_PASSWORD</code> and <code>MSSQL_SA_PASSWORD: "REDACTED_MSSQL_DEV_PASSWORD"</code> were hardcoded in the compose file from the very first commit (<code class="mono">d80d058</code>) and updated in cleartext again in <code class="mono">2ef7dae</code>. <code>.env</code> / <code>.env.example</code> existed but were never wired in — dead scaffolding.</dd>
+        <dt>Root cause</dt><dd><code>POSTGRES_PASSWORD</code> and <code>MSSQL_SA_PASSWORD</code> were hardcoded to literal values in the compose file from the very first commit (<code class="mono">d80d058</code>) and updated in cleartext again in <code class="mono">2ef7dae</code>. <code>.env</code> / <code>.env.example</code> existed but were never wired in — dead scaffolding.</dd>
         <dt>Impact</dt><dd>Two real, working passwords sat in plaintext in git history the entire time.</dd>
         <dt>Fix</dt><dd>Compose now references <code>${POSTGRES_PASSWORD}</code> / <code>${MSSQL_SA_PASSWORD}</code>; both values rotated in <code>.env</code>.</dd>
       </dl>
@@ -453,10 +453,10 @@
     <div class="diff">
       <div class="before"><span class="label">Before</span><pre>environment:
   POSTGRES_USER: devuser
-  POSTGRES_PASSWORD: REDACTED_PG_DEV_PASSWORD
+  POSTGRES_PASSWORD: &lt;hardcoded literal value&gt;
   POSTGRES_DB: appdb
   &#8942;
-  MSSQL_SA_PASSWORD: "REDACTED_MSSQL_DEV_PASSWORD"</pre></div>
+  MSSQL_SA_PASSWORD: "&lt;hardcoded literal value&gt;"</pre></div>
       <div class="after after-panel"><span class="label">After</span><pre>environment:
   POSTGRES_USER: ${POSTGRES_USER}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -467,8 +467,8 @@
 
     <h3><span class="file-tag">.env</span> — rotated (not committed; values withheld from this document on purpose)</h3>
     <div class="diff">
-      <div class="before"><span class="label">Before</span><pre>POSTGRES_PASSWORD=REDACTED_PG_DEV_PASSWORD
-MSSQL_SA_PASSWORD=REDACTED_MSSQL_DEV_PASSWORD
+      <div class="before"><span class="label">Before</span><pre>POSTGRES_PASSWORD=&lt;hardcoded literal value&gt;
+MSSQL_SA_PASSWORD=&lt;hardcoded literal value&gt;
 
 # same values as the ones exposed
 # in docker-compose.yml history</pre></div>
@@ -554,10 +554,10 @@ JOIN customers c ON c.email = v.email;</pre></div>
   </section>
 
   <section id="risk">
-    <div class="section-head"><span class="section-num">05</span><h2>Open Item</h2></div>
+    <div class="section-head"><span class="section-num">05</span><h2>Open Item — Resolved</h2></div>
     <div class="risk">
-      <div class="rtitle">Residual — old cleartext passwords remain in git history</div>
-      <p style="margin:0">Rotation neutralizes them going forward, but <code>REDACTED_PG_DEV_PASSWORD</code> and <code>REDACTED_MSSQL_DEV_PASSWORD</code> are still readable in commits <code class="mono">d80d058</code> and <code class="mono">2ef7dae</code>. Low real-world risk while the repo stays local and unpublished — but Rev. 1's own Build 5 ("Live deployment with CI") implies pushing this to a public remote eventually. Purge before that happens; see tooling recommendation below.</p>
+      <div class="rtitle">Residual — old cleartext passwords purged from git history</div>
+      <p style="margin:0">Rotation neutralized the old values going forward, but the literal strings remained readable in commits <code class="mono">d80d058</code> and <code class="mono">2ef7dae</code> until Build 5 ("Live deployment with CI"), where they were purged from every commit via <code>git filter-repo --replace-text</code> before this repo's first push to a public remote.</p>
     </div>
   </section>
 
