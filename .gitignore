@@ -1,6 +1,8 @@
 ﻿# Secrets — never commit real credentials
 .env
 CREDENTIALS.local.md
+DEPARTMENT_MAPPING.local.md
+department_mapping.local.py
 
 # OS files
 Thumbs.db

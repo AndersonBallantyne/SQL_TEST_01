@@ -6,9 +6,12 @@ EVAL_CASES = [
     {
         # "named" steers toward excluding NULL patron_department - raw ground truth has 787
         # NULL rows outranking every real department; the question is about a real one.
+        # Was "ILLU" (128 rows, real ground truth) before Build 5's data-anonymization pass -
+        # DEPARTMENT_MAP (synthesize_dataset.py) remaps it 1:1 to "DRAW", same row-for-row
+        # membership so the count and plurality are unchanged, just the code string.
         "question": "Which named patron department has the most recorded allocations?",
         "expected_tool": "run_sql_query",
-        "expected_keywords": ["ILLU"],
+        "expected_keywords": ["DRAW"],
     },
     {
         "question": "How many customers are in the database?",

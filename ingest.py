@@ -5,12 +5,13 @@ import psycopg
 
 load_dotenv(encoding="utf-8-sig")
 
-# Overridable so CI can point this at the small masked ci_fixture/ CSV instead - the real
-# export never leaves this machine, so a CI runner has no way to reach the hardcoded default.
-CSV_PATH = os.environ.get(
-    "ALLOCATIONS_CSV_PATH",
-    r"C:\IMAGEBANK_2023\DOCKER_SQL\EMEC_AGENT_BUILD\ALLOCATION-export-Oct_2024-2025.csv",
-)
+# data/ALLOCATION-synthesized.csv is the project's official dataset as of Build 5 - real
+# dates/durations/renewal/resource counts preserved row-for-row from the original real export,
+# but allocation_id, department, email domain, and every equipment description synthesized
+# (see synthesize_dataset.py) so the real institution's real operational data never needs to
+# leave this machine at all, in either the real or the fixture path - there's only one dataset
+# now, and it's already safe to commit. Still overridable for one-off local experiments.
+CSV_PATH = os.environ.get("ALLOCATIONS_CSV_PATH", "data/ALLOCATION-synthesized.csv")
 
 conn = psycopg.connect(
     host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),

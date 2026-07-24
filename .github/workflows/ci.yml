@@ -57,11 +57,6 @@ jobs:
       POSTGRES_READER_PASSWORD: ci_reader_pw
       POSTGRES_AGENT_WRITER_USER: appdb_agent_writer
       POSTGRES_AGENT_WRITER_PASSWORD: ci_writer_pw
-      # The real 1535-row export never leaves the author's machine - CI ingests a small
-      # masked subset instead (see make_ci_fixture.py), and test_data_quality.py's row-count
-      # guard reads its expected count from this same override.
-      ALLOCATIONS_CSV_PATH: ci_fixture/ALLOCATION-fixture.csv
-      EXPECTED_RAW_ROW_COUNT: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +91,10 @@ jobs:
           psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
             "ALTER ROLE appdb_agent_writer WITH PASSWORD '$POSTGRES_AGENT_WRITER_PASSWORD';"
 
-      - name: Ingest the masked CI fixture
+      # data/ALLOCATION-synthesized.csv (committed, safe to be public) is now the one official
+      # dataset for the whole project - CI and local dev use the exact same file via ingest.py's
+      # default, so there's no separate fixture concept left to keep in sync.
+      - name: Ingest the official dataset
         run: python ingest.py
 
       - name: Transform raw -> clean
@@ -148,8 +146,6 @@ jobs:
       POSTGRES_READER_PASSWORD: ci_reader_pw
       POSTGRES_AGENT_WRITER_USER: appdb_agent_writer
       POSTGRES_AGENT_WRITER_PASSWORD: ci_writer_pw
-      ALLOCATIONS_CSV_PATH: ci_fixture/ALLOCATION-fixture.csv
-      EXPECTED_RAW_ROW_COUNT: 30
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
@@ -186,7 +182,7 @@ jobs:
           psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
             "ALTER ROLE appdb_agent_writer WITH PASSWORD '$POSTGRES_AGENT_WRITER_PASSWORD';"
 
-      - name: Ingest the masked CI fixture
+      - name: Ingest the official dataset
         run: python ingest.py
 
       - name: Transform raw -> clean
