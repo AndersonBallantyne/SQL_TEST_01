@@ -5,6 +5,29 @@ on:
   pull_request:
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      eval: ${{ steps.filter.outputs.eval }}
+    steps:
+      # fetch-depth: 0 (full history), not the default shallow depth-1 clone - paths-filter
+      # needs to compute a merge-base against the previous commit on this same branch for a
+      # plain push event (it can only use the GitHub API, no checkout needed, for pull_request
+      # events - push events require real git history to diff against).
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+        id: filter
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            eval:
+              - 'agent.py'
+              - 'tools.py'
+              - 'eval_cases*.py'
+
   test:
     runs-on: ubuntu-latest
 
@@ -89,3 +112,96 @@ jobs:
 
       - name: Run pytest
         run: pytest -v
+
+  eval:
+    # Runs only on a merge to main that actually touches agent behavior (agent.py, tools.py,
+    # eval_cases*.py) - both conditions decided explicitly earlier in Build 5: the real cost of
+    # a full eval run is cents on claude-haiku-4-5, but running it on every WIP push would still
+    # be pure noise, and ANTHROPIC_API_KEY becoming a live Actions secret is worth minimizing
+    # exposure on. `needs: test` also means this never fires against a build that already
+    # failed its regular tests.
+    needs: [test, detect-changes]
+    if: github.ref == 'refs/heads/main' && needs.detect-changes.outputs.eval == 'true'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: devuser
+          POSTGRES_PASSWORD: ci_admin_pw
+          POSTGRES_DB: appdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: ci_admin_pw
+      POSTGRES_DB: appdb
+      POSTGRES_READER_USER: appdb_reader
+      POSTGRES_READER_PASSWORD: ci_reader_pw
+      POSTGRES_AGENT_WRITER_USER: appdb_agent_writer
+      POSTGRES_AGENT_WRITER_PASSWORD: ci_writer_pw
+      ALLOCATIONS_CSV_PATH: ci_fixture/ALLOCATION-fixture.csv
+      EXPECTED_RAW_ROW_COUNT: 30
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Each GitHub Actions job gets its own fresh runner and service container, so the eval
+      # job can't reuse the `test` job's already-populated database - this repeats the same
+      # migrate/ingest/transform/embed pipeline. Real duplicated compute, but this job only
+      # fires on a relevant merge to main, not every push, so it's a fine tradeoff at this scale.
+      - name: Run schema migrations
+        run: |
+          export PGPASSWORD="$POSTGRES_PASSWORD"
+          for f in 001_schema.sql 002_seed.sql 003_readonly_role.sql \
+                   004_raw_schema.sql 005_clean_schema.sql \
+                   006_agent_scratch_role.sql 007_agent_scratch_schema.sql \
+                   008_add_summary_embedding.sql 009_add_summary_embedding_hnsw_index.sql \
+                   010_docs_chunks_schema.sql 011_metrics_history_schema.sql; do
+            echo "Applying $f"
+            psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
+          done
+
+      - name: Set CI-only passwords for the reader/writer roles
+        run: |
+          export PGPASSWORD="$POSTGRES_PASSWORD"
+          psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+            "ALTER ROLE appdb_reader WITH PASSWORD '$POSTGRES_READER_PASSWORD';"
+          psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+            "ALTER ROLE appdb_agent_writer WITH PASSWORD '$POSTGRES_AGENT_WRITER_PASSWORD';"
+
+      - name: Ingest the masked CI fixture
+        run: python ingest.py
+
+      - name: Transform raw -> clean
+        run: python transform.py
+
+      - name: Embed allocation summaries
+        run: python embed_summaries.py
+
+      - name: Extract & embed doc chunks
+        run: |
+          python extract_doc_chunks.py
+          python embed_chunks.py
+
+      - name: Run eval harness (round 1)
+        run: python run_eval.py
+
+      - name: Run eval harness (round 2)
+        run: python run_eval.py eval_cases_round2

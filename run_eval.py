@@ -96,3 +96,10 @@ passed_count = sum(1 for r in results if r["passed"])
 print("\n" + "=" * 70)
 print(f"{passed_count}/{len(results)} passed")
 print("=" * 70)
+
+# Previously always exited 0 regardless of pass/fail - fine for a human reading the printed
+# report locally, but it means the new CI eval job (Build 5 Phase 3) could never actually go
+# red on a real regression, only on a crash. A non-zero exit on any failure is what makes this
+# job meaningfully gate a merge to main rather than just running silently.
+if passed_count < len(results):
+    sys.exit(1)

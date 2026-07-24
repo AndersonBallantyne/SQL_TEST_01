@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 5, Phase 3 Flow — Gated Eval Harness in CI</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #F3F6F7; }
+  body { display: flex; justify-content: center; padding: 32px 16px 56px; }
+  .frame { width: 100%; max-width: 700px; }
+  svg { display: block; width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<div class="frame">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 1300" width="680" height="1300" role="img" aria-labelledby="title desc">
+  <title id="title">Build 5, Phase 3 flow: gated eval harness in CI</title>
+  <desc id="desc">Flowchart: start, a checkpoint confirming Phase 1's CI is live and green on the public repo, recalling the earlier decision that the eval harness trigger is path-filtered and merge-to-main only, adding the ANTHROPIC_API_KEY GitHub Actions secret as the user's own action since it is a real credential, detecting whether the pushed commit touched agent.py, tools.py, eval_cases files, or prompt text, adding a new gated eval job to the CI workflow that only runs under both conditions, a decision checking the eval job correctly skips on unrelated pushes and runs with a real eval report on a relevant merge to main, then Build 5 complete.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #101827; }
+    .heading    { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 22px; font-weight: 600; }
+    .subheading { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 11px; fill: #7C8894; letter-spacing: 0.12em; }
+    .step-label { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; }
+    .step-desc  { font-size: 13px; fill: #4B5768; }
+    .step-mono  { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px; fill: #7C8894; }
+    .decision-title { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; text-anchor: middle; }
+    .decision-q     { font-size: 12.5px; fill: #B5502B; text-anchor: middle; font-weight: 600; }
+    .legend-text { font-size: 11px; fill: #7C8894; }
+    .rect-node   { fill: #FFFFFF; stroke: #B9C4C7; stroke-width: 1.5; }
+    .diamond-node{ fill: #F7E9E2; stroke: #B5502B; stroke-width: 1.5; }
+    .pill-node   { fill: #0B5158; }
+    .pill-text   { fill: #F3F9F9; font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13.5px; font-weight: 700; text-anchor: middle; letter-spacing: 0.04em; }
+    .badge       { fill: #0B5158; }
+    .badge-text  { fill: #F3F9F9; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+    .arrow-line  { stroke: #B9C4C7; stroke-width: 2; }
+    .arrow-head  { fill: #B9C4C7; }
+  </style>
+
+  <rect x="0" y="0" width="680" height="1300" fill="#F3F6F7"/>
+
+  <text x="340" y="40" class="heading" text-anchor="middle">Build 5, Phase 3 — Gated Eval Harness in CI</text>
+  <text x="340" y="60" class="subheading" text-anchor="middle">LIVE DEPLOYMENT WITH CI · BUILD 5</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="120" y="76" width="20" height="12" rx="6" class="pill-node"/>
+    <text x="146" y="86" class="legend-text">start / end</text>
+    <polygon points="234,73 250,82 234,91 218,82" class="diamond-node"/>
+    <text x="256" y="86" class="legend-text">checkpoint</text>
+    <rect x="330" y="76" width="20" height="12" rx="3" class="rect-node"/>
+    <text x="356" y="86" class="legend-text">step</text>
+    <line x1="410" y1="82" x2="440" y2="82" class="arrow-line"/>
+    <polygon points="446,82 438,78 438,86" class="arrow-head"/>
+    <text x="452" y="86" class="legend-text">flow</text>
+  </g>
+
+  <!-- connectors -->
+  <g>
+    <line class="arrow-line" x1="340" y1="170" x2="340" y2="210"/>
+    <polygon class="arrow-head" points="340,216 334,206 346,206"/>
+
+    <line class="arrow-line" x1="340" y1="346" x2="340" y2="386"/>
+    <polygon class="arrow-head" points="340,392 334,382 346,382"/>
+
+    <line class="arrow-line" x1="340" y1="470" x2="340" y2="510"/>
+    <polygon class="arrow-head" points="340,516 334,506 346,506"/>
+
+    <line class="arrow-line" x1="340" y1="594" x2="340" y2="634"/>
+    <polygon class="arrow-head" points="340,640 334,630 346,630"/>
+
+    <line class="arrow-line" x1="340" y1="718" x2="340" y2="758"/>
+    <polygon class="arrow-head" points="340,764 334,754 346,754"/>
+
+    <line class="arrow-line" x1="340" y1="842" x2="340" y2="966"/>
+    <polygon class="arrow-head" points="340,1012 334,1002 346,1002"/>
+
+    <line class="arrow-line" x1="340" y1="1142" x2="340" y2="1182"/>
+    <polygon class="arrow-head" points="340,1188 334,1178 346,1178"/>
+  </g>
+
+  <!-- Start pill -->
+  <g>
+    <rect class="pill-node" x="180" y="110" width="320" height="60" rx="30"/>
+    <text class="pill-text" x="340" y="145">START — BUILD 5, PHASE 3</text>
+  </g>
+
+  <!-- Decision: Phase 1 checkpoint -->
+  <g>
+    <polygon class="diamond-node" points="340,216 500,281 340,346 180,281"/>
+    <circle class="badge" cx="96" cy="281" r="16"/>
+    <text class="badge-text" x="96" y="282">0</text>
+    <text class="decision-title" x="340" y="275">Phase 1 check</text>
+    <text class="decision-q" x="340" y="296">public repo CI green?</text>
+  </g>
+
+  <!-- Step 1 -->
+  <g>
+    <rect class="rect-node" x="60" y="392" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="428" r="16"/>
+    <text class="badge-text" x="96" y="429">1</text>
+    <text class="step-label" x="126" y="422">Recall the gating decision</text>
+    <text class="step-mono" x="126" y="444">path-filtered (agent/tools/eval_cases) + merge-to-main only</text>
+  </g>
+
+  <!-- Step 2 -->
+  <g>
+    <rect class="rect-node" x="60" y="516" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="552" r="16"/>
+    <text class="badge-text" x="96" y="553">2</text>
+    <text class="step-label" x="126" y="546">Add the ANTHROPIC_API_KEY secret</text>
+    <text class="step-desc" x="126" y="568">user's own action — a real credential, entered via gh/GitHub settings, not by me</text>
+  </g>
+
+  <!-- Step 3 -->
+  <g>
+    <rect class="rect-node" x="60" y="640" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="676" r="16"/>
+    <text class="badge-text" x="96" y="677">3</text>
+    <text class="step-label" x="126" y="670">Detect relevant path changes</text>
+    <text class="step-mono" x="126" y="692">dorny/paths-filter against agent.py, tools.py, eval_cases*.py</text>
+  </g>
+
+  <!-- Step 4 -->
+  <g>
+    <rect class="rect-node" x="60" y="764" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="800" r="16"/>
+    <text class="badge-text" x="96" y="801">4</text>
+    <text class="step-label" x="126" y="794">Add the gated eval job to ci.yml</text>
+    <text class="step-mono" x="126" y="816">runs only if on main AND the path filter matched</text>
+  </g>
+
+  <!-- Decision: live test -->
+  <g>
+    <polygon class="diamond-node" points="340,1012 500,1077 340,1142 180,1077"/>
+    <circle class="badge" cx="96" cy="1077" r="16"/>
+    <text class="badge-text" x="96" y="1078">5</text>
+    <text class="decision-title" x="340" y="1071">Live test</text>
+    <text class="decision-q" x="340" y="1092">skips unrelated pushes, runs on a real merge?</text>
+  </g>
+
+  <!-- End pill -->
+  <g>
+    <rect class="pill-node" x="180" y="1188" width="320" height="66" rx="33"/>
+    <text class="pill-text" x="340" y="1218">BUILD 5</text>
+    <text class="pill-text" x="340" y="1238">COMPLETE</text>
+  </g>
+</svg>
+</div>
+</body>
+</html>
