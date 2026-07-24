@@ -19,9 +19,14 @@ EVAL_CASES = [
         "expected_keywords": ["4"],
     },
     {
+        # Genuinely CI-incompatible, confirmed by two live CI runs (2026-07-24): this depends
+        # on eval_domain_avg_duration surviving from round 1's save-case, but round 1's own
+        # cleanup_table step drops it immediately after that case runs, before round 2 ever
+        # executes - see run_eval.py's ci_skip handling for the full explanation.
         "question": "Do you have a previously saved result about average allocation duration by email domain? If so, which domain had the longest average duration?",
         "expected_tool": "run_sql_query",
         "expected_keywords": ["gmail.com"],
+        "ci_skip": True,
     },
     {
         "question": "How many allocations were never renewed (a renewal_count of zero)?",
