@@ -5,7 +5,12 @@ import psycopg
 
 load_dotenv(encoding="utf-8-sig")
 
-CSV_PATH = r"C:\IMAGEBANK_2023\DOCKER_SQL\EMEC_AGENT_BUILD\ALLOCATION-export-Oct_2024-2025.csv"
+# Overridable so CI can point this at the small masked ci_fixture/ CSV instead - the real
+# export never leaves this machine, so a CI runner has no way to reach the hardcoded default.
+CSV_PATH = os.environ.get(
+    "ALLOCATIONS_CSV_PATH",
+    r"C:\IMAGEBANK_2023\DOCKER_SQL\EMEC_AGENT_BUILD\ALLOCATION-export-Oct_2024-2025.csv",
+)
 
 conn = psycopg.connect(
     host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),

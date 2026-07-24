@@ -68,6 +68,16 @@ def test_writer_can_create_and_reader_can_see_it_in_agent_scratch():
 
 
 def test_scratch_table_cap_blocks_new_tables_but_not_existing_ones(monkeypatch):
+    # Create the "existing" table first, under a cap generous enough to allow it - this makes
+    # the test self-contained instead of depending on some other table already existing from
+    # unrelated past manual usage. It used to reuse domain_avg_duration (from Build 2.5
+    # testing), which only ever existed on the author's own machine, never created by any
+    # committed migration/script - a real portability gap only surfaced by running this suite
+    # against a genuinely fresh database, where that table simply isn't there and this test's
+    # "existing table" branch silently never ran at all.
+    monkeypatch.setattr(tools, "MAX_SCRATCH_TABLES", 50)
+    tools.save_dataframe("pytest_cap_existing_table", ["x"], [(1,)])
+
     # monkeypatch, not 50 real tables, to hit the cap's exact boundary - auto-restored after
     # this test, so it never actually costs the real limit's protection elsewhere.
     monkeypatch.setattr(tools, "MAX_SCRATCH_TABLES", 0)
@@ -77,16 +87,11 @@ def test_scratch_table_cap_blocks_new_tables_but_not_existing_ones(monkeypatch):
 
     # An existing table should still accept new rows even "at" the cap -
     # the cap only ever blocks creating a brand-new table.
-    # Reuses the real domain_avg_duration table (from Build 2.5), not a fresh pytest-only
-    # one - a new table name here would hit the "doesn't exist yet" branch and test the
-    # wrong path entirely. Only the inserted test row gets cleaned up below, not the table.
-    result = tools.save_dataframe(
-        "domain_avg_duration", ["patron_email_domain", "avg_duration_hours"], [("@pytest.test", 0.0)]
-    )
+    result = tools.save_dataframe("pytest_cap_existing_table", ["x"], [(2,)])
     assert result["rows_written"] == 1
 
     conn = _connect_as("POSTGRES_AGENT_WRITER_USER", "POSTGRES_AGENT_WRITER_PASSWORD")
     with conn.cursor() as cur:
-        cur.execute("DELETE FROM agent_scratch.domain_avg_duration WHERE patron_email_domain = '@pytest.test'")
+        cur.execute("DROP TABLE IF EXISTS agent_scratch.pytest_cap_existing_table")
     conn.commit()
     conn.close()

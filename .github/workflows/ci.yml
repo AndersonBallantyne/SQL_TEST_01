@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: devuser
+          POSTGRES_PASSWORD: ci_admin_pw
+          POSTGRES_DB: appdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: ci_admin_pw
+      POSTGRES_DB: appdb
+      # Throwaway credentials scoped to this one ephemeral service container, destroyed at
+      # job end - not real secrets, so no GitHub Actions secret store needed for these.
+      POSTGRES_READER_USER: appdb_reader
+      POSTGRES_READER_PASSWORD: ci_reader_pw
+      POSTGRES_AGENT_WRITER_USER: appdb_agent_writer
+      POSTGRES_AGENT_WRITER_PASSWORD: ci_writer_pw
+      # The real 1535-row export never leaves the author's machine - CI ingests a small
+      # masked subset instead (see make_ci_fixture.py), and test_data_quality.py's row-count
+      # guard reads its expected count from this same override.
+      ALLOCATIONS_CSV_PATH: ci_fixture/ALLOCATION-fixture.csv
+      EXPECTED_RAW_ROW_COUNT: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run schema migrations
+        run: |
+          export PGPASSWORD="$POSTGRES_PASSWORD"
+          for f in 001_schema.sql 002_seed.sql 003_readonly_role.sql \
+                   004_raw_schema.sql 005_clean_schema.sql \
+                   006_agent_scratch_role.sql 007_agent_scratch_schema.sql \
+                   008_add_summary_embedding.sql 009_add_summary_embedding_hnsw_index.sql \
+                   010_docs_chunks_schema.sql 011_metrics_history_schema.sql; do
+            echo "Applying $f"
+            psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
+          done
+
+      - name: Set CI-only passwords for the reader/writer roles
+        # Locally these are set once by hand (see CREDENTIALS.local.md) since no migration
+        # file carries a password in cleartext on purpose - CI has no such manual step, so it
+        # sets its own throwaway values here instead, immediately after the roles are created.
+        run: |
+          export PGPASSWORD="$POSTGRES_PASSWORD"
+          psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+            "ALTER ROLE appdb_reader WITH PASSWORD '$POSTGRES_READER_PASSWORD';"
+          psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+            "ALTER ROLE appdb_agent_writer WITH PASSWORD '$POSTGRES_AGENT_WRITER_PASSWORD';"
+
+      - name: Ingest the masked CI fixture
+        run: python ingest.py
+
+      - name: Transform raw -> clean
+        run: python transform.py
+
+      - name: Embed allocation summaries
+        run: python embed_summaries.py
+
+      - name: Extract & embed doc chunks
+        run: |
+          python extract_doc_chunks.py
+          python embed_chunks.py
+
+      - name: Run pytest
+        run: pytest -v

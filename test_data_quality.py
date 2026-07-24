@@ -34,10 +34,13 @@ CLEAN_SCHEMA = pa.DataFrameSchema({
 
 
 def test_raw_row_count():
-    # 1535 is the real source CSV's row count, not a round/arbitrary number - a regression
-    # guard against ingest.py silently dropping or duplicating rows on a re-run.
+    # 1535 is the real source CSV's row count locally. CI ingests a small masked fixture
+    # instead (ci_fixture/, see make_ci_fixture.py) and overrides this via
+    # EXPECTED_RAW_ROW_COUNT - either way, this guards against ingest.py silently dropping or
+    # duplicating rows on a re-run against whatever the current source actually contains.
+    expected = int(os.environ.get("EXPECTED_RAW_ROW_COUNT", "1535"))
     raw = _query("SELECT * FROM raw.allocations")
-    assert len(raw) == 1535
+    assert len(raw) == expected
 
 
 def test_clean_row_count_matches_raw():
