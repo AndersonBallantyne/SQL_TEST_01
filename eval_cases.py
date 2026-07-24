@@ -2,6 +2,10 @@
 # numbers) the answer is structurally required to contain - not on how the model is likely to
 # phrase a synthesized explanation. Free-text paraphrase varies run to run even when the
 # answer is fully correct; two cases below were rewritten after failing this way live.
+#
+# Touched deliberately, 2026-07-24, to trigger Build 5 Phase 3's gated eval CI job for real -
+# comment-only, no behavior change, verifying the "runs on a relevant merge to main" half of
+# the gate (the "skips unrelated pushes" half was already confirmed by the previous push).
 EVAL_CASES = [
     {
         # Originally ["blast radius", "audit"] - failed on a re-run whose answer was
