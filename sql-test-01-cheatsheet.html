@@ -269,8 +269,8 @@
   <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized — plus a project-wide file map, and a running list of Claude's own working commands. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
-    <div><dt>Covers</dt><dd>Build 1 (agent), Build 2 (pipeline), Build 2.5 (scratch workspace), Build 3 (semantic search), Build 3.5 (docs RAG) &amp; Build 4 (observability &amp; eval harness) — all complete</dd></div>
-    <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop</dd></div>
+    <div><dt>Covers</dt><dd>Build 1 (agent) through Build 5 (live deployment with CI) — all complete</dd></div>
+    <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop · GitHub Actions</dd></div>
     <div><dt>Databases</dt><dd>pg_local (appdb)</dd></div>
   </dl>
 
@@ -280,6 +280,7 @@
     <a href="#psql">psql</a>
     <a href="#powershell">PowerShell</a>
     <a href="#git">Git</a>
+    <a href="#gh-cli">GitHub CLI</a>
     <a href="#psycopg">psycopg</a>
     <a href="#sql-composition">psycopg.sql</a>
     <a href="#pandas">pandas</a>
@@ -293,7 +294,7 @@
 
   <section class="group" id="files">
     <div class="group-head"><h2>Project Files</h2><span class="group-tag">What's actually in this folder</span></div>
-    <p class="group-note">A map of the project root as of Build 4's completion — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
+    <p class="group-note">A map of the project root as of Build 5's completion — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
 
     <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">SQL migrations — run in order, numbered for reproducibility</p>
     <div class="ref-table-wrap">
@@ -311,6 +312,7 @@
           <tr><td class="cmd">008_add_summary_embedding.sql</td><td class="desc">Build 3 Phase 1 — adds <code>clean.allocations.summary_embedding vector(384)</code>.</td></tr>
           <tr><td class="cmd">009_add_summary_embedding_hnsw_index.sql</td><td class="desc">Build 3 follow-up — HNSW index on <code>summary_embedding</code> for indexed similarity search.</td></tr>
           <tr><td class="cmd">010_docs_chunks_schema.sql</td><td class="desc">Build 3.5 Phase 1 — the <code>docs.chunks</code> table (<code>vector(384)</code>) for the documentation RAG corpus.</td></tr>
+          <tr><td class="cmd">011_metrics_history_schema.sql</td><td class="desc">Build 4 follow-up — <code>observability.metrics_history</code>, a tracked time series over <code>metrics_rollup.py</code>'s runs.</td></tr>
           <tr><td class="cmd">schema_mssql.sql</td><td class="desc">The SQL Server counterpart to <code>001_schema.sql</code> — same <code>appdb</code> shape, T-SQL dialect.</td></tr>
           <tr><td class="cmd">seed_mssql.sql</td><td class="desc">SQL Server counterpart to <code>002_seed.sql</code>.</td></tr>
         </tbody>
@@ -339,6 +341,19 @@
           <tr><td class="cmd">eval_cases.py / eval_cases_round2.py</td><td class="desc">Fixed sets of test questions with an expected tool and expected answer keywords — run end-to-end against the live agent, not tested in isolation.</td></tr>
           <tr><td class="cmd">run_eval.py</td><td class="desc">Drives every case through <code>ask_agent()</code>, checks the tool-call log and answer text, reports pass/fail per question. Accepts an optional case-module argument.</td></tr>
           <tr><td class="cmd">metrics_rollup.py</td><td class="desc">Plain-text report over the tool-call log — tool-usage frequency, average turns per question (grouped by <code>question_id</code>), error rate.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — live deployment with CI (Build 5)</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">synthesize_dataset.py</td><td class="desc">Builds <code>data/ALLOCATION-synthesized.csv</code> from the real export — real dates/duration/renewal/resource counts kept, department/email/summary synthesized. Imports the real department-code mapping from a git-ignored local file, never hardcodes it.</td></tr>
+          <tr><td class="cmd">department_mapping.local.py</td><td class="desc">Git-ignored — the real department-code mapping <code>synthesize_dataset.py</code> actually runs from. Never committed; see <code>DEPARTMENT_MAPPING.local.md</code> for the human-readable copy.</td></tr>
+          <tr><td class="cmd">pytest.ini</td><td class="desc"><code>python_files = test_*.py</code> — scopes pytest discovery to this project's actual test-file convention, after a stray non-test script (<code>api_test.py</code>) was found being silently collected by pytest's broader default.</td></tr>
         </tbody>
       </table>
     </div>
@@ -389,7 +404,6 @@
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td class="cmd">db_test_py.py</td><td class="desc">The very first Postgres connectivity check — plain <code>psycopg</code>, no agent involved.</td></tr>
-          <tr><td class="cmd">api_test.py</td><td class="desc">The very first Anthropic API call — confirms auth and a real response, before any tool-use loop existed.</td></tr>
         </tbody>
       </table>
     </div>
@@ -419,7 +433,8 @@
           <tr><td class="cmd">requirements.txt</td><td class="desc">Pinned Python dependencies — <code>anthropic</code>, <code>beautifulsoup4</code>, <code>psycopg</code>, <code>pgvector</code>, <code>sentence-transformers</code>, <code>pandas</code>, <code>pandera</code>, <code>pytest</code>, <code>python-dotenv</code>.</td></tr>
           <tr><td class="cmd">.env</td><td class="desc">Real local secrets (DB passwords) — gitignored, never committed.</td></tr>
           <tr><td class="cmd">.env.example</td><td class="desc">Template shape of <code>.env</code> with placeholder values, safe to commit.</td></tr>
-          <tr><td class="cmd">.gitignore</td><td class="desc">Excludes secrets (<code>.env</code>, <code>CREDENTIALS.local.md</code>), OS/editor cruft, <code>__pycache__/</code>, logs/dumps.</td></tr>
+          <tr><td class="cmd">.gitignore</td><td class="desc">Excludes secrets (<code>.env</code>, <code>CREDENTIALS.local.md</code>, <code>DEPARTMENT_MAPPING.local.md</code>, <code>department_mapping.local.py</code>), OS/editor cruft, <code>__pycache__/</code>, logs/dumps.</td></tr>
+          <tr><td class="cmd">.github/workflows/ci.yml</td><td class="desc">Build 5 — GitHub Actions: migrations + full pipeline + pytest on every push; a gated eval-harness job on a relevant merge to <code>main</code> only.</td></tr>
           <tr><td class="cmd">.gitattributes</td><td class="desc">Forces consistent line endings for <code>.sql</code>/<code>.yml</code>/<code>.md</code> across Windows/Unix.</td></tr>
         </tbody>
       </table>
@@ -432,8 +447,10 @@
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td class="cmd">CREDENTIALS.local.md</td><td class="desc">Unredacted local companion to <code>.env</code> — gitignored, never shared or committed.</td></tr>
+          <tr><td class="cmd">DEPARTMENT_MAPPING.local.md</td><td class="desc">Build 5 — the real department-code mapping used by <code>synthesize_dataset.py</code>, human-readable. Gitignored, same treatment as <code>CREDENTIALS.local.md</code> — publishing it would let anyone reverse the department masking.</td></tr>
+          <tr><td class="cmd">data/ALLOCATION-synthesized.csv</td><td class="desc">Build 5 — the project's one official dataset (1535 rows), real temporal/quantitative fields kept, everything else synthesized. Used identically by local dev, CI, and the eval harness.</td></tr>
           <tr><td class="cmd">sql-test-01-cheatsheet.html / .pdf</td><td class="desc">This living document — every command actually typed, plus this file map.</td></tr>
-          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_4_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
+          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_5_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
           <tr><td class="cmd">PROJECT_DIAGRAMS/project-overview.html</td><td class="desc">Build 3.5 — a seed document written to answer whole-project overview questions, so the docs-RAG corpus has something to match against.</td></tr>
           <tr><td class="cmd">logs/</td><td class="desc">Build 4 — gitignored directory holding <code>tool_calls.jsonl</code> (live, JSON Lines) and <code>tool_calls.pre-question-id.jsonl</code> (archived). Durable, queryable tool-call tracing — not a Postgres table, deliberately.</td></tr>
           <tr><td class="cmd">Local Postgres.session.sql</td><td class="desc">Empty scratch file created by a VS Code SQL client extension — not authored content.</td></tr>
@@ -530,6 +547,34 @@
           <tr><td class="cmd">git mv old new</td><td class="desc">Rename a tracked file while git keeps its history attached to the new name.</td></tr>
           <tr><td class="cmd">git log --oneline -n</td><td class="desc">Recent commit history, one line each — the fastest way to check "where are we, really."</td></tr>
           <tr><td class="cmd">git diff</td><td class="desc">Exact unstaged changes, line by line, before they get staged.</td></tr>
+          <tr><td class="cmd">git remote add origin url / git push --set-upstream origin main</td><td class="desc">Build 5 — wire up a GitHub remote for the first time and push with tracking, so plain <code>git push</code> works afterward.</td></tr>
+          <tr><td class="cmd">git stash push -u -m "..." / git stash pop</td><td class="desc">Build 5 — shelve in-progress uncommitted work (including untracked files, via <code>-u</code>) to get a clean tree before a history rewrite, then restore it after.</td></tr>
+          <tr><td class="cmd">git commit --amend</td><td class="desc">Build 5 — rewrite the tip commit in place. Safe only when that commit was <b>never pushed</b>; used to fix a real mistake (real data hardcoded in a script) before it ever left the machine.</td></tr>
+          <tr><td class="cmd">git bundle create out.bundle --all / git bundle verify out.bundle</td><td class="desc">Build 5 — a full, portable backup of every ref in the repo in one file. Taken before every <code>git filter-repo</code> pass this build, saved outside the repo itself.</td></tr>
+          <tr><td class="cmd">git log --all -S"string" --oneline</td><td class="desc">Build 5 — pickaxe search: commits where a literal string's occurrence count changed. The actual verification method used to confirm a purge worked, not assumed from the tool's own success message.</td></tr>
+          <tr><td class="cmd">git show &lt;commit&gt;:&lt;path&gt;</td><td class="desc">Build 5 — print a file's exact content as of one specific commit, without checking it out — used to directly confirm a blob no longer contains something it used to.</td></tr>
+          <tr><td class="cmd">git reflog expire --expire=now --all &amp;&amp; git gc --prune=now</td><td class="desc">Build 5 — force-expire the reflog and immediately garbage-collect, so an amended-away commit's old blob is actually gone locally, not just unreferenced.</td></tr>
+          <tr><td class="cmd">git push --force origin main</td><td class="desc">Build 5 — overwrite the remote's history after a <code>filter-repo</code> rewrite. Only used after explicit confirmation, and only because the rewrite genuinely changed already-pushed commits.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="gh-cli">
+    <div class="group-head"><h2>GitHub CLI</h2><span class="group-tag">gh · Build 5</span></div>
+    <p class="group-note">Installed via <code>winget</code> mid-build (not present by default) — authentication and repo creation still required the user directly; everything past that ran from this session.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">gh auth login / gh auth status</td><td class="desc">Authenticate <code>gh</code> to a GitHub account (interactive — requires the user's own browser/credentials) and confirm the current login, protocol, and token scopes.</td></tr>
+          <tr><td class="cmd">gh repo create name --public --source=. --remote=origin --push</td><td class="desc">Create a new GitHub repo from the current local repo and push it in one step — the intended one-liner, not usable here since <code>gh</code> wasn't installed yet at that point.</td></tr>
+          <tr><td class="cmd">gh secret set NAME --repo owner/repo</td><td class="desc">Set a GitHub Actions secret, prompting for the value securely (never echoed, never logged) — how <code>ANTHROPIC_API_KEY</code> got configured, by the user directly.</td></tr>
+          <tr><td class="cmd">gh run list --limit n</td><td class="desc">Recent Actions runs for the current repo — status, workflow, branch, duration.</td></tr>
+          <tr><td class="cmd">gh run view &lt;id&gt;</td><td class="desc">Step-by-step breakdown of one run — which steps passed, which failed, without opening a browser.</td></tr>
+          <tr><td class="cmd">gh run view &lt;id&gt; --log-failed</td><td class="desc">Full log output for only the failed step(s) — the actual diagnostic step every real CI failure this build was root-caused from.</td></tr>
+          <tr><td class="cmd">gh run watch &lt;id&gt;</td><td class="desc">Streams a run's live progress until it completes — used after every push this build to confirm a fix before moving on, rather than polling manually.</td></tr>
         </tbody>
       </table>
     </div>
@@ -709,6 +754,7 @@
           <tr><td class="cmd">WebFetch(url="claude.ai/code/artifact/&lt;uuid&gt;", ...)</td><td class="desc">For Artifacts the user owns, this returns full raw HTML rather than the usual markdown conversion — used to recover Build 1's two handoff briefs, which had only ever been published as Artifacts, never saved as local files.</td></tr>
           <tr><td class="cmd">cygpath -m "$(pwd)/file.html"</td><td class="desc">Converts a Git Bash path to a Windows-style forward-slash path (<code>C:/...</code>) — necessary before building a <code>file:///</code> URL for headless Edge, since Git Bash's own <code>/c/...</code> path style isn't a valid Windows path and silently fails to load.</td></tr>
           <tr><td class="cmd">git log --oneline &lt;hash&gt;^..&lt;hash&gt;</td><td class="desc">The exact commit range between two specific commits (the leading <code>^</code> makes it inclusive of the first one) — used to pin down a build's full commit range for its handoff brief, rather than <code>-n</code>'s "last N commits."</td></tr>
+          <tr><td class="cmd">pdftotext file.pdf -</td><td class="desc">Build 5 — extracts a PDF's actual text to stdout. Used specifically because a plain <code>grep</code> on a PDF's raw bytes can silently miss encoded/compressed text — the real check after redacting something from a rendered document.</td></tr>
         </tbody>
       </table>
     </div>
@@ -716,7 +762,7 @@
   </section>
 
   <footer>
-    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 4 (agent observability &amp; eval harness) — all complete, including Build 3's follow-up hardening pass (idempotent re-embedding, HNSW index). Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 5 (live deployment with CI) — all 5 builds now complete, public repo live on GitHub with CI green end-to-end. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
   </footer>
 
 </div>

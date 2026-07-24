@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 5 Handoff Brief — Live Deployment with CI</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  h3.phase-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px; font-weight: 600; margin: 32px 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.phase-title .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 700; flex: none;
+  }
+  p.phase-goal { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .kw { color: var(--teal); font-weight: 600; }
+  .str { color: var(--accent); }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+
+  table.ref-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); table-layout: fixed; }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; word-break: break-word; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: normal; }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  ol.step-list { margin: 0 0 18px; padding-left: 22px; font-size: 13.5px; }
+  ol.step-list li { margin-bottom: 8px; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 5 · Handoff Brief</p>
+  <h1>Live Deployment with CI</h1>
+  <p class="lede">A standalone, deep-dive reference for Build 5 — every phase, every real bug the process itself surfaced, the mid-build data-anonymization pivot, and every verification result, in full. Complements (does not replace) the living cheat sheet and the two per-phase flow diagrams.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Complete — all 3 phases, CI green end-to-end</dd></div>
+    <div><dt>Commits</dt><dd><code>08b0437</code> → <code>cbcb307</code></dd></div>
+    <div><dt>Continues</dt><dd>Build 4 (agent observability &amp; eval harness)</dd></div>
+    <div><dt>Precedes</dt><dd>Build 6 (optional — Streamlit front end)</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#what">What &amp; Why</a>
+    <a href="#decisions">Scoping Decisions</a>
+    <a href="#phase1">Phase 1</a>
+    <a href="#phase3">Phase 3</a>
+    <a href="#anonymization">Data Anonymization Pivot</a>
+    <a href="#github">GitHub Setup, Step by Step</a>
+    <a href="#verification">Verification Log</a>
+    <a href="#limitations">Known Limitations</a>
+    <a href="#env">Environment State</a>
+  </nav>
+
+  <section class="doc-section" id="what">
+    <h2>What Was Built, and Why</h2>
+    <p class="section-note">
+      Every prior build deepened the agent itself. Build 5 makes the project reproducible and verifiable by something other than this one machine: a public GitHub repository with a CI workflow that proves — on every push, from a genuinely empty environment — that the schema builds, the data pipeline runs, the test suite passes, and (on a relevant merge to <code>main</code>) the agent's own eval harness still passes too.
+    </p>
+    <p class="section-note">
+      The most consequential work this build wasn't in the original scope at all: a mid-build realization that the small CI-only data fixture from Phase 1 didn't actually satisfy the real anonymization requirement, leading to a full replacement of the real/fixture split with one official synthesized dataset, and three separate <code>git filter-repo</code> history rewrites to make sure nothing that shouldn't be public ever was. That work is documented in full in its own section below, not folded quietly into the phase write-ups, because it's the part most worth learning from.
+    </p>
+    <div class="callout"><b>Trust boundary, unchanged from Build 1, now proven on a machine that isn't this one.</b> Every phase of this build exists to answer one question with evidence instead of assumption: does this actually work from zero, or does it only work here, on this laptop, because of six months of accumulated state nobody wrote down? Three separate real bugs (Phase 1) and a data-exposure gap (the anonymization pivot) all trace back to exactly that question.</div>
+  </section>
+
+  <section class="doc-section" id="decisions">
+    <h2>Scoping Decisions, Made Before Any Code Was Written</h2>
+    <p class="section-note">Two real forks were flagged at the start of this build and resolved deliberately, not defaulted into.</p>
+    <ol class="step-list">
+      <li><b>"Live deployment" means CI-only, not a public-facing app.</b> GitHub Actions validates migrations + the full test suite + a gated eval run; "deployment" means reproducibly buildable via Docker Compose, no public URL. The actual public-facing demo is Build 6's job (a Streamlit front end), not this build's — building both at once would be scope creep.</li>
+      <li><b>The eval harness runs in CI, but gated — path-filtered and merge-to-main only, not every push.</b> The real per-run cost turned out to be cents (a handful of cases on <code>claude-haiku-4-5</code>, 2–4 turns typically) — so the actual tradeoff wasn't API dollars, it was <code>ANTHROPIC_API_KEY</code> becoming a live GitHub Actions secret plus noise on every WIP commit, versus catching a real regression before it merges. <code>pytest</code> runs on every push regardless, since it costs nothing.</li>
+    </ol>
+    <div class="callout good"><b>Also decided: the new GitHub remote would be public.</b> Matches the project's stated portfolio/placement goal — and the data had already been domain-masked specifically for this eventuality back in Build 2. (That masking turned out not to be sufficient on its own — see the anonymization section.)</div>
+  </section>
+
+  <section class="doc-section" id="phase1">
+    <h3 class="phase-title"><span class="badge">1</span>GitHub Remote &amp; CI Skeleton (Phases 1 + 2 combined in practice)</h3>
+    <p class="phase-goal">Goal: a public repo, a CI workflow proving the schema and full pipeline build from zero, and the existing pytest suite wired in — Phase 2 turned out to be a natural side effect of building Phase 1 properly, not a separate step.</p>
+
+    <pre class="code"><span class="fn">.github/workflows/ci.yml — the core test job</span><code>services:
+  postgres:
+    image: pgvector/pgvector:pg17  <span class="cmt"># not plain postgres - schema needs the vector extension</span>
+    env:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: ci_admin_pw  <span class="cmt"># throwaway, scoped to this ephemeral container only</span>
+      POSTGRES_DB: appdb
+
+steps:
+  - <span class="kw">uses</span>: actions/checkout@v4
+  - <span class="kw">uses</span>: actions/setup-python@v5
+  - <span class="kw">run</span>: pip install -r requirements.txt
+  - <span class="cmt"># apply 001 through 011 in order, then ingest -> transform -> embed -> pytest</span></code></pre>
+
+    <div class="callout warn"><b>Bug 1 — no migration ever ran <code>CREATE EXTENSION vector</code>.</b> Even on the <code>pgvector/pgvector:pg17</code> image, the extension had been enabled by hand, once, months ago, directly in a <code>psql</code> session when Build 3 was first set up — never captured in any committed file. <code>008_add_summary_embedding.sql</code>'s own comment even referred to "the vector extension (enabled Phase 1, step 1)" — a manual step that was never actually SQL. Every migration re-run against <code>pg_local</code> since then silently found the extension already present. It surfaced only the moment a genuinely fresh volume tried to apply these migrations from scratch — first a disposable local throwaway container, then GitHub Actions' real ephemeral runner.</div>
+    <div class="callout good"><b>Fixed:</b> <code>CREATE EXTENSION IF NOT EXISTS vector;</code> added directly to <code>008_add_summary_embedding.sql</code>, idempotent so it's a no-op on a volume where it's already enabled.</div>
+
+    <div class="callout warn"><b>Bug 2 — a pytest test silently depended on leftover local-only state.</b> <code>test_scratch_table_cap_blocks_new_tables_but_not_existing_ones</code> reused <code>agent_scratch.domain_avg_duration</code>, a table that exists only because of real hands-on Build 2.5 testing months earlier, never created by any script. On a fresh database it doesn't exist, so the test's "existing table" branch never actually exercised what it claimed to — <code>save_dataframe</code> correctly saw "table doesn't exist" plus the test's own monkeypatched <code>MAX_SCRATCH_TABLES = 0</code>, and correctly refused to create it, raising an unhandled <code>RuntimeError</code> inside a call the test expected to succeed.</div>
+    <div class="callout good"><b>Fixed:</b> the test now creates its own throwaway table first (under a temporarily-raised <code>MAX_SCRATCH_TABLES</code> via <code>monkeypatch</code>), making it fully self-contained regardless of what else exists in <code>agent_scratch</code>.</div>
+
+    <div class="callout warn"><b>Bug 3 — <code>api_test.py</code>, a stray non-test script, was silently collected and executed by bare <code>pytest</code>.</b> This was the very first Anthropic API call ever made in this project, predating <code>agent.py</code> — a scratch connectivity check with no test functions, just a module-level <code>client.messages.create(...)</code>. It matched pytest's <code>*_test.py</code> discovery glob even though every real test file uses only <code>test_*.py</code>. Locally, a valid <code>ANTHROPIC_API_KEY</code> in <code>.env</code> meant this call had silently succeeded (and quietly spent real API credit) on every bare <code>pytest</code> invocation, ever — nothing to fail, so nothing for pytest to ever flag as wrong. It surfaced the moment <code>pytest</code> ran somewhere without that key already present: the first real Actions run, correctly, since the eval harness's secret wasn't configured until Phase 3.</div>
+    <div class="callout good"><b>Fixed:</b> <code>api_test.py</code> deleted outright (fully superseded by <code>agent.py</code>'s real functionality, confirmed nothing else referenced it), plus a new <code>pytest.ini</code> (<code>python_files = test_*.py</code>) scoping discovery to the convention every real test file already follows, so no future stray script can repeat this.</p></div>
+
+    <div class="callout good"><b>Common thread across all three bugs:</b> each was invisible specifically because <code>pg_local</code>'s long-lived Docker volume and local <code>.env</code> had silently satisfied an undocumented or accidental prerequisite for a long time. Each surfaced only by deliberately testing against an environment with none of that accumulated state — first a disposable throwaway container, then GitHub Actions' actual runner. This is the concrete, project-specific argument for why CI closes a real gap rather than just replicating what local testing already covers.</div>
+  </section>
+
+  <section class="doc-section" id="phase3">
+    <h3 class="phase-title"><span class="badge">3</span>Gated Eval Harness in CI</h3>
+    <p class="phase-goal">Goal: run the existing eval harness in CI too, but only on a relevant merge to main, per the scoping decision above.</p>
+
+    <pre class="code"><span class="fn">.github/workflows/ci.yml — detect-changes job</span><code>- <span class="kw">uses</span>: actions/checkout@v4
+  <span class="kw">with</span>:
+    fetch-depth: 0  <span class="cmt"># paths-filter needs real git history to diff a push event</span>
+
+- <span class="kw">uses</span>: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706  <span class="cmt"># v4.0.2, pinned by SHA not tag</span>
+  <span class="kw">id</span>: filter
+  <span class="kw">with</span>:
+    base: ${{ github.ref }}
+    filters: |
+      eval:
+        - <span class="str">'agent.py'</span>
+        - <span class="str">'tools.py'</span>
+        - <span class="str">'eval_cases*.py'</span></code></pre>
+    <div class="callout"><b>A real design detail confirmed by research before writing this, not assumed:</b> <code>paths-filter</code> can work purely via the GitHub API (no checkout needed) for <code>pull_request</code> events, but a plain <code>push</code> event needs real git history to compute a merge-base against the previous commit on the same branch — hence <code>fetch-depth: 0</code> and an explicit <code>base: ${{ github.ref }}</code>, not the default shallow clone.</div>
+
+    <pre class="code"><span class="fn">.github/workflows/ci.yml — the gated eval job</span><code><span class="kw">eval</span>:
+  needs: [test, detect-changes]  <span class="cmt"># never fires against an already-broken build</span>
+  <span class="kw">if</span>: github.ref == <span class="str">'refs/heads/main'</span> &amp;&amp; needs.detect-changes.outputs.eval == <span class="str">'true'</span>
+  <span class="cmt"># ...same migrate/ingest/transform/embed setup as the test job, then:</span>
+  - <span class="kw">run</span>: python run_eval.py
+  - <span class="kw">run</span>: python run_eval.py eval_cases_round2</code></pre>
+
+    <div class="callout warn"><b>Real gap found while wiring this up: <code>run_eval.py</code> never set a non-zero exit code.</b> It printed a full pass/fail report but always exited 0 — meaning this job could never actually go red on a genuine eval regression, only on an outright crash. A meaningless gate.</div>
+    <div class="callout good"><b>Fixed:</b> <code>sys.exit(1)</code> if any case fails. Confirmed the fix actually works by watching a real CI run go red on a genuine failure (see the anonymization section — the same run that first surfaced this also proved the exit code fires correctly).</div>
+
+    <p><b>Live-verified both halves of the gate for real</b>, not assumed from reading the YAML: a comment-only touch to <code>eval_cases.py</code> correctly triggered the <code>eval</code> job on a real merge to <code>main</code>; a separate, unrelated push (touching only <code>ci.yml</code>/<code>run_eval.py</code>) correctly left it skipped, shown as <code>-</code> in the Actions UI.</p>
+  </section>
+
+  <section class="doc-section" id="anonymization">
+    <h2>The Data Anonymization Pivot</h2>
+    <p class="section-note">Not part of the original Build 5 scope — surfaced by a direct question mid-build ("should I just mask the whole file"), which led to discovering the existing approach didn't actually meet the real bar. Documented in full because it's the most consequential work in this build.</p>
+
+    <div class="callout warn"><b>The Phase 1 CI fixture (30 rows, masked ID + domain only) didn't satisfy the real requirement.</b> A closer look at what "anonymization" actually needed to protect against revealed the bar was broader than institution identity — <b>no real operational/proprietary data public</b>, not just "don't reveal who this is." Under that standard, the already-published fixture failed: real department codes, real dates/durations, and real equipment descriptions (e.g. <code>CANON T3i</code>, <code>GVM 800D RGB LIGHT</code>, only the embedded tag numbers scrubbed) were all still real, for those 30 rows, already public.</div>
+
+    <p><b>Resolution: one official synthesized dataset (<code>data/ALLOCATION-synthesized.csv</code>) replaces the real-file/fixture split entirely</b> — used identically by local dev, CI, and the eval harness, so there's no separate fixture to keep in sync.</p>
+
+    <table class="ref-table">
+      <thead><tr><th>Field</th><th>Treatment</th></tr></thead>
+      <tbody>
+        <tr><td>renewal_count, all 3 dates, duration, resource_count</td><td class="mono">kept real, unchanged, row-for-row — nothing proprietary in these alone</td></tr>
+        <tr><td>allocation_id</td><td class="mono">random unique 7-digit IDs (random.sample, not sequential — changed after explicit correction) — categorically different length from real 6-digit IDs</td></tr>
+        <tr><td>patron_department</td><td class="mono">1:1 fictional remap (DEPARTMENT_MAP) — exact distribution/plurality shape preserved; blanks (787 of 1535 rows) left as-is</td></tr>
+        <tr><td>patron_email domain</td><td class="mono">artschool.edu family → fixture.edu family, subdomain structure kept; gmail.com left as-is per explicit instruction (generic provider, not identifying)</td></tr>
+        <tr><td>summary</td><td class="mono">fully synthesized from a ~50-item pool spanning the same real equipment categories, different specific items; resource_count real items generated per row</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout"><b>The real department-code mapping is deliberately not in this public repo.</b> Publishing real code → fake code side by side would let anyone reverse the masking. It lives in two git-ignored, local-only files: <code>DEPARTMENT_MAPPING.local.md</code> (human-readable) and <code>department_mapping.local.py</code> (the actual source <code>synthesize_dataset.py</code> imports at runtime, via <code>importlib.util</code> since a literal dot in a filename isn't a valid dotted import path). Same treatment this project already gives <code>CREDENTIALS.local.md</code>.</div>
+
+    <div class="callout warn"><b>A real mistake, caught before it ever left the machine.</b> The first version of <code>synthesize_dataset.py</code> hardcoded <code>DEPARTMENT_MAP</code> with the real codes as dictionary keys directly in the committed script — exactly the mapping meant to stay private. Caught by the same <code>-S</code> pickaxe verification used to confirm the credential purge, before this commit was ever pushed. Fixed via <code>git commit --amend</code> (safe here specifically because nothing had been shared yet), plus <code>git reflog expire --expire=now --all &amp;&amp; git gc --prune=now</code> to fully prune the flawed blob locally.</div>
+
+    <div class="callout good"><b>A genuinely good side effect: the unified dataset resolved most of <code>eval_cases_round2.py</code>'s CI-portability problem for free.</b> Of 3 originally-failing cases: the department-plurality case just needed its expected keyword updated to match the new synthetic department code (<code>DRAW</code>, same real count of 128, since the remap is 1:1 — the real code it replaced isn't reproduced here, same reasoning as the mapping table itself); the renewal-count case needed <i>no change at all</i> — <code>1243</code> held exactly, since that field was never touched.</div>
+
+    <div class="callout warn"><b>The third case is genuinely CI-incompatible — confirmed by two separate live CI runs, for a different reason than first assumed.</b> The "previously saved result" case depends on <code>eval_domain_avg_duration</code> surviving from round 1's own save-case, but round 1's <code>cleanup_table</code> step drops that table immediately after its case runs (needed so round 1 stays independently rerunnable) — so round 2 never has anything to find, even within the same job. A local "pass" earlier in this session was misleading: <code>pg_local</code>'s <code>agent_scratch</code> schema still held a real, months-old leftover table from actual Build 2.5 testing, untouched by this session's schema reload, coincidentally satisfying the case for reasons unrelated to anything built this session.</div>
+    <div class="callout good"><b>Fixed properly:</b> an explicit <code>ci_skip</code> flag on that one case, checked against the <code>CI=true</code> env var GitHub Actions sets automatically — prints <code>[SKIPPED - CI]</code> rather than failing unpredictably or passing on stale coincidence.</div>
+
+    <pre class="code"><span class="fn">Sample — real eval_cases_round2.py results after all fixes, local CI=true test run</span><code>[SKIPPED - CI] Do you have a previously saved result about average allocation
+duration by email domain? If so, which domain had the longest average duration?
+
+[PASS] Which named patron department has the most recorded allocations?
+  answer: The named patron department with the most recorded allocations is
+  "DRAW" with 128 allocations.
+
+[PASS] How many allocations were never renewed (a renewal_count of zero)?
+  answer: There are 1,243 allocations that were never renewed.
+
+======================================================================
+4/4 passed
+======================================================================</code></pre>
+
+    <p><b>One more real exposure found and fixed in the same pass, unrelated to this session's own work:</b> <code>PROJECT_DIAGRAMS/BUILD_3_FLOW/build3-handoff-brief.html</code>/<code>.pdf</code> had contained a real department code as a hypothetical example question since Build 3 — already public long before this build. Found via the same <code>-S</code> pickaxe search used to verify the main purge. Fixed (swapped for its synthetic equivalent, per <code>DEPARTMENT_MAP</code> — not reproduced here, same reasoning as the mapping table itself; PDF regenerated and verified via <code>pdftotext</code>) and purged from history in the same pass.</p>
+
+    <div class="callout"><b>Two different purge techniques used deliberately, not interchangeably.</b> The old <code>ci_fixture/ALLOCATION-fixture.csv</code> was removed with <code>--path ... --invert-paths</code> (whole-file removal — it was superseded entirely). The Build 3 brief's one leaked string was fixed with <code>--replace-text</code> (in-place scrub, same technique as the original credential purge) — chosen specifically because that particular real code is unusual enough not to collide with other words, unlike some of the other real department codes, which are short enough to be substrings of common English/code words (e.g. one is a substring of "transform"/"transaction", which appear constantly throughout this codebase). That collision risk was checked directly via a full-history search before running anything, not assumed.</div>
+
+    <p><b>Full sequence of git-history rewrites this build, for the record:</b> (1) the original leaked-credentials purge — <code>--replace-text</code> for the old hardcoded dev passwords (see <code>environment-handoff-brief-v2.html</code>'s own "Open Item" section; not reproduced here on purpose), pushed to an empty remote so no force was needed on that push; (2) <code>ci_fixture/ALLOCATION-fixture.csv</code> removal, <code>--path --invert-paths</code>; (3) the Build 3 brief scrub, <code>--replace-text</code>. (2) and (3) both required <code>git push --force</code>, confirmed explicitly with the user before each one. Three separate backup bundles were taken along the way, all saved outside the repo entirely.</p>
+  </section>
+
+  <section class="doc-section" id="github">
+    <h2>GitHub Setup, Step by Step</h2>
+    <p class="section-note">The actual sequence, including the parts that didn't go smoothly on the first try — kept in full because the troubleshooting is itself useful reference.</p>
+    <ol class="step-list">
+      <li>Handed over <code>gh repo create ... --push</code> as the intended one-liner — <code>gh</code> wasn't installed.</li>
+      <li>Established a hard boundary: creating a repo and authenticating to GitHub both require the user's own account — no browser access, no way to complete an OAuth/device-code flow in this session. What could be done: check for and install <code>gh</code> via <code>winget</code>. What only the user could do: <code>gh auth login</code>, and (as it turned out) the actual repo creation via the web UI.</li>
+      <li><code>winget install --id GitHub.cli -e --accept-package-agreements --accept-source-agreements</code> → installed <code>gh</code> 2.96.0. PATH required a manual refresh (<code>$env:Path = [System.Environment]::GetEnvironmentVariable(...)</code>) in the already-open session to pick it up.</li>
+      <li>Repo created via the web UI by the user directly; <code>gh auth login</code> run by the user (their own credentials, own browser). Verified from this session via <code>gh auth status</code> → logged in, HTTPS protocol, correct token scopes.</li>
+      <li><code>git remote -v</code> / <code>git fetch origin</code> / <code>git diff main origin/main --stat</code> confirmed the first push had already happened (by the user, outside this session's visibility) before this session ever ran <code>git push</code> itself.</li>
+      <li><code>gh run list</code> → <code>gh run view &lt;id&gt;</code> → <code>gh run view &lt;id&gt; --log-failed</code> — the actual diagnostic sequence used every time a run needed investigating, rather than guessing from the YAML.</li>
+      <li><code>gh run watch &lt;id&gt;</code> — streamed live step-by-step progress to confirm each fix before moving on, for every push this build.</li>
+    </ol>
+    <div class="callout"><b>Protocol choice: HTTPS, not SSH.</b> <code>gh</code>'s credential helper handles auth automatically once logged in — no key generation/management needed for a single-machine, solo-author setup. SSH's advantage (multiple machines, a passphrase-separated key) doesn't apply here.</div>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification Log</h2>
+    <p class="section-note">What was actually run against a real environment, not just read for plausibility — same standard as every build in this project, extended here to a genuinely fresh environment for the first time.</p>
+    <ul class="check-list">
+      <li><b>Local dry run, disposable throwaway container</b><span class="detail">Full migrate → ingest → transform → embed → pytest pipeline run against a fresh Postgres container (not <code>pg_local</code>, to avoid destroying real dev data) — this is what surfaced bugs 1 and 2 before they ever reached GitHub Actions.</span></li>
+      <li><b>First real Actions run</b><span class="detail">Failed on <code>pytest</code> only — every prior step (migrations, fixture ingest, transform, embed, doc-chunks) passed exactly as the local dry run predicted. Surfaced bug 3.</span></li>
+      <li><b>Second Actions run, post-fix</b><span class="detail">Fully green, every step including <code>pytest</code>.</span></li>
+      <li><b>Gate live-tested both directions</b><span class="detail">A relevant commit correctly triggered <code>eval</code>; an unrelated commit correctly skipped it.</span></li>
+      <li><b><code>eval</code> job's first real run</b><span class="detail">Round 1 7/7; round 2 2/5 against the (still-being-replaced) old fixture — this run is what surfaced the anonymization gap's downstream eval consequences.</span></li>
+      <li><b>Full local reload onto the new official dataset</b><span class="detail"><code>raw</code>/<code>clean</code> rebuilt from <code>004</code>/<code>005</code>, re-ingested, <code>008</code>/<code>009</code> re-applied (rebuilding <code>clean.allocations</code> from scratch also drops the <code>summary_embedding</code> column those add — a real subtlety), re-embedded (1535 rows). pytest 19/19, eval round 1 7/7, eval round 2 5/5 (before the <code>ci_skip</code> fix existed).</span></li>
+      <li><b>Post-force-push Actions run</b><span class="detail"><code>test</code> ✓, <code>detect-changes</code> ✓, <code>eval</code> round 1 ✓ / round 2 4/5 (the one genuinely CI-incompatible case, confirmed live for the second time, not guessed).</span></li>
+      <li><b>Final Actions run, after the <code>ci_skip</code> fix</b><span class="detail">Fully green — <code>test</code>, <code>detect-changes</code>, <code>eval</code> (both rounds, the one case correctly skipped, not silently passing or failing).</span></li>
+      <li><b>History-purge verification, three times</b><span class="detail">Each <code>git filter-repo</code> pass followed by a direct full-history search (<code>git log --all -p | grep</code>, plus <code>-S</code> pickaxe and direct blob checks via <code>git show &lt;commit&gt;:&lt;path&gt;</code>) confirming zero remaining matches — never assumed clean from the tool's own success message alone.</span></li>
+    </ul>
+
+    <pre class="code"><span class="fn">Sample — final green Actions run, gh run watch output</span><code>✓ main CI · 30124608945
+JOBS
+✓ detect-changes in 5s
+✓ test in 2m56s
+✓ eval in 4m4s
+  ✓ Run eval harness (round 1)
+  ✓ Run eval harness (round 2)</code></pre>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Known Limitations &amp; Open Items</h2>
+    <div class="callout warn"><b><code>question_id</code>'s concurrency-safety, flagged in Build 4, is still unexercised.</b> CI's jobs run sequentially within a workflow (though in parallel with each other where <code>needs:</code> allows); nothing in this build actually ran two <code>ask_agent()</code> calls at the same literal moment. That real test still only becomes possible once Build 6 (a multi-user front end) exists.</div>
+    <div class="callout warn"><b>Both eval rounds duplicate their full setup pipeline.</b> Each GitHub Actions job gets its own fresh runner and service container, so the <code>eval</code> job can't reuse the <code>test</code> job's already-populated database — real duplicated compute (migrate/ingest/transform/embed runs twice on any commit that triggers eval). Acceptable at this project's scale since <code>eval</code> only fires on a relevant merge to main, not every push.</div>
+    <div class="callout"><b>The living cheat sheet's <code>api_test.py</code> row is now stale</b> (the file no longer exists) — addressed in the same session as this brief, see the cheat sheet's own changelog footer.</div>
+  </section>
+
+  <section class="doc-section" id="env">
+    <h2>Environment State</h2>
+    <table class="ref-table">
+      <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>New Python</td><td class="mono">synthesize_dataset.py</td></tr>
+        <tr><td>Removed Python</td><td class="mono">api_test.py, make_ci_fixture.py</td></tr>
+        <tr><td>Changed Python</td><td class="mono">ingest.py (CSV_PATH default), run_eval.py (exit code, ci_skip), eval_cases_round2.py (DRAW keyword, ci_skip flag), test_agent_scratch_boundary.py, test_data_quality.py</td></tr>
+        <tr><td>New SQL</td><td class="mono">008_add_summary_embedding.sql — added CREATE EXTENSION IF NOT EXISTS vector</td></tr>
+        <tr><td>New data</td><td class="mono">data/ALLOCATION-synthesized.csv (1535 rows, official dataset) — replaces ci_fixture/ (removed) and the real external CSV as the default</td></tr>
+        <tr><td>New local-only files</td><td class="mono">department_mapping.local.py, DEPARTMENT_MAPPING.local.md (both git-ignored — real department-code key, never committed)</td></tr>
+        <tr><td>New CI</td><td class="mono">.github/workflows/ci.yml — detect-changes, test, eval jobs; pytest.ini</td></tr>
+        <tr><td>New dependency (CI only)</td><td class="mono">dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 (v4.0.2, pinned by SHA)</td></tr>
+        <tr><td>GitHub remote</td><td class="mono">https://github.com/AndersonBallantyne/SQL_TEST_01 — public, HTTPS protocol</td></tr>
+        <tr><td>GitHub Actions secret</td><td class="mono">ANTHROPIC_API_KEY (set by the user directly, never handled in-session)</td></tr>
+        <tr><td>Diagram folder</td><td class="mono">PROJECT_DIAGRAMS/BUILD_5_FLOW/ — phase1/phase3 flow diagrams, this brief</td></tr>
+        <tr><td>Backup bundles (outside the repo)</td><td class="mono">C:\IMAGEBANK_2023\DOCKER_SQL\SQL_TEST_01_backups\ — 3 bundles, one per filter-repo pass</td></tr>
+        <tr><td>Eval suite total</td><td class="mono">12 cases across 2 rounds; 11 run in CI (1 explicitly ci_skip'd), all passing</td></tr>
+        <tr><td>Project test suite</td><td class="mono">19/19 passing, both locally and in CI</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Build 5 complete — all 3 phases, CI green end-to-end, public repo live with clean history. Next: the optional Build 6 (Streamlit front end). Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
+</body>
+</html>
