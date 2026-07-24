@@ -21,3 +21,6 @@ __pycache__/
 *.dump
 
 logs/
+
+# Personal working-style reference — local-only, not part of the public portfolio
+PROJECT_DIAGRAMS/Working-Style_Prompt/
