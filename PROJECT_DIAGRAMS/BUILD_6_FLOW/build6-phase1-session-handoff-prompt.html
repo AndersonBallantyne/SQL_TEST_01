@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 6 → New Session — Handoff Prompt (Sample)</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 18px 20px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    line-height: 1.6; margin: 10px 0 18px; white-space: pre-wrap; word-break: break-word;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout.flag { border-left-color: var(--accent); background: var(--accent-tint); }
+  .callout b { color: var(--ink); }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  ol.step-list { margin: 0 0 18px; padding-left: 22px; font-size: 13.5px; }
+  ol.step-list li { margin-bottom: 8px; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 6 · Session Handoff · Sample Prompt</p>
+  <h1>Build 6 → New Session — Handoff Prompt</h1>
+  <p class="lede">The actual prompt used to open the next session and resume Build 6, preserved here as a worked, reusable example of a complete cross-session handoff prompt for this project — not just a Build-6-specific artifact.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Ready to use — paste as the first message in the new session</dd></div>
+    <div><dt>Purpose</dt><dd>Real Build 6 continuation prompt, doubling as a reusable template</dd></div>
+    <div><dt>Written from</dt><dd>HEAD <code>b902500</code>, same session as the Phase 1 incident brief</dd></div>
+    <div><dt>Companion docs</dt><dd><code>build6-phase1-incident-brief.html</code>, <code>build6-phase1-flow-diagram.html</code></dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#why">Why This Exists</a>
+    <a href="#prompt">The Prompt</a>
+    <a href="#template">What Makes This a Good Template</a>
+  </nav>
+
+  <section class="doc-section" id="why">
+    <h2>Why This Exists</h2>
+    <p class="section-note">
+      This project's memory system (<code>MEMORY.md</code> and its linked files) auto-loads into every new session and carries durable facts — working style, learner profile, build history. What it doesn't do well on its own is convey <i>current priority and urgency</i>: a fresh session sees the same index whether the last session ended cleanly or ended mid-incident with an unresolved decision sitting on the table. An explicit handoff prompt fills that gap — it states plainly what's true right now, what's unresolved, and what the very first action should be, rather than trusting a new session to infer urgency correctly from a general-purpose memory index.
+    </p>
+    <div class="callout"><b>Concrete trigger for writing this one down as a sample:</b> Build 6 Phase 1 was just built in violation of this project's standing hard rule (see the companion incident brief), and the remediation decision was still open when the session needed to end. A prompt that only said "continue Build 6" would risk the next session either re-litigating the incident from scratch or, worse, missing it entirely and plowing ahead into Phase 2 the same unsupervised way. Writing the handoff explicitly, with the unresolved decision stated as the first required action, is what actually prevents that.</div>
+  </section>
+
+  <section class="doc-section" id="prompt">
+    <h2>The Prompt</h2>
+    <p class="section-note">Reproduced verbatim, exactly as handed to the user for the new session.</p>
+    <pre class="code"><span class="fn">Verbatim handoff prompt</span>Project: C:\IMAGEBANK_2023\DOCKER_SQL\SQL_TEST_01 (git repo, branch main, HEAD b902500).
+This is a hands-on SQL/Docker/agent-dev tutoring project — read your auto-loaded memory
+(MEMORY.md and its linked files) before doing anything; it carries the full working-style
+contract, learner profile, and project history. This prompt covers only what's specific to
+resuming Build 6 right now.
+
+CURRENT STATE
+Build 6 (optional Streamlit front end for the agent) Phase 1 is code-complete, tested, and
+committed (b902500): app.py + requirements.txt add a minimal chat UI calling the existing
+ask_agent() from Build 4. It works — live-tested in browser, correct tool-backed answers.
+
+CRITICAL — READ BEFORE TOUCHING ANYTHING
+Phase 1 was built in violation of this project's standing hard rule (never execute a whole
+phase/build unilaterally — established 2026-07-17, Build 1 Phase 6). Every mechanical step
+of Phase 1 (both requirements.txt edits, all of app.py, the pip install into the venv,
+launching/polling/killing/relaunching the streamlit dev server, and the git commit itself)
+was done directly, with zero hands-on participation from the user. This is a confirmed
+recurrence, broader in scope than the original incident. Full blow-by-blow record, root
+cause, and comparison table: PROJECT_DIAGRAMS/BUILD_6_FLOW/build6-phase1-incident-brief.html
+(+ .pdf). The recurrence is also logged in feedback_tutoring-style.md under "RECURRENCE,
+2026-07-27 (Build 6, Phase 1)" — read that entry, it has the refined how-to-apply.
+
+UNRESOLVED — YOUR FIRST ACTION
+The user has NOT yet decided how to proceed. Three remediation options were presented
+(recorded in the incident brief's "Remediation Options Presented" section):
+  1. Revert b902500, redo Phase 1 fully hands-on (user types app.py/requirements.txt
+     themselves, runs pip install and streamlit run themselves) — recommended, low cost.
+  2. Keep the commit as a working reference, have the user independently re-type their own
+     version to get the rep, then swap it in.
+  3. Accept Phase 1 as sunk cost, move on, strictly enforce the rule from Phase 2 forward.
+Do not proceed into any new Build 6 work until this decision is made. Start the session by
+asking which option the user wants (or re-confirming if they already decided since this
+prompt was written) — do not default to option 3 just because it's the path of least
+resistance.
+
+NON-NEGOTIABLE GOING FORWARD, PER THE REFINED RULE
+Before the first tool call of ANY phase (this one included), explicitly map every numbered
+step in that phase's own flow diagram to either "read-only/mine" (diagnosis, verification,
+diagrams, handoff docs — fine to do directly) or "deliverable/yours" (any file write/edit
+that IS the phase's actual code, any pip install, any run/build/test/server-launch command)
+— and do this mapping BEFORE starting, not implicitly action-by-action. Deliverable steps get
+handed over as instructional text (exact command, expected output, common failure+fix) for
+the user to run themselves and paste back — never written or executed directly by you. This
+covers file edits AND venv installs AND starting/stopping dev-server processes — all three,
+explicitly, this time.
+
+BUILD 6 FULL SCOPE (for context — Phase 1 done, Phases 2-4 not started)
+Tech stack already decided: Streamlit (pure Python, fits existing stack, no new tooling).
+  Phase 1 — DONE (pending remediation decision above): minimal chat UI wrapping ask_agent().
+  Phase 2 — session-state / multi-turn history via st.session_state. Note: app.py already
+    has the session_state message-history scaffolding from Phase 1 (lines 9-10, 12-14, 18-19,
+    37) — first task in Phase 2 is confirming with the user what's actually still in scope
+    beyond what already exists, not assuming it's all yet to build.
+  Phase 3 — containerize as a streamlit service in docker-compose.yml, verified live in a
+    browser (this is where Bash/PowerShell docker commands become the user's to run, per the
+    hard rule — same category as every other build/run command).
+  Phase 4 (stretch) — if Build 4's tool-call logging still holds up, surface a "tools used"
+    expander in the UI.
+
+STANDING PROCEDURE REMINDERS (full detail in memory, just flagging so nothing's skipped)
+- Publish a flow diagram (SVG+HTML+PNG in PROJECT_DIAGRAMS/BUILD_6_FLOW/, matching the
+  established visual system) before starting Phase 2, same as every other phase this project
+  has done.
+- Verify any new diagram/doc by actually rendering it (screenshot + print-to-pdf/pdftoppm),
+  not just by reading the source — this project has a real history of overflow bugs that only
+  show up in the rendered output.
+- Run `claude auth status` at the start of this session (new Build/session boundary = trigger)
+  to confirm this chat itself hasn't silently switched to metered API billing.
+- Don't trust this prompt's or memory's sense of "current state" over `git log --oneline -10`
+  and the actual current files — this project has been worked across many disconnected
+  sessions before, and stale assumptions have caused real problems previously.
+- At Build 6's eventual completion (all phases done), the final handoff brief MUST include
+  this Phase 1 incident as its own clearly called-out section (not folded quietly into the
+  Phase 1 write-up) — link back to build6-phase1-incident-brief.html rather than
+  re-summarizing it thin. This is an explicit, standing flag, not optional.</pre>
+  </section>
+
+  <section class="doc-section" id="template">
+    <h2>What Makes This a Good Template</h2>
+    <p class="section-note">The reusable shape, extracted for whenever the next session boundary needs one of these — Build 7's kickoff, a future mid-build incident, or any handoff where silent assumption is riskier than explicit statement.</p>
+    <ul class="check-list">
+      <li><b>State current state as fact, not narrative.</b><span class="detail">Exact commit hash, exact file names, one sentence on what works — no scene-setting, no "as you may recall."</span></li>
+      <li><b>Put anything critical/unresolved first, in its own loud section.</b><span class="detail">Not buried under "current state" — a new session skims; the thing most likely to be missed needs to be the thing that's hardest to miss.</span></li>
+      <li><b>Name the very first action explicitly.</b><span class="detail">"Ask which option" beats "proceed thoughtfully" — an open decision left implicit gets silently resolved in whatever direction requires the least friction, which is exactly the failure mode this was written to prevent.</span></li>
+      <li><b>Restate the rule, don't just cite it.</b><span class="detail">A pointer to memory ("see the hard rule") is necessary but not sufficient — the specific refinement (venv installs and process management count too) is new enough that it needs to be read, not just referenced.</span></li>
+      <li><b>Carry forward scope so nothing has to be rediscovered.</b><span class="detail">The full Build 6 phase breakdown is reproduced here even though it also lives in the project roadmap memory — redundancy is cheap, re-deriving scope from scratch mid-session is not.</span></li>
+      <li><b>End with the standing-procedure checklist, condensed.</b><span class="detail">Full detail stays in memory; this is just enough to make sure nothing gets silently skipped in the first few turns of the new session.</span></li>
+    </ul>
+    <div class="callout good"><b>Note on placement:</b> filed alongside the incident brief it accompanies (<code>PROJECT_DIAGRAMS/BUILD_6_FLOW/</code>) rather than a separate top-level "templates" location — it's both a real, usable artifact for this specific handoff and a worked example, and staying next to the incident it responds to keeps the two readable together.</div>
+  </section>
+
+  <footer>
+    Written 2026-07-27, same session as the Phase 1 incident brief and Phase 1 flow diagram. Not a handoff brief in the usual sense (no build retrospective) — a session-boundary artifact, filed here because Build 6 is what it hands off into.
+  </footer>
+
+</div>
+</body>
+</html>
