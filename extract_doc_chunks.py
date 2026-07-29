@@ -13,6 +13,13 @@ SOURCE_FILES = [
     "PROJECT_DIAGRAMS/BUILD_2_FLOW/build2-handoff-brief.html",
     "PROJECT_DIAGRAMS/BUILD_2_5_FLOW/build2-5-handoff-brief.html",
     "PROJECT_DIAGRAMS/BUILD_3_FLOW/build3-handoff-brief.html",
+    # Added 2026-07-29 - these three existed on disk since Build 3.5/4/5 but were never
+    # added here, so search_docs's corpus silently stopped growing after Build 3. Found
+    # only because a live question about the project's build history came back stuck at
+    # Build 3, not from any automated check (SOURCE_FILES has no directory-scan fallback).
+    "PROJECT_DIAGRAMS/BUILD_3_5_FLOW/build3-5-handoff-brief.html",
+    "PROJECT_DIAGRAMS/BUILD_4_FLOW/build4-handoff-brief.html",
+    "PROJECT_DIAGRAMS/BUILD_5_FLOW/build5-handoff-brief.html",
 ]
 
 
