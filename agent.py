@@ -15,7 +15,7 @@ client = anthropic.Anthropic()
 tools = [
     {
         "name": "run_sql_query",
-        "description": "Run a read-only SQL query against the appdb Postgres database and return the resulting rows.",
+        "description": "Run a read-only SQL query against the appdb Postgres database and return the resulting rows. Results are capped at 200 rows - if more rows matched, a final {'message': ...} entry says so. Add your own LIMIT/WHERE to narrow the query, or use an aggregate query (COUNT/GROUP BY) instead of fetching individual rows when you need a total or a breakdown rather than the raw rows themselves.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -187,7 +187,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
                     raise ValueError(f"Unknown tool name: {block.name}")
 
                 latency_ms = (time.perf_counter() - start) * 1000
-                log_tool_call(block.name, block.input, result, latency_ms, turn, question_id)
+                log_tool_call(block.name, block.input, result, latency_ms, turn, question_id, user_question=user_question)
 
                 print(f"[TOOL RESULT] {block.name}:")
                 print(json.dumps(result, indent=2, default=str))
@@ -199,7 +199,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
                 })
             except Exception as e:
                 latency_ms = (time.perf_counter() - start) * 1000
-                log_tool_call(block.name, block.input, None, latency_ms, turn, question_id, error=str(e))
+                log_tool_call(block.name, block.input, None, latency_ms, turn, question_id, user_question=user_question, error=str(e))
 
                 print(f"[TOOL ERROR] {block.name}: {e}")
                 tool_results.append({

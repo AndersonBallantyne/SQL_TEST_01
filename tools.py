@@ -9,6 +9,12 @@ from sentence_transformers import SentenceTransformer
 
 load_dotenv(encoding="utf-8-sig")
 
+# Arbitrary safety cap, not a real capacity limit - same spirit as MAX_SCRATCH_TABLES below.
+# Confirmed necessary live, not hypothetical: a legitimate SELECT with no LIMIT against
+# clean.allocations returned 936,551 characters in one tool result and blew the *next*
+# turn's prompt past the 200k-token API ceiling (Build 6 Phase 2 testing, 2026-07-29).
+MAX_SQL_RESULT_ROWS = 200
+
 def run_sql_query(sql: str, params: list | None = None) -> list[dict]:
     # App-level guard, not the real boundary - a model that ignored this entirely still
     # can't write anything, since this connects as appdb_reader (read-only at the DB level).
@@ -30,9 +36,28 @@ def run_sql_query(sql: str, params: list | None = None) -> list[dict]:
     with conn.cursor() as cur:
         cur.execute(sql, params)
         columns = [desc[0] for desc in cur.description]
-        rows = cur.fetchall()
+        # Fetch one row past the cap so truncation can be detected without a second
+        # COUNT(*) round-trip - if that (cap + 1)th row exists, the real result was larger.
+        rows = cur.fetchmany(MAX_SQL_RESULT_ROWS + 1)
     conn.close()
-    return [dict(zip(columns, row)) for row in rows]
+
+    truncated = len(rows) > MAX_SQL_RESULT_ROWS
+    if truncated:
+        rows = rows[:MAX_SQL_RESULT_ROWS]
+
+    result = [dict(zip(columns, row)) for row in rows]
+    if truncated:
+        # Same sentinel-dict pattern as search_summaries/search_docs's no-match message
+        # below - signals the limitation back to the model through the normal result
+        # shape instead of silently dropping rows, so it can add its own LIMIT/WHERE
+        # rather than mistaking a capped result for the complete answer.
+        result.append({
+            "message": f"Result truncated at {MAX_SQL_RESULT_ROWS} rows - more rows "
+                       f"matched. Add a LIMIT or a narrower WHERE clause to see a "
+                       f"specific subset, or an aggregate query (COUNT/GROUP BY) if "
+                       f"you need a total rather than individual rows."
+        })
+    return result
 
 def list_tables() -> list[dict]:
     return run_sql_query("""
