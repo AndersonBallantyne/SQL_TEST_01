@@ -12,6 +12,12 @@ load_dotenv(encoding="utf-8-sig")
 
 client = anthropic.Anthropic()
 
+# Generated once, when this module is first imported - stays identical across every
+# Streamlit rerun (module-level code only runs once per process), and only changes if
+# the underlying process actually restarts. A cheap way to tell "did the server restart"
+# apart from "session_state just looks empty for some other reason".
+PROCESS_ID = uuid.uuid4().hex[:8]
+
 tools = [
     {
         "name": "run_sql_query",

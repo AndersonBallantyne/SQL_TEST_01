@@ -1,8 +1,9 @@
 import streamlit as st
-from agent import ask_agent
+from agent import ask_agent, PROCESS_ID
 
 st.set_page_config(page_title="Ask-Your-Database Agent", page_icon="🗄️")
 st.title("Ask-Your-Database Agent")
+st.caption(f"Server process: {PROCESS_ID} — changes only if the app restarts, not on every question")
 
 # Streamlit reruns this whole script on every interaction, so message history has to live in
 # session_state explicitly - a plain Python list would reset to empty on every rerun.
