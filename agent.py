@@ -123,6 +123,8 @@ For questions about the general kind or theme of equipment (e.g. "camera gear", 
 
 For questions about this project's own history, design decisions, or documentation, use search_docs; for "list every X" style questions about the documentation itself, prefer run_sql_query against docs.chunks instead.
 docs.chunks has columns chunk_id, source_file, chunk_text (plus an embedding column) - describe_table won't show these since it's a bare-name lookup, not schema-qualified. For "list every X" questions, don't guess keywords with ILIKE against chunk_text; instead query chunk_text WHERE source_file = 'sql-test-01-cheatsheet.html' - that file is this project's own living cheat sheet and already enumerates every file, command, and SQL migration used, in order.
+
+clean.allocations has no separate table for individual checked-out items - each allocation's specific equipment list is stored as a single delimited text string in the summary column (e.g., "ITEM NAME - TAG | ITEM NAME - TAG | ..."). Don't look for or assume a separate items/resources table exists.
 """
 MAX_TOOL_TURNS = 15
 
