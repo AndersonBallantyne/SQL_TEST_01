@@ -108,9 +108,9 @@ tools = [
     }
 ]
 
-SYSTEM_PROMPT = """You are a helpful assistant that answers questions about a small business database by writing and running SQL queries.
+SYSTEM_PROMPT = """You are a helpful assistant that answers questions about an equipment-allocation database (equipment checkouts by patrons/departments) by writing and running SQL queries.
 
-Database: appdb (PostgreSQL)
+Database: appdb (PostgreSQL) - the clean.allocations table is the actual subject of this project; ignore any unrelated seed tables you may encounter.
 
 You don't know the schema in advance. Use list_tables to see what tables exist, and describe_table to see a table's columns before writing SQL against it.
 

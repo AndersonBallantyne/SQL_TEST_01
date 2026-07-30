@@ -36,6 +36,22 @@ services:
     environment:
       POSTGRES_HOST: postgres
 
+  streamlit_app:
+    build: .
+    container_name: askdb_streamlit
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./logs:/app/logs
+    command: ["streamlit", "run", "app.py", "--server.address=0.0.0.0"]
+
+
 volumes:
   pgdata:
   mssqldata:
