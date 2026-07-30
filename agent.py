@@ -126,11 +126,29 @@ docs.chunks has columns chunk_id, source_file, chunk_text (plus an embedding col
 """
 MAX_TOOL_TURNS = 15
 
-def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
+MAX_FULL_FIDELITY_ROUNDS = 3
+
+def flatten_history(history_rounds):
+    older_rounds = history_rounds[:-MAX_FULL_FIDELITY_ROUNDS]
+    recent_rounds = history_rounds[-MAX_FULL_FIDELITY_ROUNDS:]
+
+    messages = []
+    for round in older_rounds:
+        messages.append({"role": "user", "content": round["user_question"]})
+        messages.append({"role": "assistant", "content": round["answer_text"]})
+    for round in recent_rounds:
+        messages.extend(round["full_messages"])
+
+    return messages
+
+def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None):
+
     # Random, not a counter - a shared counter would itself need synchronization once
     # Build 5/6 make concurrent ask_agent() calls possible, defeating the point of this ID.
     question_id = uuid.uuid4().hex[:12]
-    messages = [{"role": "user", "content": user_question}]
+    messages = flatten_history(history_rounds or [])
+    messages.append({"role": "user", "content": user_question})
+
     turn = 0
     answer = ""
     while turn < max_tool_turns:
@@ -145,7 +163,8 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
             )
         except anthropic.APIError as e:
             print(f"Anthropic API error: {e}")
-            return {"answer": answer, "error": str(e)}
+            return {"answer": answer, "error": str(e), "full_messages": messages}
+
 
         for block in response.content:
             if block.type == "text":
@@ -158,7 +177,8 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
         messages.append({"role": "assistant", "content": response.content})
 
         if response.stop_reason != "tool_use":
-            return {"answer": answer, "error": None}
+            return {"answer": answer, "error": None, "full_messages": messages}
+
 
         tool_results = []
         for block in response.content:
@@ -212,7 +232,8 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS):
         messages.append({"role": "user", "content": tool_results})
 
     print(f"Stopped after reaching the {max_tool_turns}-turn limit.")
-    return {"answer": answer, "error": "max_turns_reached"}
+    return {"answer": answer, "error": "max_turns_reached", "full_messages": messages}
+
 
 
 if __name__ == "__main__":

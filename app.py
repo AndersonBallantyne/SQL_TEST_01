@@ -9,6 +9,9 @@ st.title("Ask-Your-Database Agent")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "rounds" not in st.session_state:
+    st.session_state.rounds = []
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -22,7 +25,7 @@ if user_question:
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = ask_agent(user_question)
+            response = ask_agent(user_question, history_rounds=st.session_state.rounds)
 
         if response["error"]:
             # Surfaced distinctly, not swallowed - max_turns_reached or a raw API error both
@@ -35,3 +38,9 @@ if user_question:
             st.markdown(response["answer"])
 
     st.session_state.messages.append({"role": "assistant", "content": response["answer"]})
+
+    st.session_state.rounds.append({
+        "user_question": user_question,
+        "answer_text": response["answer"],
+        "full_messages": response["full_messages"],
+    })
