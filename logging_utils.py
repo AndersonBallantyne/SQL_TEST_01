@@ -24,3 +24,19 @@ def log_tool_call(tool_name, input_data, output_data, latency_ms, turn, question
     }
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry, default=str) + "\n")
+
+def log_final_answer(question_id, user_question, answer, error=None):
+    # A distinct event shape from log_tool_call's entries (no tool_name/turn/input/output/
+    # latency_ms) - the model's final answer isn't a tool call, it's what ask_agent() returns
+    # to the caller. Added 2026-07-29 after discovering the log had no record of it at all,
+    # while verifying Build 6 Phase 2's boundary test against real browser Q&A.
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "question_id": question_id,
+        "user_question": user_question,
+        "answer": answer,
+        "error": error,
+    }
+    with open(LOG_PATH, "a") as f:
+        f.write(json.dumps(entry, default=str) + "\n")

@@ -6,7 +6,7 @@ import anthropic
 #from tools import run_sql_query, list_tables, describe_table, save_dataframe
 from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries, search_docs
 import time
-from logging_utils import log_tool_call
+from logging_utils import log_tool_call, log_final_answer
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -163,6 +163,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
             )
         except anthropic.APIError as e:
             print(f"Anthropic API error: {e}")
+            log_final_answer(question_id, user_question, answer, error=str(e))
             return {"answer": answer, "error": str(e), "full_messages": messages}
 
 
@@ -177,6 +178,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
         messages.append({"role": "assistant", "content": response.content})
 
         if response.stop_reason != "tool_use":
+            log_final_answer(question_id, user_question, answer)
             return {"answer": answer, "error": None, "full_messages": messages}
 
 
@@ -232,6 +234,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
         messages.append({"role": "user", "content": tool_results})
 
     print(f"Stopped after reaching the {max_tool_turns}-turn limit.")
+    log_final_answer(question_id, user_question, answer, error="max_turns_reached")
     return {"answer": answer, "error": "max_turns_reached", "full_messages": messages}
 
 
