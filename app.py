@@ -1,12 +1,14 @@
 import streamlit as st
 from agent import ask_agent, PROCESS_ID
 
-st.set_page_config(page_title="Ask-Your-Database Agent", page_icon="🗄️")
-st.title("Ask-Your-Database Agent")
-st.caption(f"Server process: {PROCESS_ID} — changes only if the app restarts, not on every question")
-
 # Streamlit reruns this whole script on every interaction, so message history has to live in
 # session_state explicitly - a plain Python list would reset to empty on every rerun.
+
+st.set_page_config(page_title="Ask-Your-Database Agent", page_icon="🗄️")
+st.title("Ask-Your-Database Agent")
+st.caption(f"Server process: {PROCESS_ID} — changes only if the app restarts")
+
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -17,7 +19,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-user_question = st.chat_input("Ask a question about the database...")
+user_question = st.chat_input("Ask about the database or project build")
 
 if user_question:
     st.session_state.messages.append({"role": "user", "content": user_question})
