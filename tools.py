@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from dotenv import load_dotenv
@@ -64,6 +65,7 @@ def list_tables() -> list[dict]:
         SELECT table_schema, table_name
         FROM information_schema.tables
         WHERE table_schema IN ('clean', 'agent_scratch', 'docs')
+          AND NOT (table_schema = 'agent_scratch' AND table_name = 'chat_rounds')
         ORDER BY table_name;
     """)
 
@@ -76,6 +78,7 @@ def describe_table(name: str) -> list[dict]:
         SELECT column_name, data_type
         FROM information_schema.columns
         WHERE table_schema IN ('clean', 'agent_scratch', 'docs') AND table_name = %s
+          AND NOT (table_schema = 'agent_scratch' AND table_name = 'chat_rounds')
         ORDER BY ordinal_position;
     """, [name])
 
@@ -248,6 +251,61 @@ def save_dataframe(table_name: str, columns: list[str], rows: list[tuple]) -> di
     print(f"[{datetime.now().isoformat()}] Wrote {len(rows)} rows to agent_scratch.{table_name}")
     return {"schema": "agent_scratch", "table": table_name, "rows_written": len(rows)}
 
+
+def _jsonable(obj):
+    # full_messages' assistant turns embed raw Anthropic SDK objects (TextBlock/ToolUseBlock,
+    # Pydantic models) - not JSON-serializable directly. json.dumps calls this for anything it
+    # can't handle itself; model_dump() turns each one into a plain dict before re-encoding.
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+def save_chat_round(question_id: str, user_question: str, answer_text: str, full_messages: list) -> None:
+    # Called directly by app.py, not the model via a tool schema - this is the application
+    # layer persisting its own conversation, the same "least-privileged role available"
+    # philosophy as save_dataframe even though there's no LLM-authored write path here.
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_AGENT_WRITER_USER"],
+        password=os.environ["POSTGRES_AGENT_WRITER_PASSWORD"],
+    )
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO agent_scratch.chat_rounds (question_id, user_question, answer_text, full_messages)
+            VALUES (%s, %s, %s, %s::jsonb)
+            """,
+            (question_id, user_question, answer_text, json.dumps(full_messages, default=_jsonable)),
+        )
+    conn.commit()
+    conn.close()
+
+def load_chat_rounds() -> list[dict]:
+    # Read-only, so this connects as appdb_reader rather than the writer role - matches the
+    # explicit SELECT grant to appdb_reader in 012_chat_rounds_schema.sql.
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_READER_USER"],
+        password=os.environ["POSTGRES_READER_PASSWORD"],
+    )
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT question_id, user_question, answer_text, full_messages
+            FROM agent_scratch.chat_rounds
+            ORDER BY round_id ASC
+        """)
+        rows = cur.fetchall()
+    conn.close()
+    # psycopg deserializes jsonb natively - full_messages comes back as plain dicts/lists
+    # already, the same shape flatten_history() already expects from a live session.
+    return [
+        {"question_id": qid, "user_question": uq, "answer_text": ans, "full_messages": fm}
+        for qid, uq, ans, fm in rows
+    ]
 
 
 if __name__ == "__main__":
