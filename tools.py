@@ -260,6 +260,14 @@ def _jsonable(obj):
         return obj.model_dump()
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
+# Arbitrary safety cap, not a real capacity limit - same "trim on write" spirit as
+# LOG_ROTATION_THRESHOLD_LINES (Build 4) for logs/tool_calls.jsonl. chat_rounds has no
+# separate rollup/archive to lean on the way the log does, so this is a straight trim, not
+# a move - found necessary not hypothetical: nothing before this capped either how many
+# rounds load_chat_rounds() returns or how large the table could grow, confirmed by direct
+# inspection (no LIMIT anywhere in either function) after a live question about it.
+MAX_CHAT_ROUNDS = 200
+
 def save_chat_round(question_id: str, user_question: str, answer_text: str, full_messages: list) -> None:
     # Called directly by app.py, not the model via a tool schema - this is the application
     # layer persisting its own conversation, the same "least-privileged role available"
@@ -278,6 +286,21 @@ def save_chat_round(question_id: str, user_question: str, answer_text: str, full
             VALUES (%s, %s, %s, %s::jsonb)
             """,
             (question_id, user_question, answer_text, json.dumps(full_messages, default=_jsonable)),
+        )
+        # Trim right after inserting, same call as the insert - keeps only the most recent
+        # MAX_CHAT_ROUNDS rows. The subquery returns NULL once the table is at or under the
+        # cap (OFFSET runs past the end), and "round_id <= NULL" is never true, so this is a
+        # correct no-op below the cap rather than needing a separate count-then-branch check.
+        cur.execute(
+            """
+            DELETE FROM agent_scratch.chat_rounds
+            WHERE round_id <= (
+                SELECT round_id FROM agent_scratch.chat_rounds
+                ORDER BY round_id DESC
+                OFFSET %s LIMIT 1
+            )
+            """,
+            (MAX_CHAT_ROUNDS,),
         )
     conn.commit()
     conn.close()
