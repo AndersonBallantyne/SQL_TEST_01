@@ -314,6 +314,7 @@
           <tr><td class="cmd">009_add_summary_embedding_hnsw_index.sql</td><td class="desc">Build 3 follow-up — HNSW index on <code>summary_embedding</code> for indexed similarity search.</td></tr>
           <tr><td class="cmd">010_docs_chunks_schema.sql</td><td class="desc">Build 3.5 Phase 1 — the <code>docs.chunks</code> table (<code>vector(384)</code>) for the documentation RAG corpus.</td></tr>
           <tr><td class="cmd">011_metrics_history_schema.sql</td><td class="desc">Build 4 follow-up — <code>observability.metrics_history</code>, a tracked time series over <code>metrics_rollup.py</code>'s runs.</td></tr>
+          <tr><td class="cmd">012_chat_rounds_schema.sql</td><td class="desc">Build 6 Phase 3.5 — <code>agent_scratch.chat_rounds</code>, persistent shared chat history surviving a real container restart.</td></tr>
           <tr><td class="cmd">schema_mssql.sql</td><td class="desc">The SQL Server counterpart to <code>001_schema.sql</code> — same <code>appdb</code> shape, T-SQL dialect.</td></tr>
           <tr><td class="cmd">seed_mssql.sql</td><td class="desc">SQL Server counterpart to <code>002_seed.sql</code>.</td></tr>
         </tbody>
@@ -365,8 +366,9 @@
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">app.py</td><td class="desc">The Streamlit entrypoint — chat UI wrapping <code>ask_agent()</code>, hybrid tiered history threading via <code>session_state.rounds</code>, and a <code>Tools used</code> expander per answer sourced from the tool-call log.</td></tr>
+          <tr><td class="cmd">app.py</td><td class="desc">The Streamlit entrypoint — chat UI wrapping <code>ask_agent()</code>, hybrid tiered history threading via <code>session_state.rounds</code>, a persisted feed (Phase 3.5) loaded from <code>agent_scratch.chat_rounds</code> on first load, and an FAQ-style render: only the newest round shows expanded, older rounds collapse into <code>st.expander(label=the question)</code>.</td></tr>
           <tr><td class="cmd">test_agent_history.py</td><td class="desc">3 tests for <code>flatten_history()</code> — the pure function behind hybrid tiered conversation memory.</td></tr>
+          <tr><td class="cmd">012_chat_rounds_schema.sql</td><td class="desc">Build 6 Phase 3.5 — <code>agent_scratch.chat_rounds</code>, the durable store behind the persisted chat feed. Reuses <code>appdb_agent_writer</code>, no new role.</td></tr>
         </tbody>
       </table>
     </div>
@@ -403,7 +405,7 @@
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">extract_doc_chunks.py</td><td class="desc">Parses this project's own docs into embeddable chunks — four extraction shapes across two design eras, plus narrative prose.</td></tr>
+          <tr><td class="cmd">extract_doc_chunks.py</td><td class="desc">Parses this project's own docs into embeddable chunks — four extraction shapes across two design eras, plus narrative prose. <code>SOURCE_FILES</code> auto-discovers every handoff brief via <code>glob</code> (Build 6 fix) rather than a hand-maintained list, after that list twice silently fell behind a newly-written brief.</td></tr>
           <tr><td class="cmd">embed_chunks.py</td><td class="desc">Idempotent backfill for <code>docs.chunks</code> — same <code>WHERE embedding IS NULL</code> pattern as <code>embed_summaries.py</code>.</td></tr>
           <tr><td class="cmd">search_chunks.py</td><td class="desc">Standalone script proving raw similarity search over the docs corpus works, before any agent wiring.</td></tr>
         </tbody>
@@ -772,6 +774,7 @@
         </tbody>
       </table>
     </div>
+    <div class="callout" style="border:1px solid var(--rule); border-left:4px solid var(--accent); background:var(--surface); border-radius:8px; padding:14px 18px; margin:14px 0; font-size:13.5px;"><b>Build 6 Phase 3.5 — <code>st.expander</code> cannot nest inside another <code>st.expander</code>.</b> Hit while building the FAQ-style collapsed-round view (each older round wraps its answer in an expander labeled with the question) — a round's <code>Tools used</code> detail (itself normally an expander, Phase 4) has to render as plain inline text/captions instead whenever it's inside an already-collapsed round, and only get the real widget when that round is the one currently shown expanded.</div>
   </section>
 
   <section class="group" id="claude-commands">
@@ -799,7 +802,7 @@
   </section>
 
   <footer>
-    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 6 (front end for the agent) — a real Streamlit chat UI now runs alongside the CLI agent, both as docker-compose services sharing one image. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 6, complete end to end including Phase 3.5 — a real Streamlit chat UI runs alongside the CLI agent, both as docker-compose services sharing one image, with chat history now surviving a real container restart. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
   </footer>
 
 </div>

@@ -1,3 +1,4 @@
+import glob
 import os
 from dotenv import load_dotenv
 import psycopg
@@ -5,22 +6,23 @@ from bs4 import BeautifulSoup
 
 load_dotenv(encoding="utf-8-sig")
 
+# Handoff briefs are auto-discovered by glob, not hand-listed - a hardcoded list here
+# silently stopped growing after Build 3 (found 2026-07-29, three missing briefs), then
+# missed Build 6's brief entirely the same day it was written (found 2026-07-31, while
+# verifying "are the agent's docs current"). Same root cause both times: a manual list
+# with no directory-scan fallback. Fixed at the root this time instead of patched again -
+# every file matching this glob is included automatically, present and future.
 SOURCE_FILES = [
     "sql-test-01-cheatsheet.html",
     "PROJECT_DIAGRAMS/project-overview.html",
-    "PROJECT_DIAGRAMS/BUILD_1_FLOW/environment-handoff-brief-v2.html",
-    "PROJECT_DIAGRAMS/BUILD_1_FLOW/build1-handoff-brief.html",
-    "PROJECT_DIAGRAMS/BUILD_2_FLOW/build2-handoff-brief.html",
-    "PROJECT_DIAGRAMS/BUILD_2_5_FLOW/build2-5-handoff-brief.html",
-    "PROJECT_DIAGRAMS/BUILD_3_FLOW/build3-handoff-brief.html",
-    # Added 2026-07-29 - these three existed on disk since Build 3.5/4/5 but were never
-    # added here, so search_docs's corpus silently stopped growing after Build 3. Found
-    # only because a live question about the project's build history came back stuck at
-    # Build 3, not from any automated check (SOURCE_FILES has no directory-scan fallback).
-    "PROJECT_DIAGRAMS/BUILD_3_5_FLOW/build3-5-handoff-brief.html",
-    "PROJECT_DIAGRAMS/BUILD_4_FLOW/build4-handoff-brief.html",
-    "PROJECT_DIAGRAMS/BUILD_5_FLOW/build5-handoff-brief.html",
-]
+] + sorted(
+    # glob returns os.sep-joined paths - backslash on Windows - which would silently create
+    # a second, duplicate set of rows under a different source_file string every time this
+    # runs on Windows vs. however it ran before. Normalized to "/" so source_file stays a
+    # stable key across OSes and reruns, matching every other path string in this file.
+    path.replace(os.sep, "/")
+    for path in glob.glob("PROJECT_DIAGRAMS/**/*handoff-brief*.html", recursive=True)
+)
 
 
 def extract_callout_chunks(soup):

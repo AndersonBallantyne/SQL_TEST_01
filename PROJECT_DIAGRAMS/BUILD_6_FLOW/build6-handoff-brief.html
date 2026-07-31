@@ -148,8 +148,8 @@
   <p class="lede">A standalone, deep-dive reference for Build 6 — a Streamlit chat interface wrapping the existing tool-use agent, so the whole project is demoable in a browser instead of only via a Python REPL. Every phase, every real bug the process surfaced, and every verification result, in full. Complements (does not replace) the living cheat sheet and the per-phase flow diagrams.</p>
 
   <dl class="meta">
-    <div><dt>Status</dt><dd>Functionally complete — Phases 1–4 done; Phase 3.5 scoped and deferred (see Known Limitations)</dd></div>
-    <div><dt>Commits</dt><dd><code>b902500</code> → <code>9f82642</code></dd></div>
+    <div><dt>Status</dt><dd>Complete — all phases including 3.5, live-verified in a real browser</dd></div>
+    <div><dt>Commits</dt><dd><code>b902500</code> → <code>f27341a</code></dd></div>
     <div><dt>Continues</dt><dd>Build 5 (live deployment with CI)</dd></div>
     <div><dt>Precedes</dt><dd>Build 7 (verifier/critic agent)</dd></div>
   </dl>
@@ -162,6 +162,7 @@
     <a href="#bugs">Bugs Found &amp; Fixed</a>
     <a href="#phase3">Phase 3</a>
     <a href="#phase4">Phase 4</a>
+    <a href="#phase35">Phase 3.5</a>
     <a href="#discussion">Design Discussion</a>
     <a href="#limitations">Known Limitations</a>
     <a href="#verification">Verification Log</a>
@@ -174,7 +175,7 @@
       Every build through Build 5 deepened the agent or its infrastructure; none of them changed how a person actually reaches it. <code>agent.py</code> was still a <code>print()</code>-based CLI loop — technically complete, entirely undemoable to anyone unwilling to clone the repo and run Python locally. Build 6 closes that gap: a real, clickable chat interface, wrapping <code>ask_agent()</code> as-is, with no changes to the agent's own reasoning.
     </p>
     <p class="section-note">
-      Four phases, in order: a minimal chat UI (Phase 1); genuine multi-turn conversation memory, since nothing before this build ever needed it (Phase 2); containerizing the whole thing as a second service sharing Build 1's own Docker image (Phase 3); and a stretch phase surfacing Build 4's tool-call logging directly in the browser (Phase 4). A fifth unit of scope — persistent, restart-proof chat history — was identified mid-build from a real live-testing gap, designed in full, and deliberately deferred; it's documented under Known Limitations as a recorded possible feature, not silently dropped.
+      Five units of work, in order built (not always in number order): a minimal chat UI (Phase 1); genuine multi-turn conversation memory, since nothing before this build ever needed it (Phase 2); containerizing the whole thing as a second service sharing Build 1's own Docker image (Phase 3); a stretch phase surfacing Build 4's tool-call logging directly in the browser (Phase 4); and persistent, restart-proof chat history (Phase 3.5) - identified mid-build from a real live-testing gap, initially deferred, then fast-tracked once a UI refinement made it worth building after all. See Phase 3.5's own section for the full story.
     </p>
     <div class="callout"><b>Nothing about the agent's own reasoning changed in this build.</b> Every phase here is front-end/infrastructure work around the existing <code>ask_agent()</code> tool-use loop — the one exception is a handful of real, evidence-based fixes to <code>tools.py</code>/<code>agent.py</code> that live-testing through the new UI surfaced (a missing result cap, stale discovery scope, a stale system prompt) — see Bugs Found &amp; Fixed.</p></div>
   </section>
@@ -285,6 +286,9 @@ Q3: "What were the exact items in that allocation?"               <span class="c
 
     <div class="callout warn"><b>5. The system prompt still described <code>appdb</code> as a generic "small business database," leftover Build 1 framing.</b> Asking "What can you do?" through the real UI produced example questions like "customers with orders over $500" — confirmed via the log that zero tool calls fired, meaning this was pure stale-framing filler text, not real schema discovery. A real portfolio viewer trying one of those self-suggested examples would have gotten a confusing empty result, since those tables were never the project's actual subject.</div>
     <div class="callout good"><b>Fixed, alongside related housekeeping:</b> the prompt's opening rewritten to describe the actual domain (equipment allocations, <code>clean.allocations</code> as the real subject table). Separately, <code>customers</code>/<code>orders</code> (original Build 1 seed tables, unrelated to the portfolio narrative since Build 2) removed from <code>list_tables</code>/<code>describe_table</code>'s discovery scope — a discovery-level fix, not a hard DB-level lockout, since this isn't sensitive data, just narrative clutter.</div>
+
+    <div class="callout warn"><b>6. The same "docs.chunks stopped growing" bug from earlier in this build recurred — this time on this very brief, found while explicitly auditing whether the agent's own documentation knowledge was current through Build 6.</b> <code>extract_doc_chunks.py</code>'s <code>SOURCE_FILES</code> is a hardcoded list; it had already been patched once this build (Bug 3) to add three missing briefs, but the fix was itself just another manual entry — this brief was written afterward and never added, so <code>search_docs</code>'s knowledge of the project's own history was one build stale again, the same day it happened, the same root cause both times.</div>
+    <div class="callout good"><b>Fixed at the root this time, not patched again:</b> <code>SOURCE_FILES</code> now auto-discovers every file matching <code>PROJECT_DIAGRAMS/**/*handoff-brief*.html</code> via <code>glob</code>, rather than a hand-maintained list — present and future handoff briefs are included automatically, with no manual step to forget. The corpus was then rebuilt in full (all 9 handoff briefs plus the cheat sheet and project overview, including this brief's own just-updated Phase 3.5 content) and verified with a real <code>search_docs</code> query confirming Build 6/Phase 3.5 content is actually retrievable, not just present in the table.</div>
   </section>
 
   <section class="doc-section" id="phase3">
@@ -333,6 +337,43 @@ Q3: "What were the exact items in that allocation?"               <span class="c
     <div class="callout good"><b>A real follow-up caught live, not during initial build:</b> the expander was originally hidden entirely when a question triggered zero tool calls (e.g. "What can you do?", answered purely from the system prompt). Confirmed via the log this was correct behavior, not a bug — then changed anyway, per explicit request, to always render <code>Tools used (0)</code> with a short explanatory caption, so the UI element is consistently present rather than silently absent.</div>
   </section>
 
+  <section class="doc-section" id="phase35">
+    <h3 class="phase-title"><span class="badge">5</span>Persistent Chat History (Phase 3.5)</h3>
+    <p class="phase-goal">Goal: survive what Phase 3 revealed live — a container restart silently wiping every session's in-memory conversation, with no in-UI signal it had happened. Numbered 3.5 because it was originally scoped as an insertion between Phases 3 and 4; built last, once a UI refinement (below) made it worth fast-tracking rather than leaving deferred.</p>
+
+    <p><b>Storage: one shared global feed (Option B), not per-user/per-session.</b> New table <code>agent_scratch.chat_rounds</code> reuses the existing <code>appdb_agent_writer</code> role rather than standing up a third one — the same least-privilege philosophy as <code>save_dataframe</code>, even though this particular write is application code running on every new round, not an LLM-driven tool call.</p>
+
+    <pre class="code"><span class="fn">tools.py — the two new functions this phase needed</span><code><span class="kw">def</span> _jsonable(obj):
+    <span class="cmt"># Anthropic SDK response blocks (TextBlock/ToolUseBlock) are Pydantic objects embedded</span>
+    <span class="cmt"># in assistant turns - not JSON-serializable directly. json.dumps calls this for</span>
+    <span class="cmt"># anything it can't handle itself.</span>
+    <span class="kw">if</span> hasattr(obj, <span class="str">"model_dump"</span>):
+        <span class="kw">return</span> obj.model_dump()
+    <span class="kw">raise</span> TypeError(...)
+
+<span class="kw">def</span> save_chat_round(question_id, user_question, answer_text, full_messages):
+    <span class="cmt"># ...connects as appdb_agent_writer...</span>
+    cur.execute(
+        <span class="str">"INSERT INTO agent_scratch.chat_rounds (...) VALUES (%s, %s, %s, %s::jsonb)"</span>,
+        (question_id, user_question, answer_text, json.dumps(full_messages, default=_jsonable)),
+    )
+
+<span class="kw">def</span> load_chat_rounds():
+    <span class="cmt"># ...connects as appdb_reader, ORDER BY round_id ASC...</span>
+    <span class="cmt"># psycopg deserializes jsonb natively - full_messages comes back as plain dicts,</span>
+    <span class="cmt"># the same shape flatten_history() already expects from a live session.</span></code></pre>
+
+    <div class="callout good"><b>The serialization wrinkle flagged at design time resolved exactly as predicted, with zero changes to <code>flatten_history()</code> itself.</b> The one real complexity was getting SDK objects into and back out of JSONB correctly — once that round-trips, persistence is invisible to the memory-threading logic, which just sees plain dicts either way.</div>
+
+    <p><b>A UI refinement, proposed after this phase was already scoped and deferred, is what made fast-tracking it worthwhile — and it resolved two open gaps from the original design at once.</b> Rather than per-user attribution tags or a hard cutoff on how much history renders, only the single most-recent round shows expanded (full chat bubbles); every earlier round collapses into <code>st.expander(label = the question text itself)</code>. This clears up "which answer is mine" differently than originally scoped — not by tagging identity, but by guaranteeing whoever just asked a question always sees their own answer as the one left open — and solves the display-length concern better than a hard last-N cutoff would have: nothing is ever hidden, it just collapses to a one-line label, so the feed can grow indefinitely without the rendered page growing with it. A genuine side effect: the collapsed labels read as a scannable, running FAQ.</p>
+
+    <div class="callout warn"><b>One real Streamlit constraint hit during the build, not before: expanders can't nest.</b> Phase 4 already puts a <code>Tools used</code> expander under every answer — so a collapsed historical round can't wrap that same widget inside the new outer FAQ-expander. Resolved by parameterizing the render helper: inside a collapsed round, tool-call detail renders as plain inline text/captions instead of a second expander; the one currently-expanded round (never itself inside an expander) keeps the real collapsible widget.</div>
+
+    <p><b>Verified against the actual failure mode this feature exists to prevent, not a looser proxy for it.</b> A genuine two-process test: one Python process asked a real question and called <code>save_chat_round()</code>, then exited completely; a second, entirely separate process — zero shared memory, zero shared state — called <code>load_chat_rounds()</code> and correctly recalled the prior answer with no re-query. Confirmed for real afterward too: an actual <code>docker compose restart</code> preserved history visibly in the browser, not just this script-level proxy for it.</p>
+
+    <div class="callout"><b>A real, previously-only-predicted limitation, confirmed directly via a two-tab test.</b> Asking a question in one open tab doesn't appear in a second already-open tab until that tab is refreshed or asks its own question. Not a bug — Streamlit only reruns a given tab's script on that tab's own interaction; each tab holds its own independent <code>session_state</code>, loaded from the database once at that tab's first load, with no push mechanism to other open sessions. This is exactly the "not live-synced across tabs" tradeoff named when Option B was first chosen, now empirically confirmed rather than just anticipated.</div>
+  </section>
+
   <section class="doc-section" id="discussion">
     <h2>Design Discussion</h2>
 
@@ -349,9 +390,9 @@ Q3: "What were the exact items in that allocation?"               <span class="c
   <section class="doc-section" id="limitations">
     <h2>Known Limitations &amp; Open Items</h2>
 
-    <div class="callout warn"><b>Chat history is not persistent — a container restart silently wipes every session's memory.</b> Found live: a restart (done to pick up the Bug 5 prompt fix) wiped an in-progress browser conversation with no in-UI signal it had happened. Confirmed via a direct <code>docker exec</code> test that the memory mechanism itself works correctly inside Docker (a fresh session recalling a prior answer with zero new tool calls) — the real cause is that <code>st.session_state</code> lives only in server memory, with nothing persisting it. A <code>PROCESS_ID</code> diagnostic (generated once per process, shown as a UI caption) was added so a restart is at least visible rather than silently confusing.</div>
+    <div class="callout good"><b>Resolved this build: chat history is now persistent — see Phase 5 (Phase 3.5) above.</b> A real container restart no longer wipes conversation memory; a <code>PROCESS_ID</code> diagnostic (generated once per process, shown as a UI caption) still makes a restart visible when one does happen.</div>
 
-    <div class="callout"><b>Scoped in full, deliberately deferred, recorded as a possible future feature — Phase 3.5, persistent shared chat history.</b> Design: a new <code>agent_scratch.chat_rounds</code> table (reusing the existing <code>appdb_agent_writer</code> role, not a new one), loaded on session start instead of starting empty — <code>flatten_history()</code> itself needs zero changes, since persistence only changes where the initial <code>rounds</code> list comes from. Chosen shape: <b>one shared/global conversation</b> (not per-session/per-user), explicitly simpler than giving each browser tab a durable identity via <code>st.query_params</code>, appropriate for a solo portfolio demo. Two real design gaps were identified during scoping and left undecided, since the feature itself is on hold: (1) the shared-feed design has no user/session attribution at all — every tab renders the exact same transcript, so there's no "these are mine" concept; (2) persistence removes the accidental page-length cap a restart used to provide — nothing currently limits how long the rendered UI history grows, which would need an explicit display-only cap (separate from the model's own context-window handling, which is already solved).</div>
+    <div class="callout warn"><b>Not live-synced across open tabs — confirmed via real two-tab testing, not just anticipated at design time.</b> See Phase 3.5's write-up above for the root cause and why it's a deliberate simplicity tradeoff of the shared-feed design, not a defect. True live push across tabs would need additional infrastructure (polling, or Streamlit's newer auto-refresh primitives) not built in this pass.</div>
 
     <div class="callout"><b>Cosmetic-only: Streamlit's dev-mode file watcher logs a harmless <code>ModuleNotFoundError: No module named 'torchvision'</code>.</b> Root-caused to the watcher probing optional vision-model submodules while walking <code>sentence-transformers</code>'s dependency tree — this project never installs or needs <code>torchvision</code>. Zero functional impact, confirmed every time it came up; a <code>[logger] level = "error"</code> config fix was attempted and could not be confirmed effective in real use, so it was removed rather than kept as unverified.</div>
   </section>
@@ -362,9 +403,10 @@ Q3: "What were the exact items in that allocation?"               <span class="c
     <ul class="check-list">
       <li><b>Phase 1</b><span class="detail">Live-verified in the browser; independently rebuilt in place later as a comprehension check before Build 6 was considered closed.</span></li>
       <li><b>Phase 2, boundary test</b><span class="detail">Reproduced identically across two script-based runs and one real browser session (see the sample transcript above).</span></li>
-      <li><b>Each of the 5 bugs above</b><span class="detail"><code>py_compile</code> on every changed file; a direct functional reproduction of the original failure against the fixed code; full pytest suite re-run after every single fix (19 → 22 passing across the build).</span></li>
+      <li><b>Each of the 6 bugs above</b><span class="detail"><code>py_compile</code> on every changed file; a direct functional reproduction of the original failure against the fixed code; full pytest suite re-run after every single fix (19 → 22 passing across the build).</span></li>
       <li><b>Phase 3</b><span class="detail">Both images built, stack brought up, live-verified in the browser with log persistence confirmed via the host filesystem bind mount; a stale unrelated container from an earlier build cleaned up so only the current one remains.</span></li>
       <li><b>Phase 4</b><span class="detail"><code>py_compile</code> clean; a direct functional test of <code>get_tool_calls</code> (temp log file — correct <code>question_id</code> filtering, <code>output</code> excluded, unknown-ID returns <code>[]</code>); full pytest suite 22/22; a real live <code>ask_agent()</code> call confirming <code>question_id</code> threads end-to-end to real logged data; confirmed live in the browser for both the zero-tool-call and multi-tool-call cases.</span></li>
+      <li><b>Phase 3.5</b><span class="detail"><code>py_compile</code> clean; a save/load round-trip test against the live table (JSONB serialization survives intact, discovery exclusion confirmed); full pytest suite 22/22; a genuine two-process restart-simulation test (one process saves and exits, a second unrelated process loads from the DB only and correctly recalls the answer); container rebuilt and confirmed via <code>docker exec ... grep</code> to actually be running the new code; then confirmed for real by the user — an actual container restart, a two-tab shared-feed check, and the FAQ-expander's look and feel, all in a live browser.</span></li>
     </ul>
     <pre class="code"><span class="fn">Sample — live browser confirmation, Phase 4's zero-tool-call case</span><code>Q: "What can you do?"
 -&gt; answered entirely from the system prompt, zero tool calls
@@ -383,10 +425,11 @@ Q: "Tell me about the database?"
       <thead><tr><th>Component</th><th>Detail</th></tr></thead>
       <tbody>
         <tr><td>New Python</td><td class="mono">app.py — the Streamlit entrypoint</td></tr>
-        <tr><td>Changed Python</td><td class="mono">agent.py (ask_agent() callable refactor carried in from Build 4, flatten_history(), MAX_FULL_FIDELITY_ROUNDS, PROCESS_ID, question_id returned, SYSTEM_PROMPT rewritten), tools.py (MAX_SQL_RESULT_ROWS cap, customers/orders removed from discovery), logging_utils.py (user_question field, log_final_answer(), get_tool_calls())</td></tr>
+        <tr><td>Changed Python</td><td class="mono">agent.py (ask_agent() callable refactor carried in from Build 4, flatten_history(), MAX_FULL_FIDELITY_ROUNDS, PROCESS_ID, question_id returned, SYSTEM_PROMPT rewritten), tools.py (MAX_SQL_RESULT_ROWS cap, customers/orders + chat_rounds removed from discovery, save_chat_round()/load_chat_rounds()), logging_utils.py (user_question field, log_final_answer(), get_tool_calls()), extract_doc_chunks.py (SOURCE_FILES switched from a hand-maintained list to glob auto-discovery, see Bugs Found &amp; Fixed)</td></tr>
+        <tr><td>New SQL</td><td class="mono">012_chat_rounds_schema.sql — agent_scratch.chat_rounds, applied live against pg_local</td></tr>
         <tr><td>Changed infra</td><td class="mono">Dockerfile (COPY fixed to include logging_utils.py/app.py), docker-compose.yml (new streamlit_app service), requirements.txt (streamlit added)</td></tr>
         <tr><td>New tests</td><td class="mono">test_agent_history.py — 3 tests for flatten_history()</td></tr>
-        <tr><td>Diagram folder</td><td class="mono">PROJECT_DIAGRAMS/BUILD_6_FLOW/ — phase1/phase2/phase3/phase3-5/phase4 flow diagrams, this brief. Phase 3.5's diagram documents a deferred design, not built code.</td></tr>
+        <tr><td>Diagram folder</td><td class="mono">PROJECT_DIAGRAMS/BUILD_6_FLOW/ — phase1/phase2/phase3/phase3-5/phase4 flow diagrams, this brief.</td></tr>
         <tr><td>Live app</td><td class="mono">http://localhost:8501 (streamlit_app service) — unreachable without --server.address=0.0.0.0 set on the container, see Phase 3</td></tr>
         <tr><td>Project test suite</td><td class="mono">22/22 passing (up from 19 at the start of this build)</td></tr>
       </tbody>
@@ -394,7 +437,7 @@ Q: "Tell me about the database?"
   </section>
 
   <footer>
-    Build 6 functionally complete — Phases 1 through 4 done, live-verified in a real browser. Phase 3.5 (persistent shared chat history) is fully designed and deliberately deferred, recorded above as a possible future feature rather than blocking scope. Next: Build 7 (a verifier/critic agent), or Phase 3.5 if it's picked back up first. Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+    Build 6 complete — every phase including 3.5, live-verified in a real browser (real restart survives, two-tab shared feed confirmed, FAQ-expander confirmed). Next: Build 7 (a verifier/critic agent). Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
   </footer>
 
 </div>
