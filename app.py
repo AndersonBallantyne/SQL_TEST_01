@@ -21,9 +21,10 @@ if "rounds" not in st.session_state:
 def render_tool_calls(tool_calls):
     # Input only, not output - output can be a full row dump (see MAX_SQL_RESULT_ROWS), which
     # would turn this expander into the same doom-scrolling problem it's meant to avoid.
-    if not tool_calls:
-        return
+    tool_calls = tool_calls or []
     with st.expander(f"Tools used ({len(tool_calls)})"):
+        if not tool_calls:
+            st.caption("Answered directly - no tools were called for this question.")
         for call in tool_calls:
             st.markdown(f"**{call['tool_name']}**")
             st.code(json.dumps(call["input"], indent=2), language="json")
@@ -33,7 +34,8 @@ def render_tool_calls(tool_calls):
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        render_tool_calls(message.get("tool_calls"))
+        if message["role"] == "assistant":
+            render_tool_calls(message.get("tool_calls"))
 
 user_question = st.chat_input("Ask about the database or project build")
 
