@@ -25,6 +25,24 @@ def log_tool_call(tool_name, input_data, output_data, latency_ms, turn, question
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry, default=str) + "\n")
 
+def get_tool_calls(question_id):
+    # Reuses the Phase 1 log as the source of truth (same pattern as run_eval.py) instead of
+    # threading a parallel tool-call tracker through app.py - filters to entries carrying
+    # "tool_name" so log_final_answer's differently-shaped entries are skipped automatically.
+    if not os.path.exists(LOG_PATH):
+        return []
+    calls = []
+    with open(LOG_PATH) as f:
+        for line in f:
+            entry = json.loads(line)
+            if entry.get("question_id") == question_id and "tool_name" in entry:
+                calls.append({
+                    "tool_name": entry["tool_name"],
+                    "input": entry["input"],
+                    "latency_ms": entry["latency_ms"],
+                })
+    return calls
+
 def log_final_answer(question_id, user_question, answer, error=None):
     # A distinct event shape from log_tool_call's entries (no tool_name/turn/input/output/
     # latency_ms) - the model's final answer isn't a tool call, it's what ask_agent() returns

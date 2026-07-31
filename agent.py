@@ -172,7 +172,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
         except anthropic.APIError as e:
             print(f"Anthropic API error: {e}")
             log_final_answer(question_id, user_question, answer, error=str(e))
-            return {"answer": answer, "error": str(e), "full_messages": messages}
+            return {"answer": answer, "error": str(e), "full_messages": messages, "question_id": question_id}
 
 
         for block in response.content:
@@ -187,7 +187,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
 
         if response.stop_reason != "tool_use":
             log_final_answer(question_id, user_question, answer)
-            return {"answer": answer, "error": None, "full_messages": messages}
+            return {"answer": answer, "error": None, "full_messages": messages, "question_id": question_id}
 
 
         tool_results = []
@@ -243,7 +243,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
 
     print(f"Stopped after reaching the {max_tool_turns}-turn limit.")
     log_final_answer(question_id, user_question, answer, error="max_turns_reached")
-    return {"answer": answer, "error": "max_turns_reached", "full_messages": messages}
+    return {"answer": answer, "error": "max_turns_reached", "full_messages": messages, "question_id": question_id}
 
 
 

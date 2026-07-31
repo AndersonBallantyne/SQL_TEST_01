@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 6, Phase 4 Flow — Tools Used Expander</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #F3F6F7; }
+  body { display: flex; justify-content: center; padding: 32px 16px 56px; }
+  .frame { width: 100%; max-width: 700px; }
+  svg { display: block; width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<div class="frame">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 920" width="680" height="920" role="img" aria-labelledby="title desc">
+  <title id="title">Build 6, Phase 4 flow: a "tools used" expander in the UI</title>
+  <desc id="desc">Flowchart: start, then five steps - return question_id from ask_agent, add a get_tool_calls helper to logging_utils.py that reads the existing tool-call log filtered by question_id, wire app.py to store and render a Tools Used expander per round showing tool name and input with latency as a small caption, live-test in the browser with a multi-tool question and confirm the expander persists correctly across reruns, then audit and commit - ending in a continue pill.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; fill: #101827; }
+    .heading    { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 22px; font-weight: 600; }
+    .subheading { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 11px; fill: #7C8894; letter-spacing: 0.12em; }
+    .step-label { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-size: 16.5px; font-weight: 600; }
+    .step-mono  { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px; fill: #7C8894; }
+    .legend-text { font-size: 11px; fill: #7C8894; }
+    .rect-node   { fill: #FFFFFF; stroke: #B9C4C7; stroke-width: 1.5; }
+    .pill-node   { fill: #0B5158; }
+    .pill-text   { fill: #F3F9F9; font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13.5px; font-weight: 700; text-anchor: middle; letter-spacing: 0.04em; }
+    .badge       { fill: #0B5158; }
+    .badge-text  { fill: #F3F9F9; font-size: 14px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+    .arrow-line  { stroke: #B9C4C7; stroke-width: 2; }
+    .arrow-head  { fill: #B9C4C7; }
+  </style>
+
+  <rect x="0" y="0" width="680" height="920" fill="#F3F6F7"/>
+
+  <text x="340" y="40" class="heading" text-anchor="middle">Build 6, Phase 4 — Tools Used Expander</text>
+  <text x="340" y="60" class="subheading" text-anchor="middle">FRONT END FOR THE AGENT · BUILD 6 · STRETCH</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="16" y="76" width="20" height="12" rx="6" class="pill-node"/>
+    <text x="42" y="86" class="legend-text">start / end</text>
+    <rect x="150" y="76" width="20" height="12" rx="3" class="rect-node"/>
+    <text x="176" y="86" class="legend-text">step</text>
+    <line x1="230" y1="82" x2="258" y2="82" class="arrow-line"/>
+    <polygon points="264,82 256,78 256,86" class="arrow-head"/>
+    <text x="270" y="86" class="legend-text">flow</text>
+  </g>
+
+  <!-- connectors -->
+  <g>
+    <line class="arrow-line" x1="340" y1="170" x2="340" y2="210"/>
+    <polygon class="arrow-head" points="340,216 334,206 346,206"/>
+
+    <line class="arrow-line" x1="340" y1="294" x2="340" y2="334"/>
+    <polygon class="arrow-head" points="340,340 334,330 346,330"/>
+
+    <line class="arrow-line" x1="340" y1="418" x2="340" y2="458"/>
+    <polygon class="arrow-head" points="340,464 334,454 346,454"/>
+
+    <line class="arrow-line" x1="340" y1="542" x2="340" y2="582"/>
+    <polygon class="arrow-head" points="340,588 334,578 346,578"/>
+
+    <line class="arrow-line" x1="340" y1="666" x2="340" y2="706"/>
+    <polygon class="arrow-head" points="340,712 334,702 346,702"/>
+
+    <line class="arrow-line" x1="340" y1="790" x2="340" y2="830"/>
+    <polygon class="arrow-head" points="340,836 334,826 346,826"/>
+  </g>
+
+  <!-- Start pill -->
+  <g>
+    <rect class="pill-node" x="180" y="110" width="320" height="60" rx="30"/>
+    <text class="pill-text" x="340" y="145">START — BUILD 6, PHASE 4</text>
+  </g>
+
+  <!-- Step 1 -->
+  <g>
+    <rect class="rect-node" x="60" y="216" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="252" r="16"/>
+    <text class="badge-text" x="96" y="253">1</text>
+    <text class="step-label" x="126" y="246">Return question_id from ask_agent()</text>
+    <text class="step-mono" x="126" y="268">agent.py - already generated, just wasn't handed back</text>
+  </g>
+
+  <!-- Step 2 -->
+  <g>
+    <rect class="rect-node" x="60" y="340" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="376" r="16"/>
+    <text class="badge-text" x="96" y="377">2</text>
+    <text class="step-label" x="126" y="370">Add get_tool_calls(question_id)</text>
+    <text class="step-mono" x="126" y="392">logging_utils.py - filters the existing tool_calls.jsonl log</text>
+  </g>
+
+  <!-- Step 3 -->
+  <g>
+    <rect class="rect-node" x="60" y="464" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="500" r="16"/>
+    <text class="badge-text" x="96" y="501">3</text>
+    <text class="step-label" x="126" y="494">Wire app.py - store per round, render expander</text>
+    <text class="step-mono" x="126" y="516">tool name + input shown, latency as a small caption</text>
+  </g>
+
+  <!-- Step 4 -->
+  <g>
+    <rect class="rect-node" x="60" y="588" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="624" r="16"/>
+    <text class="badge-text" x="96" y="625">4</text>
+    <text class="step-label" x="126" y="618">Live-test a multi-tool question in the browser</text>
+    <text class="step-mono" x="126" y="640">confirm expander persists per round across reruns</text>
+  </g>
+
+  <!-- Step 5 -->
+  <g>
+    <rect class="rect-node" x="60" y="712" width="560" height="78" rx="10"/>
+    <circle class="badge" cx="96" cy="748" r="16"/>
+    <text class="badge-text" x="96" y="749">5</text>
+    <text class="step-label" x="126" y="742">Audit, then commit</text>
+    <text class="step-mono" x="126" y="764">closes Build 6's optional stretch scope</text>
+  </g>
+
+  <!-- End pill -->
+  <g>
+    <rect class="pill-node" x="180" y="836" width="320" height="66" rx="33"/>
+    <text class="pill-text" x="340" y="866">CONTINUE →</text>
+    <text class="pill-text" x="340" y="886">BUILD 6 CLOSEOUT</text>
+  </g>
+</svg>
+</div>
+</body>
+</html>
