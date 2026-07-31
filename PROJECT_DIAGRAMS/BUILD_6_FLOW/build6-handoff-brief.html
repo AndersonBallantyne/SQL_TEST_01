@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 6 Handoff Brief — Front End for the Agent</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  h3.phase-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px; font-weight: 600; margin: 32px 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.phase-title .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 700; flex: none;
+  }
+  p.phase-goal { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .kw { color: var(--teal); font-weight: 600; }
+  .str { color: var(--accent); }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+
+  table.ref-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); table-layout: fixed; }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; word-break: break-word; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: normal; }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  ol.step-list { margin: 0 0 18px; padding-left: 22px; font-size: 13.5px; }
+  ol.step-list li { margin-bottom: 8px; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 6 · Handoff Brief</p>
+  <h1>Front End for the Agent</h1>
+  <p class="lede">A standalone, deep-dive reference for Build 6 — a Streamlit chat interface wrapping the existing tool-use agent, so the whole project is demoable in a browser instead of only via a Python REPL. Every phase, every real bug the process surfaced, and every verification result, in full. Complements (does not replace) the living cheat sheet and the per-phase flow diagrams.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Functionally complete — Phases 1–4 done; Phase 3.5 scoped and deferred (see Known Limitations)</dd></div>
+    <div><dt>Commits</dt><dd><code>b902500</code> → <code>9f82642</code></dd></div>
+    <div><dt>Continues</dt><dd>Build 5 (live deployment with CI)</dd></div>
+    <div><dt>Precedes</dt><dd>Build 7 (verifier/critic agent)</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#what">What &amp; Why</a>
+    <a href="#stack">Tech Stack Decision</a>
+    <a href="#phase1">Phase 1</a>
+    <a href="#phase2">Phase 2</a>
+    <a href="#bugs">Bugs Found &amp; Fixed</a>
+    <a href="#phase3">Phase 3</a>
+    <a href="#phase4">Phase 4</a>
+    <a href="#discussion">Design Discussion</a>
+    <a href="#limitations">Known Limitations</a>
+    <a href="#verification">Verification Log</a>
+    <a href="#env">Environment State</a>
+  </nav>
+
+  <section class="doc-section" id="what">
+    <h2>What Was Built, and Why</h2>
+    <p class="section-note">
+      Every build through Build 5 deepened the agent or its infrastructure; none of them changed how a person actually reaches it. <code>agent.py</code> was still a <code>print()</code>-based CLI loop — technically complete, entirely undemoable to anyone unwilling to clone the repo and run Python locally. Build 6 closes that gap: a real, clickable chat interface, wrapping <code>ask_agent()</code> as-is, with no changes to the agent's own reasoning.
+    </p>
+    <p class="section-note">
+      Four phases, in order: a minimal chat UI (Phase 1); genuine multi-turn conversation memory, since nothing before this build ever needed it (Phase 2); containerizing the whole thing as a second service sharing Build 1's own Docker image (Phase 3); and a stretch phase surfacing Build 4's tool-call logging directly in the browser (Phase 4). A fifth unit of scope — persistent, restart-proof chat history — was identified mid-build from a real live-testing gap, designed in full, and deliberately deferred; it's documented under Known Limitations as a recorded possible feature, not silently dropped.
+    </p>
+    <div class="callout"><b>Nothing about the agent's own reasoning changed in this build.</b> Every phase here is front-end/infrastructure work around the existing <code>ask_agent()</code> tool-use loop — the one exception is a handful of real, evidence-based fixes to <code>tools.py</code>/<code>agent.py</code> that live-testing through the new UI surfaced (a missing result cap, stale discovery scope, a stale system prompt) — see Bugs Found &amp; Fixed.</p></div>
+  </section>
+
+  <section class="doc-section" id="stack">
+    <h2>Tech Stack Decision</h2>
+    <p class="section-note">Decided before any code was written. Streamlit, over two real alternatives.</p>
+    <table class="ref-table">
+      <thead><tr><th>Option</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td><b>Streamlit</b> (chosen)</td><td class="mono">Pure Python — no new language or build tooling. Built-in chat primitives (<code>st.chat_message</code>, <code>st.chat_input</code>) purpose-built for exactly this shape of app. Deployable as another <code>docker-compose.yml</code> service, or free via Streamlit Community Cloud.</td></tr>
+        <tr><td>Flask/FastAPI + a separate JS/React front end</td><td class="mono">Deferred — more production-shaped in theory, but real scope creep: a second codebase and build-tooling stack for a project whose point is the SQL/data-agent work, not front-end engineering.</td></tr>
+        <tr><td>Gradio</td><td class="mono">Deferred — comparable fit, more ML-demo-oriented. Streamlit's broader general adoption and pure-Python fit won out.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="doc-section" id="phase1">
+    <h3 class="phase-title"><span class="badge">1</span>Minimal Chat UI</h3>
+    <p class="phase-goal">Goal: wrap the existing <code>ask_agent()</code> loop in a real chat interface — nothing more.</p>
+
+    <pre class="code"><span class="fn">app.py — the shape of every later phase builds on</span><code><span class="kw">import</span> streamlit <span class="kw">as</span> st
+<span class="kw">from</span> agent <span class="kw">import</span> ask_agent
+
+<span class="cmt"># Streamlit reruns this whole script on every interaction, so history has to live in</span>
+<span class="cmt"># session_state explicitly - a plain Python list would reset to empty on every rerun.</span>
+<span class="kw">if</span> <span class="str">"messages"</span> <span class="kw">not in</span> st.session_state:
+    st.session_state.messages = []
+
+<span class="kw">for</span> message <span class="kw">in</span> st.session_state.messages:
+    <span class="kw">with</span> st.chat_message(message[<span class="str">"role"</span>]):
+        st.markdown(message[<span class="str">"content"</span>])
+
+user_question = st.chat_input(<span class="str">"Ask about the database..."</span>)
+<span class="kw">if</span> user_question:
+    <span class="cmt"># append user message, call ask_agent(), append assistant message</span></code></pre>
+
+    <div class="callout"><b>Why <code>agent.py</code> needed a refactor first, not just <code>app.py</code>.</b> The original agent was a <code>__main__</code>-guarded script, not an importable function. Build 4 had already refactored it into a callable <code>ask_agent(user_question)</code> for the eval harness's benefit — this build is the second, independent payoff of that same refactor, reusing it entirely unchanged rather than duplicating agent logic inside the UI layer.</div>
+  </section>
+
+  <section class="doc-section" id="phase2">
+    <h3 class="phase-title"><span class="badge">2</span>Hybrid Tiered Conversation Memory</h3>
+    <p class="phase-goal">Goal: real multi-turn memory. Phase 1's <code>session_state.messages</code> only gave the <i>display</i> history — <code>ask_agent()</code> itself still built a fresh one-message list on every call, so the model had zero actual memory of prior turns despite the transcript rendering fine.</p>
+
+    <p><b>Two designs were weighed, not defaulted into.</b> Option A: full raw Anthropic message-block replay (real tool-call memory, but unbounded per-conversation growth). Option B: text-only history (just prior question/answer text pairs). B was initially recommended as the better-scoped fit — then explicitly overridden once the project's own "production-grade portfolio" goal was invoked: real production systems bound/manage history rather than replay it forever (this assistant's own context-compaction being the concrete example), which argues for <i>B plus an explicit cap</i>, not for unbounded A. The chosen design went further still, deliberately: <b>hybrid tiered memory</b> — recent rounds keep full raw tool-call fidelity, older rounds collapse to plain text.</p>
+
+    <pre class="code"><span class="fn">agent.py — the actual mechanism</span><code>MAX_FULL_FIDELITY_ROUNDS = 3
+
+<span class="kw">def</span> flatten_history(history_rounds):
+    older_rounds = history_rounds[:-MAX_FULL_FIDELITY_ROUNDS]
+    recent_rounds = history_rounds[-MAX_FULL_FIDELITY_ROUNDS:]
+
+    messages = []
+    <span class="kw">for</span> round <span class="kw">in</span> older_rounds:
+        messages.append({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: round[<span class="str">"user_question"</span>]})
+        messages.append({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: round[<span class="str">"answer_text"</span>]})
+    <span class="kw">for</span> round <span class="kw">in</span> recent_rounds:
+        messages.extend(round[<span class="str">"full_messages"</span>])
+    <span class="kw">return</span> messages
+
+<span class="kw">def</span> ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=<span class="kw">None</span>):
+    messages = flatten_history(history_rounds <span class="kw">or</span> [])
+    messages.append({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: user_question})
+    <span class="cmt"># ...turn loop unchanged... every return now also hands back full_messages</span></code></pre>
+
+    <div class="callout good"><b>A genuine cross-layer nuance, corrected while designing:</b> Streamlit's <code>session_state</code> keeps live Python objects in server memory across reruns within one session — it does <i>not</i> require JSON serialization the way real cross-process persistence would. Storing raw Anthropic SDK objects (<code>TextBlock</code>/<code>ToolUseBlock</code>) in <code>session_state</code> is simpler than it first sounds; the real complexity is the flatten/collapse logic itself and the API's strict tool_use→tool_result adjacency rule at the fidelity-window boundary.</div>
+
+    <div class="callout"><b>NOTE-WORTHY — a performance/best-practice analysis was requested and given before any code was written, flagged explicitly for this brief.</b>
+      <p style="margin:10px 0 4px;"><b>Scale tradeoffs identified, none yet mitigated in the design as built:</b></p>
+      <ol class="step-list" style="margin-bottom:10px;">
+        <li>The fidelity window bounds <i>round count</i>, not <i>per-round payload size</i> — a much larger table means a single retained <code>run_sql_query</code> result could be large regardless of how few rounds are kept raw. (This specific gap became real days later — see Bugs Found &amp; Fixed.)</li>
+        <li>A sliding full→collapsed boundary invalidates the API's prompt-cache prefix every turn (the boundary round's content changes each time) — unlike infrequent/periodic compaction (this assistant's own context management, LangChain's <code>ConversationSummaryBufferMemory</code>), which preserves a stable cacheable prefix far longer.</li>
+        <li>Vector-search latency (<code>search_summaries</code>/<code>search_docs</code>) compounds with conversation-memory latency at real scale.</li>
+        <li>Per-session server memory footprint (N full rounds × concurrent users, once this build containerizes the app) is real concurrency territory — the same category Build 4's <code>question_id</code> field exists for.</li>
+      </ol>
+      <p style="margin:10px 0 4px;"><b>Best-practice verdict, precise, not a blanket yes/no:</b> the general shape (recent-full + older-degraded) is a real, recognized pattern — it matches LangChain's summary-buffer memory and this assistant's own context compaction. But this project's version is a simplification in two specific ways: it retains old rounds' verbatim text rather than re-summarizing via a dedicated LLM call, and it's recency-based rather than relevance-based (semantic retrieval of the most pertinent prior rounds) — this codebase is unusually well-positioned to do the latter, since pgvector is already proven via <code>search_summaries</code>/<code>search_docs</code>. A second, more sophisticated alternative already sits in this codebase too: push large tool outputs into <code>agent_scratch</code> instead of retaining them in context, and have the agent re-query rather than re-read.</p>
+      <p style="margin:0;"><b>Disposition:</b> named honestly as future-examination material, not blocking — Phase 2 proceeded on the hybrid design as scoped.</p>
+    </div>
+
+    <p><b>Step 8 — the boundary test, confirmed genuinely, not assumed.</b> Two test designs were tried and honestly discarded before a third worked: the first two were inconclusive because the seed question's own answer was already a complete data dump, so collapsed text alone would have sufficed regardless of whether true collapse was actually exercised. The third design deliberately asked only for an aggregate total up front, forcing the later follow-up to require fresh tool calls if memory genuinely didn't retain the detail.</p>
+    <pre class="code"><span class="fn">Sample — the confirming 3-question chain, MAX_FULL_FIDELITY_ROUNDS temporarily set to 1</span><code>Q1: "What's the average allocation duration, in hours?"          <span class="cmt"># aggregate only, no row detail</span>
+    -&gt; 230.06 hours
+
+Q2: "Which allocation had the most items checked out?"           <span class="cmt"># unrelated, just advances the round count</span>
+    -&gt; allocation 9993490, 95 items
+
+Q3: "What were the exact items in that allocation?"               <span class="cmt"># Q2 is now collapsed, not full-fidelity</span>
+    -&gt; correctly re-ran run_sql_query rather than fabricating an answer
+    -&gt; allocation 9993490, 6 items <span class="cmt"># (reconstructed correctly - re-queried, not hallucinated)</span></code></pre>
+    <div class="callout good">Reproduced identically across two script-based runs and one real browser session — the system recovers gracefully via re-querying when retained memory doesn't have what's needed, arguably a more important property than "recalls old raw data verbatim."</div>
+  </section>
+
+  <section class="doc-section" id="bugs">
+    <h2>Bugs Found &amp; Fixed</h2>
+    <p class="section-note">All five surfaced through genuine live-testing of the new UI, not speculative review — the first real end-to-end usage this agent had ever gotten outside a controlled script or eval case.</p>
+
+    <div class="callout warn"><b>1. <code>run_sql_query</code> had no result-size cap — broke a live browser question with a real 400 API error before Phase 2's own code was even finished.</b> An unfiltered follow-up-style question (<code>SELECT ... FROM clean.allocations WHERE actual_end IS NOT NULL ORDER BY actual_end DESC</code>, no <code>LIMIT</code>) matched nearly the whole table and returned 936,551 characters in one tool result — <code>Error code: 400 ... prompt is too long: 448866 tokens &gt; 200000 maximum</code>. Every prior use of this tool (Build 1 through the eval harness) happened to involve small tables, aggregates, or model-written <code>LIMIT</code>s, so this path had simply never been exercised before.</div>
+    <div class="callout good"><b>Fixed:</b> <code>MAX_SQL_RESULT_ROWS = 200</code>, <code>cur.fetchmany(201)</code> instead of <code>fetchall()</code> — fetching one row past the cap makes truncation detectable without a second round-trip. A truncated result gets a trailing <code>{"message": "Result truncated at 200 rows..."}</code> sentinel entry, the same pattern <code>search_summaries</code>/<code>search_docs</code> already use for "no match." This exact gap had already been named as a real, unaddressed risk during Phase 2's own scale discussion above — this incident is that flagged risk surfacing for real, independently confirming the flag wasn't paranoid.</div>
+
+    <div class="callout warn"><b>2. The tool-call log never recorded the actual question asked.</b> <code>logs/tool_calls.jsonl</code> had every field describing what a tool did, but not what the user had asked that triggered it — discovered while trying to hand back the exact original question that had caused bug 1, and finding it structurally impossible to reconstruct from the log alone.</div>
+    <div class="callout good"><b>Fixed:</b> <code>log_tool_call()</code> gained a <code>user_question</code> parameter, now passed from both of <code>ask_agent()</code>'s call sites.</div>
+
+    <div class="callout warn"><b>3. <code>docs.chunks</code> — the documentation-RAG corpus — had silently stopped growing after Build 3.</b> Found by directly noticing that questions about build history only ever surfaced Build 1–3 content. Root cause: <code>extract_doc_chunks.py</code>'s <code>SOURCE_FILES</code> is a hardcoded list, written during Build 3.5 and never updated as Build 3.5, 4, and 5 each got their own handoff brief afterward.</div>
+    <div class="callout good"><b>Fixed:</b> the three missing brief paths added, extraction/embedding scripts re-run — both already idempotent by design (<code>DELETE ... WHERE source_file = %s</code> before re-insert; <code>WHERE embedding IS NULL</code> backfill), so nothing needed to change to make the re-run safe. All 10 source files now present, 395 chunks, 0 unembedded.</div>
+
+    <div class="callout warn"><b>4. The log recorded tool activity but never the model's actual final answer.</b> Made correctness impossible to verify from the log alone — had to cross-check every answer against the live browser by hand.</div>
+    <div class="callout good"><b>Fixed:</b> a new <code>log_final_answer(question_id, user_question, answer, error)</code> event — a distinct shape from tool-call entries (no <code>tool_name</code>/<code>turn</code>/<code>input</code>/<code>output</code>/<code>latency_ms</code>), wired into all three of <code>ask_agent()</code>'s return points.</div>
+
+    <div class="callout warn"><b>5. The system prompt still described <code>appdb</code> as a generic "small business database," leftover Build 1 framing.</b> Asking "What can you do?" through the real UI produced example questions like "customers with orders over $500" — confirmed via the log that zero tool calls fired, meaning this was pure stale-framing filler text, not real schema discovery. A real portfolio viewer trying one of those self-suggested examples would have gotten a confusing empty result, since those tables were never the project's actual subject.</div>
+    <div class="callout good"><b>Fixed, alongside related housekeeping:</b> the prompt's opening rewritten to describe the actual domain (equipment allocations, <code>clean.allocations</code> as the real subject table). Separately, <code>customers</code>/<code>orders</code> (original Build 1 seed tables, unrelated to the portfolio narrative since Build 2) removed from <code>list_tables</code>/<code>describe_table</code>'s discovery scope — a discovery-level fix, not a hard DB-level lockout, since this isn't sensitive data, just narrative clutter.</div>
+  </section>
+
+  <section class="doc-section" id="phase3">
+    <h3 class="phase-title"><span class="badge">3</span>Containerization</h3>
+    <p class="phase-goal">Goal: run the Streamlit app as a real <code>docker-compose</code> service, matching how the CLI agent has run since Build 1.</p>
+
+    <div class="callout warn"><b>A real pre-existing bug found before any Phase 3 code was written.</b> <code>Dockerfile</code>'s <code>COPY agent.py tools.py ./</code> line had never included <code>logging_utils.py</code> (added in Build 4) — the <code>agent</code> service's image would have failed to build with an <code>ImportError</code> the moment it was ever rebuilt, unrelated to Phase 3 itself but only caught because this phase meant touching this exact file.</div>
+    <div class="callout good"><b>Fixed:</b> <code>COPY agent.py tools.py logging_utils.py app.py ./</code>.</div>
+
+    <pre class="code"><span class="fn">docker-compose.yml — one image, two services, differentiated only by command</span><code>  agent:
+    build: .
+    <span class="cmt"># default CMD ["python", "agent.py"] from the Dockerfile</span>
+
+  streamlit_app:
+    build: .
+    depends_on: [postgres]
+    ports:
+      - <span class="str">"8501:8501"</span>
+    volumes:
+      - ./logs:/app/logs
+    command: [<span class="str">"streamlit"</span>, <span class="str">"run"</span>, <span class="str">"app.py"</span>, <span class="str">"--server.address=0.0.0.0"</span>]</code></pre>
+    <div class="callout warn"><b>A genuine Streamlit-in-Docker gotcha:</b> Streamlit defaults to binding <code>localhost</code> only — unreachable through Docker's port mapping without <code>--server.address=0.0.0.0</code>, which was not obvious from the plain <code>streamlit run</code> command used locally in Phase 1.</div>
+
+    <div class="callout"><b>Stricter than the local dev-server case: Docker's <code>COPY</code> bakes source in at build time, with no hot-reload path at all.</b> Editing <code>agent.py</code>/<code>tools.py</code>/<code>app.py</code> on the host has zero effect on an already-running container. Confirmed directly (not assumed) after the Bug 5 system-prompt fix: a <code>docker exec ... grep</code> against the running container's own copy of <code>agent.py</code> showed the old text still present until a full <code>docker compose build</code> + <code>up</code> (recreate) was run.</div>
+  </section>
+
+  <section class="doc-section" id="phase4">
+    <h3 class="phase-title"><span class="badge">4</span>Tools Used Expander</h3>
+    <p class="phase-goal">Goal (stretch): surface Build 4's existing tool-call logging directly in the browser, rather than leaving it CLI/log-file-only.</p>
+
+    <p><b>Design: reuse the log as the source of truth, don't track calls twice.</b> Matches the precedent already set by <code>run_eval.py</code> (which reads <code>logs/tool_calls.jsonl</code> after each <code>ask_agent()</code> call rather than tracking separately).</p>
+    <pre class="code"><span class="fn">logging_utils.py — the one new function this phase needed</span><code><span class="kw">def</span> get_tool_calls(question_id):
+    <span class="kw">if not</span> os.path.exists(LOG_PATH):
+        <span class="kw">return</span> []
+    calls = []
+    <span class="kw">with</span> open(LOG_PATH) <span class="kw">as</span> f:
+        <span class="kw">for</span> line <span class="kw">in</span> f:
+            entry = json.loads(line)
+            <span class="kw">if</span> entry.get(<span class="str">"question_id"</span>) == question_id <span class="kw">and</span> <span class="str">"tool_name"</span> <span class="kw">in</span> entry:
+                calls.append({<span class="str">"tool_name"</span>: entry[<span class="str">"tool_name"</span>], <span class="str">"input"</span>: entry[<span class="str">"input"</span>], <span class="str">"latency_ms"</span>: entry[<span class="str">"latency_ms"</span>]})
+    <span class="kw">return</span> calls</code></pre>
+    <p><code>ask_agent()</code>'s three return points now hand back <code>question_id</code> (already generated internally, just never returned before); <code>app.py</code> calls <code>get_tool_calls(question_id)</code> after each response and renders an <code>st.expander</code>, storing the result per round in <code>session_state</code> so it survives future reruns instead of only showing once.</p>
+
+    <div class="callout"><b>Deliberate scope limit: input only, never output.</b> A tool's <code>output</code> can be a full row dump (the exact shape Bug 1 above had to be capped for) — showing it in the expander would just move the doom-scrolling problem into a different widget. Tool name, input, and latency (as a small caption) are shown; the underlying data is not.</div>
+
+    <div class="callout good"><b>A real follow-up caught live, not during initial build:</b> the expander was originally hidden entirely when a question triggered zero tool calls (e.g. "What can you do?", answered purely from the system prompt). Confirmed via the log this was correct behavior, not a bug — then changed anyway, per explicit request, to always render <code>Tools used (0)</code> with a short explanatory caption, so the UI element is consistently present rather than silently absent.</div>
+  </section>
+
+  <section class="doc-section" id="discussion">
+    <h2>Design Discussion</h2>
+
+    <h3 class="phase-title" style="margin-top:12px;">One Image, Two Containers</h3>
+    <p>Two services, two separate needs, not a redundancy. <code>agent</code> (the CLI container) is the original Build 1 deliverable, proving the core tool-use loop works, containerized and reproducible — also what Build 5's CI actually exercises (migrations + pytest run against the real agent code), the engineering foundation everything else sits on. <code>streamlit_app</code> (the web container) was built specifically because the CLI isn't demoable to a portfolio reviewer — per Build 6's own original scoping: a real, clickable interface so the project is demoable without cloning the repo and running Python locally.</p>
+    <p>Both containers are built from the <b>same image</b> (one <code>Dockerfile</code>, one <code>requirements.txt</code>, one set of copied source files) but run with <b>different commands</b> — not two separate images, not one container doing double duty. If asked "which one is the final project": the Streamlit container is what a recruiter would actually click through, but the CLI/agent container isn't superseded by it — it's the tested, CI-verified core the Streamlit app is a front end on top of. Both stay in the final project, serving different audiences.</p>
+
+    <h3 class="phase-title">What Is <code>sentence-transformers</code> Actually Doing?</h3>
+    <p>Not solely focused on the allocations data — it plays the same <i>mechanical</i> role in two entirely separate places. It converts text into a fixed-length numeric vector (384 dimensions, <code>all-MiniLM-L6-v2</code>) — nothing more. It never writes any part of the agent's actual response; that's entirely Claude's job. The embedding model's only output is "here's a vector representing the meaning of this text," compared to pre-computed vectors via distance (<code>&lt;=&gt;</code> in pgvector) to find semantically similar rows.</p>
+    <p>Two distinct uses in <code>tools.py</code>, sharing one cached model instance: <code>search_summaries()</code> embeds the user's query and compares it against <code>clean.allocations.summary_embedding</code> — the allocations data itself. <code>search_docs()</code> embeds the query and compares it against <code>docs.chunks.embedding</code> — this project's own build history and design decisions, nothing to do with the allocations database at all.</p>
+    <p>The actual flow, end to end: the embedding model finds candidate rows semantically close to the question. Those rows return to Claude as a normal tool result, the same way <code>run_sql_query</code>'s rows would — and Claude is the one that reads them and writes the actual prose answer. <code>sentence-transformers</code> never sees the conversation, never generates text for the user, and has no awareness of which tool called it.</p>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Known Limitations &amp; Open Items</h2>
+
+    <div class="callout warn"><b>Chat history is not persistent — a container restart silently wipes every session's memory.</b> Found live: a restart (done to pick up the Bug 5 prompt fix) wiped an in-progress browser conversation with no in-UI signal it had happened. Confirmed via a direct <code>docker exec</code> test that the memory mechanism itself works correctly inside Docker (a fresh session recalling a prior answer with zero new tool calls) — the real cause is that <code>st.session_state</code> lives only in server memory, with nothing persisting it. A <code>PROCESS_ID</code> diagnostic (generated once per process, shown as a UI caption) was added so a restart is at least visible rather than silently confusing.</div>
+
+    <div class="callout"><b>Scoped in full, deliberately deferred, recorded as a possible future feature — Phase 3.5, persistent shared chat history.</b> Design: a new <code>agent_scratch.chat_rounds</code> table (reusing the existing <code>appdb_agent_writer</code> role, not a new one), loaded on session start instead of starting empty — <code>flatten_history()</code> itself needs zero changes, since persistence only changes where the initial <code>rounds</code> list comes from. Chosen shape: <b>one shared/global conversation</b> (not per-session/per-user), explicitly simpler than giving each browser tab a durable identity via <code>st.query_params</code>, appropriate for a solo portfolio demo. Two real design gaps were identified during scoping and left undecided, since the feature itself is on hold: (1) the shared-feed design has no user/session attribution at all — every tab renders the exact same transcript, so there's no "these are mine" concept; (2) persistence removes the accidental page-length cap a restart used to provide — nothing currently limits how long the rendered UI history grows, which would need an explicit display-only cap (separate from the model's own context-window handling, which is already solved).</div>
+
+    <div class="callout"><b>Cosmetic-only: Streamlit's dev-mode file watcher logs a harmless <code>ModuleNotFoundError: No module named 'torchvision'</code>.</b> Root-caused to the watcher probing optional vision-model submodules while walking <code>sentence-transformers</code>'s dependency tree — this project never installs or needs <code>torchvision</code>. Zero functional impact, confirmed every time it came up; a <code>[logger] level = "error"</code> config fix was attempted and could not be confirmed effective in real use, so it was removed rather than kept as unverified.</div>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification Log</h2>
+    <p class="section-note">What was actually run against a real environment or a real browser, not just read for plausibility.</p>
+    <ul class="check-list">
+      <li><b>Phase 1</b><span class="detail">Live-verified in the browser; independently rebuilt in place later as a comprehension check before Build 6 was considered closed.</span></li>
+      <li><b>Phase 2, boundary test</b><span class="detail">Reproduced identically across two script-based runs and one real browser session (see the sample transcript above).</span></li>
+      <li><b>Each of the 5 bugs above</b><span class="detail"><code>py_compile</code> on every changed file; a direct functional reproduction of the original failure against the fixed code; full pytest suite re-run after every single fix (19 → 22 passing across the build).</span></li>
+      <li><b>Phase 3</b><span class="detail">Both images built, stack brought up, live-verified in the browser with log persistence confirmed via the host filesystem bind mount; a stale unrelated container from an earlier build cleaned up so only the current one remains.</span></li>
+      <li><b>Phase 4</b><span class="detail"><code>py_compile</code> clean; a direct functional test of <code>get_tool_calls</code> (temp log file — correct <code>question_id</code> filtering, <code>output</code> excluded, unknown-ID returns <code>[]</code>); full pytest suite 22/22; a real live <code>ask_agent()</code> call confirming <code>question_id</code> threads end-to-end to real logged data; confirmed live in the browser for both the zero-tool-call and multi-tool-call cases.</span></li>
+    </ul>
+    <pre class="code"><span class="fn">Sample — live browser confirmation, Phase 4's zero-tool-call case</span><code>Q: "What can you do?"
+-&gt; answered entirely from the system prompt, zero tool calls
+-&gt; Tools used (0)
+   "Answered directly - no tools were called for this question."
+
+Q: "Tell me about the database?"
+-&gt; list_tables {} 22ms
+-&gt; describe_table {"table_name": "allocations"} 20ms
+-&gt; Tools used (2), both persisted correctly after the next question was asked</code></pre>
+  </section>
+
+  <section class="doc-section" id="env">
+    <h2>Environment State</h2>
+    <table class="ref-table">
+      <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>New Python</td><td class="mono">app.py — the Streamlit entrypoint</td></tr>
+        <tr><td>Changed Python</td><td class="mono">agent.py (ask_agent() callable refactor carried in from Build 4, flatten_history(), MAX_FULL_FIDELITY_ROUNDS, PROCESS_ID, question_id returned, SYSTEM_PROMPT rewritten), tools.py (MAX_SQL_RESULT_ROWS cap, customers/orders removed from discovery), logging_utils.py (user_question field, log_final_answer(), get_tool_calls())</td></tr>
+        <tr><td>Changed infra</td><td class="mono">Dockerfile (COPY fixed to include logging_utils.py/app.py), docker-compose.yml (new streamlit_app service), requirements.txt (streamlit added)</td></tr>
+        <tr><td>New tests</td><td class="mono">test_agent_history.py — 3 tests for flatten_history()</td></tr>
+        <tr><td>Diagram folder</td><td class="mono">PROJECT_DIAGRAMS/BUILD_6_FLOW/ — phase1/phase2/phase3/phase3-5/phase4 flow diagrams, this brief. Phase 3.5's diagram documents a deferred design, not built code.</td></tr>
+        <tr><td>Live app</td><td class="mono">http://localhost:8501 (streamlit_app service) — unreachable without --server.address=0.0.0.0 set on the container, see Phase 3</td></tr>
+        <tr><td>Project test suite</td><td class="mono">22/22 passing (up from 19 at the start of this build)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Build 6 functionally complete — Phases 1 through 4 done, live-verified in a real browser. Phase 3.5 (persistent shared chat history) is fully designed and deliberately deferred, recorded above as a possible future feature rather than blocking scope. Next: Build 7 (a verifier/critic agent), or Phase 3.5 if it's picked back up first. Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
+</body>
+</html>

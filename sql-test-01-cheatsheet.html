@@ -269,7 +269,7 @@
   <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized — plus a project-wide file map, and a running list of Claude's own working commands. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
-    <div><dt>Covers</dt><dd>Build 1 (agent) through Build 5 (live deployment with CI) — all complete</dd></div>
+    <div><dt>Covers</dt><dd>Build 1 (agent) through Build 6 (front end for the agent) — all complete</dd></div>
     <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop · GitHub Actions</dd></div>
     <div><dt>Databases</dt><dd>pg_local (appdb)</dd></div>
   </dl>
@@ -289,6 +289,7 @@
     <a href="#vector-search">pgvector &amp; embeddings</a>
     <a href="#beautifulsoup">BeautifulSoup</a>
     <a href="#stdlib">Python stdlib</a>
+    <a href="#streamlit">Streamlit</a>
     <a href="#claude-commands">Claude's Commands</a>
   </nav>
 
@@ -354,6 +355,18 @@
           <tr><td class="cmd">synthesize_dataset.py</td><td class="desc">Builds <code>data/ALLOCATION-synthesized.csv</code> from the real export — real dates/duration/renewal/resource counts kept, department/email/summary synthesized. Imports the real department-code mapping from a git-ignored local file, never hardcodes it.</td></tr>
           <tr><td class="cmd">department_mapping.local.py</td><td class="desc">Git-ignored — the real department-code mapping <code>synthesize_dataset.py</code> actually runs from. Never committed; see <code>DEPARTMENT_MAPPING.local.md</code> for the human-readable copy.</td></tr>
           <tr><td class="cmd">pytest.ini</td><td class="desc"><code>python_files = test_*.py</code> — scopes pytest discovery to this project's actual test-file convention, after a stray non-test script (<code>api_test.py</code>) was found being silently collected by pytest's broader default.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — front end for the agent (Build 6)</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">app.py</td><td class="desc">The Streamlit entrypoint — chat UI wrapping <code>ask_agent()</code>, hybrid tiered history threading via <code>session_state.rounds</code>, and a <code>Tools used</code> expander per answer sourced from the tool-call log.</td></tr>
+          <tr><td class="cmd">test_agent_history.py</td><td class="desc">3 tests for <code>flatten_history()</code> — the pure function behind hybrid tiered conversation memory.</td></tr>
         </tbody>
       </table>
     </div>
@@ -428,9 +441,9 @@
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">docker-compose.yml</td><td class="desc">Defines <code>pg_local</code>, <code>mssql_local</code>, and the <code>agent</code> service; Postgres image is <code>pgvector/pgvector:pg17</code>.</td></tr>
-          <tr><td class="cmd">Dockerfile</td><td class="desc">Builds the <code>agent</code> service's image.</td></tr>
-          <tr><td class="cmd">requirements.txt</td><td class="desc">Pinned Python dependencies — <code>anthropic</code>, <code>beautifulsoup4</code>, <code>psycopg</code>, <code>pgvector</code>, <code>sentence-transformers</code>, <code>pandas</code>, <code>pandera</code>, <code>pytest</code>, <code>python-dotenv</code>.</td></tr>
+          <tr><td class="cmd">docker-compose.yml</td><td class="desc">Defines <code>pg_local</code>, <code>mssql_local</code>, the <code>agent</code> service, and (Build 6) <code>streamlit_app</code> — same image as <code>agent</code>, just a different <code>command:</code>. Postgres image is <code>pgvector/pgvector:pg17</code>.</td></tr>
+          <tr><td class="cmd">Dockerfile</td><td class="desc">Builds one shared image used by both the <code>agent</code> and <code>streamlit_app</code> services — differentiated only by each service's <code>command:</code> override, not two separate Dockerfiles.</td></tr>
+          <tr><td class="cmd">requirements.txt</td><td class="desc">Pinned Python dependencies — <code>anthropic</code>, <code>beautifulsoup4</code>, <code>psycopg</code>, <code>pgvector</code>, <code>sentence-transformers</code>, <code>pandas</code>, <code>pandera</code>, <code>pytest</code>, <code>python-dotenv</code>, <code>streamlit</code> (Build 6).</td></tr>
           <tr><td class="cmd">.env</td><td class="desc">Real local secrets (DB passwords) — gitignored, never committed.</td></tr>
           <tr><td class="cmd">.env.example</td><td class="desc">Template shape of <code>.env</code> with placeholder values, safe to commit.</td></tr>
           <tr><td class="cmd">.gitignore</td><td class="desc">Excludes secrets (<code>.env</code>, <code>CREDENTIALS.local.md</code>, <code>DEPARTMENT_MAPPING.local.md</code>, <code>department_mapping.local.py</code>), OS/editor cruft, <code>__pycache__/</code>, logs/dumps.</td></tr>
@@ -450,7 +463,7 @@
           <tr><td class="cmd">DEPARTMENT_MAPPING.local.md</td><td class="desc">Build 5 — the real department-code mapping used by <code>synthesize_dataset.py</code>, human-readable. Gitignored, same treatment as <code>CREDENTIALS.local.md</code> — publishing it would let anyone reverse the department masking.</td></tr>
           <tr><td class="cmd">data/ALLOCATION-synthesized.csv</td><td class="desc">Build 5 — the project's one official dataset (1535 rows), real temporal/quantitative fields kept, everything else synthesized. Used identically by local dev, CI, and the eval harness.</td></tr>
           <tr><td class="cmd">sql-test-01-cheatsheet.html / .pdf</td><td class="desc">This living document — every command actually typed, plus this file map.</td></tr>
-          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_5_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
+          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_6_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
           <tr><td class="cmd">PROJECT_DIAGRAMS/project-overview.html</td><td class="desc">Build 3.5 — a seed document written to answer whole-project overview questions, so the docs-RAG corpus has something to match against.</td></tr>
           <tr><td class="cmd">logs/</td><td class="desc">Build 4 — gitignored directory holding <code>tool_calls.jsonl</code> (live, JSON Lines) and <code>tool_calls.pre-question-id.jsonl</code> (archived). Durable, queryable tool-call tracing — not a Postgres table, deliberately.</td></tr>
           <tr><td class="cmd">Local Postgres.session.sql</td><td class="desc">Empty scratch file created by a VS Code SQL client extension — not authored content.</td></tr>
@@ -477,6 +490,7 @@
         </tbody>
       </table>
     </div>
+    <div class="callout" style="border:1px solid var(--rule); border-left:4px solid var(--accent); background:var(--surface); border-radius:8px; padding:14px 18px; margin:14px 0; font-size:13.5px;"><b>Build 6 — <code>COPY</code> bakes source in at build time, with no hot-reload path at all.</b> Editing <code>agent.py</code>/<code>tools.py</code>/<code>app.py</code> on the host has zero effect on an already-running container, no matter what — stricter than the local Streamlit dev-server case, which at least auto-reruns <code>app.py</code> on save. A real <code>docker compose build</code> + <code>up</code> (recreating the container) is required every time, confirmed directly via <code>docker exec ... grep</code> against the container's own copy of a file rather than trusting the build log alone.</div>
   </section>
 
   <section class="group" id="psql">
@@ -737,6 +751,29 @@
     </div>
   </section>
 
+  <section class="group" id="streamlit">
+    <div class="group-head"><h2>Streamlit</h2><span class="group-tag">Build 6 · app.py</span></div>
+    <p class="group-note">Everything <code>app.py</code> uses to turn <code>ask_agent()</code> into a real chat interface — session state, chat primitives, and the Phase 4 tool-call expander.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">streamlit run app.py --server.address=0.0.0.0</td><td class="desc">Starts the dev server. The address flag is only needed inside Docker — Streamlit defaults to binding <code>localhost</code> only, unreachable through a container's port mapping otherwise; not needed for a plain local run.</td></tr>
+          <tr><td class="cmd">st.session_state</td><td class="desc">A dict-like store that survives Streamlit's full-script rerun on every interaction — a plain Python variable would reset to its initial value every time. Holds live Python objects directly; no JSON serialization needed within one session.</td></tr>
+          <tr><td class="cmd">if "key" not in st.session_state: st.session_state.key = default</td><td class="desc">The standard init-once guard — runs on every rerun, but only actually sets the default the first time.</td></tr>
+          <tr><td class="cmd">st.chat_message(role)</td><td class="desc">A styled message bubble for a given role (<code>"user"</code>/<code>"assistant"</code>) — used as a <code>with</code> block, contents render inside it.</td></tr>
+          <tr><td class="cmd">st.chat_input(placeholder)</td><td class="desc">The bottom-anchored chat text box — returns the typed text once submitted, otherwise <code>None</code>.</td></tr>
+          <tr><td class="cmd">st.spinner("...")</td><td class="desc">Shows a loading indicator for the duration of a <code>with</code> block — wraps the <code>ask_agent()</code> call so the wait for a real API round-trip is visibly acknowledged.</td></tr>
+          <tr><td class="cmd">st.error(msg)</td><td class="desc">A visually distinct red message box — used to surface <code>ask_agent()</code>'s error field separately from a normal answer, not swallowed.</td></tr>
+          <tr><td class="cmd">st.expander(label)</td><td class="desc">A collapsible section, closed by default — the <code>Tools used (N)</code> block per answer, keeping tool-call detail available without it dominating the page.</td></tr>
+          <tr><td class="cmd">st.code(text, language="json")</td><td class="desc">A syntax-highlighted, monospace code block — used for each tool call's formatted <code>input</code>.</td></tr>
+          <tr><td class="cmd">st.caption(text)</td><td class="desc">Small, muted secondary text — the <code>PROCESS_ID</code> line under the title, and each tool call's latency.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="group" id="claude-commands">
     <div class="group-head"><h2>Claude's Commands</h2><span class="group-tag">Diagrams · verification · publishing</span></div>
     <p class="group-note">A separate running list from everything above — not what <i>you've</i> typed, but the commands Claude actually runs behind the scenes while building diagrams, verifying renders, and publishing docs for this project. Appended to as new patterns come up, same as every other section.</p>
@@ -762,7 +799,7 @@
   </section>
 
   <footer>
-    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 5 (live deployment with CI) — all 5 builds now complete, public repo live on GitHub with CI green end-to-end. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 6 (front end for the agent) — a real Streamlit chat UI now runs alongside the CLI agent, both as docker-compose services sharing one image. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
   </footer>
 
 </div>
