@@ -149,7 +149,7 @@
 
   <dl class="meta">
     <div><dt>Status</dt><dd>Complete — all phases including 3.5, live-verified in a real browser</dd></div>
-    <div><dt>Commits</dt><dd><code>b902500</code> → <code>f27341a</code></dd></div>
+    <div><dt>Commits</dt><dd><code>b902500</code> → <code>edc84d2</code></dd></div>
     <div><dt>Continues</dt><dd>Build 5 (live deployment with CI)</dd></div>
     <div><dt>Precedes</dt><dd>Build 7 (verifier/critic agent)</dd></div>
   </dl>
@@ -372,6 +372,29 @@ Q3: "What were the exact items in that allocation?"               <span class="c
     <p><b>Verified against the actual failure mode this feature exists to prevent, not a looser proxy for it.</b> A genuine two-process test: one Python process asked a real question and called <code>save_chat_round()</code>, then exited completely; a second, entirely separate process — zero shared memory, zero shared state — called <code>load_chat_rounds()</code> and correctly recalled the prior answer with no re-query. Confirmed for real afterward too: an actual <code>docker compose restart</code> preserved history visibly in the browser, not just this script-level proxy for it.</p>
 
     <div class="callout"><b>A real, previously-only-predicted limitation, confirmed directly via a two-tab test.</b> Asking a question in one open tab doesn't appear in a second already-open tab until that tab is refreshed or asks its own question. Not a bug — Streamlit only reruns a given tab's script on that tab's own interaction; each tab holds its own independent <code>session_state</code>, loaded from the database once at that tab's first load, with no push mechanism to other open sessions. This is exactly the "not live-synced across tabs" tradeoff named when Option B was first chosen, now empirically confirmed rather than just anticipated.</div>
+
+    <p><b>Follow-up fix, same day: no cap or cleanup existed on either the displayed feed or the underlying table, until asked directly.</b> Neither <code>load_chat_rounds()</code> nor the render loop had a <code>LIMIT</code> anywhere — every round ever saved would be loaded into every session and rendered (collapsed, but still rendered) forever, and <code>agent_scratch.chat_rounds</code> had no rotation mechanism at all, unlike <code>logs/tool_calls.jsonl</code>'s own <code>LOG_ROTATION_THRESHOLD_LINES</code> from a Build 4 follow-up.</p>
+
+    <pre class="code"><span class="fn">tools.py — trim on write, same spirit as the log's own rotation</span><code>MAX_CHAT_ROUNDS = 200  <span class="cmt"># arbitrary safety cap, not a real capacity limit</span>
+
+<span class="kw">def</span> save_chat_round(question_id, user_question, answer_text, full_messages):
+    <span class="cmt"># ...insert the new round...</span>
+    cur.execute(
+        <span class="str">"""
+        DELETE FROM agent_scratch.chat_rounds
+        WHERE round_id &lt;= (
+            SELECT round_id FROM agent_scratch.chat_rounds
+            ORDER BY round_id DESC OFFSET %s LIMIT 1
+        )
+        """</span>,
+        (MAX_CHAT_ROUNDS,),
+    )</code></pre>
+
+    <div class="callout good"><b>The subquery doubles as its own no-op guard.</b> Below the cap, <code>OFFSET</code> runs past the end of the table and the subquery returns <code>NULL</code> — <code>round_id &lt;= NULL</code> is never true in SQL, so nothing gets deleted, with no separate count-then-branch check needed the way <code>save_dataframe</code>'s <code>MAX_SCRATCH_TABLES</code> check requires.</div>
+
+    <div class="callout warn"><b>A real gap in the original migration, found immediately by running this against the live database, not by review.</b> <code>012_chat_rounds_schema.sql</code> had only ever granted <code>SELECT, INSERT</code> to <code>appdb_agent_writer</code> — never <code>DELETE</code>, since the original design had nothing that deleted anything. The new trim step failed with <code>InsufficientPrivilege</code> on the very first test run. Fixed by granting <code>DELETE</code> live against <code>pg_local</code>, then amending <code>012_chat_rounds_schema.sql</code> itself in place (the same precedent as Build 5's <code>CREATE EXTENSION vector</code> fix to <code>008_add_summary_embedding.sql</code>) so a genuinely fresh database gets the correct grant from one file, not a follow-up migration.</div>
+
+    <p>Verified with a real boundary test (<code>test_chat_rounds.py</code>, new): <code>MAX_CHAT_ROUNDS</code> monkeypatched to <code>3</code>, 5 real rounds saved, confirmed only the 3 most recent survive and the 2 oldest are gone - plus a save/load round-trip test and a discovery-exclusion test, 3 tests total. Full suite 25/25 (up from 22).</p>
   </section>
 
   <section class="doc-section" id="discussion">
@@ -425,13 +448,13 @@ Q: "Tell me about the database?"
       <thead><tr><th>Component</th><th>Detail</th></tr></thead>
       <tbody>
         <tr><td>New Python</td><td class="mono">app.py — the Streamlit entrypoint</td></tr>
-        <tr><td>Changed Python</td><td class="mono">agent.py (ask_agent() callable refactor carried in from Build 4, flatten_history(), MAX_FULL_FIDELITY_ROUNDS, PROCESS_ID, question_id returned, SYSTEM_PROMPT rewritten), tools.py (MAX_SQL_RESULT_ROWS cap, customers/orders + chat_rounds removed from discovery, save_chat_round()/load_chat_rounds()), logging_utils.py (user_question field, log_final_answer(), get_tool_calls()), extract_doc_chunks.py (SOURCE_FILES switched from a hand-maintained list to glob auto-discovery, see Bugs Found &amp; Fixed)</td></tr>
+        <tr><td>Changed Python</td><td class="mono">agent.py (ask_agent() callable refactor carried in from Build 4, flatten_history(), MAX_FULL_FIDELITY_ROUNDS, PROCESS_ID, question_id returned, SYSTEM_PROMPT rewritten), tools.py (MAX_SQL_RESULT_ROWS cap, customers/orders + chat_rounds removed from discovery, save_chat_round()/load_chat_rounds(), MAX_CHAT_ROUNDS retention cap), logging_utils.py (user_question field, log_final_answer(), get_tool_calls()), extract_doc_chunks.py (SOURCE_FILES switched from a hand-maintained list to glob auto-discovery, see Bugs Found &amp; Fixed)</td></tr>
         <tr><td>New SQL</td><td class="mono">012_chat_rounds_schema.sql — agent_scratch.chat_rounds, applied live against pg_local</td></tr>
         <tr><td>Changed infra</td><td class="mono">Dockerfile (COPY fixed to include logging_utils.py/app.py), docker-compose.yml (new streamlit_app service), requirements.txt (streamlit added)</td></tr>
-        <tr><td>New tests</td><td class="mono">test_agent_history.py — 3 tests for flatten_history()</td></tr>
+        <tr><td>New tests</td><td class="mono">test_agent_history.py — 3 tests for flatten_history(); test_chat_rounds.py — 3 tests (round-trip, discovery exclusion, MAX_CHAT_ROUNDS boundary)</td></tr>
         <tr><td>Diagram folder</td><td class="mono">PROJECT_DIAGRAMS/BUILD_6_FLOW/ — phase1/phase2/phase3/phase3-5/phase4 flow diagrams, this brief.</td></tr>
         <tr><td>Live app</td><td class="mono">http://localhost:8501 (streamlit_app service) — unreachable without --server.address=0.0.0.0 set on the container, see Phase 3</td></tr>
-        <tr><td>Project test suite</td><td class="mono">22/22 passing (up from 19 at the start of this build)</td></tr>
+        <tr><td>Project test suite</td><td class="mono">25/25 passing (up from 19 at the start of this build)</td></tr>
       </tbody>
     </table>
   </section>

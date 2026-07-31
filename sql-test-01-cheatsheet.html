@@ -368,7 +368,8 @@
         <tbody>
           <tr><td class="cmd">app.py</td><td class="desc">The Streamlit entrypoint — chat UI wrapping <code>ask_agent()</code>, hybrid tiered history threading via <code>session_state.rounds</code>, a persisted feed (Phase 3.5) loaded from <code>agent_scratch.chat_rounds</code> on first load, and an FAQ-style render: only the newest round shows expanded, older rounds collapse into <code>st.expander(label=the question)</code>.</td></tr>
           <tr><td class="cmd">test_agent_history.py</td><td class="desc">3 tests for <code>flatten_history()</code> — the pure function behind hybrid tiered conversation memory.</td></tr>
-          <tr><td class="cmd">012_chat_rounds_schema.sql</td><td class="desc">Build 6 Phase 3.5 — <code>agent_scratch.chat_rounds</code>, the durable store behind the persisted chat feed. Reuses <code>appdb_agent_writer</code>, no new role.</td></tr>
+          <tr><td class="cmd">012_chat_rounds_schema.sql</td><td class="desc">Build 6 Phase 3.5 — <code>agent_scratch.chat_rounds</code>, the durable store behind the persisted chat feed. Reuses <code>appdb_agent_writer</code>, no new role. Grants <code>SELECT, INSERT, DELETE</code> — <code>DELETE</code> added after the fact once <code>MAX_CHAT_ROUNDS</code> needed it.</td></tr>
+          <tr><td class="cmd">test_chat_rounds.py</td><td class="desc">3 tests — save/load round-trip, discovery exclusion, and <code>MAX_CHAT_ROUNDS</code>'s exact boundary via <code>monkeypatch</code>.</td></tr>
         </tbody>
       </table>
     </div>
