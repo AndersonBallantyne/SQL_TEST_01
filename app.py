@@ -1,7 +1,7 @@
 import json
 import streamlit as st
 from agent import ask_agent, PROCESS_ID
-from logging_utils import get_tool_calls
+from logging_utils import get_tool_calls, get_verification
 from tools import save_chat_round, load_chat_rounds
 
 # Streamlit reruns this whole script on every interaction, so history has to live in
@@ -21,6 +21,8 @@ if "rounds" not in st.session_state:
         # already survives a restart via its own bind mount (Build 6 Phase 3), so this
         # re-derives display data the same way a live session already does, no duplication.
         round["tool_calls"] = get_tool_calls(round["question_id"])
+        round["verification"] = get_verification(round["question_id"])
+
     st.session_state.rounds = persisted
 
 
@@ -44,6 +46,14 @@ def render_tool_call_details(tool_calls, nested):
                 st.code(json.dumps(call["input"], indent=2), language="json")
                 st.caption(f"{call['latency_ms']:.0f} ms")
 
+def render_verification_badge(verification):
+    if verification is None:
+        return
+    if verification["supported"]:
+        st.success("✓ Verified against tool evidence")
+    else:
+        st.error(f"⚠ Unverified: {verification['reason']}")
+
 
 def render_expanded_round(round):
     # The one round shown in full - either the round just answered this turn, or (on a
@@ -52,6 +62,7 @@ def render_expanded_round(round):
         st.markdown(round["user_question"])
     with st.chat_message("assistant"):
         st.markdown(round["answer_text"])
+        render_verification_badge(round["verification"])
         render_tool_call_details(round["tool_calls"], nested=False)
 
 
@@ -61,6 +72,7 @@ def render_collapsed_round(round):
     # the question text itself is the collapsed label.
     with st.expander(f"Q: {round['user_question']}"):
         st.markdown(round["answer_text"])
+        render_verification_badge(round["verification"])
         render_tool_call_details(round["tool_calls"], nested=True)
 
 
@@ -77,6 +89,8 @@ if user_question:
     with st.spinner("Thinking..."):
         response = ask_agent(user_question, history_rounds=st.session_state.rounds)
         tool_calls = get_tool_calls(response["question_id"])
+        verification = get_verification(response["question_id"])
+
 
     with st.chat_message("user"):
         st.markdown(user_question)
@@ -90,6 +104,7 @@ if user_question:
                 st.markdown(response["answer"])
         else:
             st.markdown(response["answer"])
+        render_verification_badge(verification)
         render_tool_call_details(tool_calls, nested=False)
 
     st.session_state.rounds.append({
@@ -98,6 +113,7 @@ if user_question:
         "answer_text": response["answer"],
         "full_messages": response["full_messages"],
         "tool_calls": tool_calls,
+        "verification": verification,
     })
 
     save_chat_round(response["question_id"], user_question, response["answer"], response["full_messages"])

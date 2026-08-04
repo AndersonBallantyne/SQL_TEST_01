@@ -6,7 +6,8 @@ import anthropic
 #from tools import run_sql_query, list_tables, describe_table, save_dataframe
 from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries, search_docs
 import time
-from logging_utils import log_tool_call, log_final_answer
+from verify_answer import verify_answer
+from logging_utils import log_tool_call, log_final_answer, log_verification, get_tool_calls
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -187,7 +188,15 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
 
         if response.stop_reason != "tool_use":
             log_final_answer(question_id, user_question, answer)
+            try:
+                evidence = get_tool_calls(question_id, include_output=True)
+                if evidence:
+                    supported, reason = verify_answer(user_question, answer, evidence)
+                    log_verification(question_id, user_question, answer, supported, reason)
+            except Exception as e:
+                print(f"[VERIFY ERROR] {e}")
             return {"answer": answer, "error": None, "full_messages": messages, "question_id": question_id}
+
 
 
         tool_results = []
