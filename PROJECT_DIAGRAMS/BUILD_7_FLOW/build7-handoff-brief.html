@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build 7 Handoff Brief — Verifier / Critic Agent</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --good: #2E7D5B;
+    --good-tint: #E4F1EA;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+
+  h3.phase-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 19px; font-weight: 600; margin: 32px 0 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.phase-title .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 13px; font-weight: 700; flex: none;
+  }
+  p.phase-goal { font-size: 14px; color: var(--ink-2); margin: 0 0 16px; }
+
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .kw { color: var(--teal); font-weight: 600; }
+  .str { color: var(--accent); }
+
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+
+  table.ref-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); table-layout: fixed; }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; word-break: break-word; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: normal; }
+
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+
+  ol.step-list { margin: 0 0 18px; padding-left: 22px; font-size: 13.5px; }
+  ol.step-list li { margin-bottom: 8px; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Build 7 · Handoff Brief</p>
+  <h1>Verifier / Critic Agent</h1>
+  <p class="lede">A standalone, deep-dive reference for Build 7 — a second, cheaper agent that checks the main agent's proposed answer against the actual tool evidence from that turn, before it's surfaced. Every phase, every real bug the process surfaced, and every verification result, in full. Complements (does not replace) the living cheat sheet and the per-phase flow diagrams.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Complete — all 4 phases, live-verified in a real browser</dd></div>
+    <div><dt>Commits</dt><dd><code>88a5eb9</code> → <code>12acaed</code></dd></div>
+    <div><dt>Continues</dt><dd>Build 6 (front end for the agent)</dd></div>
+    <div><dt>Precedes</dt><dd>None scoped yet — "Project 2" (a separate future portfolio project) is flagged but explicitly deferred</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#what">What &amp; Why</a>
+    <a href="#decisions">Design Decisions</a>
+    <a href="#phase1">Phase 1</a>
+    <a href="#phase2">Phase 2</a>
+    <a href="#bugs">Bugs Found &amp; Fixed</a>
+    <a href="#phase3">Phase 3</a>
+    <a href="#phase4">Phase 4</a>
+    <a href="#limitations">Known Limitations</a>
+    <a href="#verification">Verification Log</a>
+    <a href="#env">Environment State</a>
+  </nav>
+
+  <section class="doc-section" id="what">
+    <h2>What Was Built, and Why</h2>
+    <p class="section-note">
+      Every eval case built since Build 4 checks the agent's behavior offline, against a fixed set of questions run by hand. None of that infrastructure does anything once the agent is actually answering a real question live. Build 7 closes that gap: a second, narrowly-scoped agent whose only job is judging whether the main agent's proposed answer actually follows from the tool evidence gathered for it — the eval harness's "verify against ground truth" ethos, extended into runtime.
+    </p>
+    <p class="section-note">
+      Scoped originally during a 2026-07-24 placement/portfolio-strategy discussion (not a technical gap found hands-on, unlike every other build so far) — picked over a router/supervisor alternative specifically because that tool-choice judgment call was already handled reasonably well by the main agent's own system prompt (a Build 3 design point), so a router wouldn't add real value the way a verifier does.
+    </p>
+    <div class="callout"><b>Nothing about the main agent's own reasoning changed in this build.</b> The verifier is a separate agent, called after the main agent already has its answer, reading the same structured tool-call log Build 4 already produces. No changes to <code>tools.py</code>, the tool schemas, or <code>SYSTEM_PROMPT</code>.</p></div>
+  </section>
+
+  <section class="doc-section" id="decisions">
+    <h2>Design Decisions</h2>
+    <p class="section-note">Four forks resolved in a dedicated scoping conversation before any Phase 2+ code was written.</p>
+
+    <h3 class="phase-title" style="margin-top:12px;">1. The Verifier's Own Model &amp; Prompt</h3>
+    <p>The original scoping note called it "a second, cheaper agent" — worth naming directly: the main agent already runs on <code>claude-haiku-4-5</code>, the cheapest/fastest current-gen Claude model, so there's no smaller tier to drop to. The real cost saving is <b>scope</b>, not model tier: the verifier's prompt is a single bounded judgment (question + tool evidence + proposed answer → supported/unsupported), never the full multi-turn conversation history the main agent carries. Same model, narrower prompt, and a forced <code>tool_choice</code> so the verdict is always a structured field, never prose that needs parsing.</p>
+
+    <h3 class="phase-title">2. Where the Verdict Surfaces</h3>
+    <table class="ref-table">
+      <thead><tr><th>Option</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td><b>Log only</b> (Phase 2, built)</td><td class="mono">A new <code>log_verification()</code> event, same shape as <code>log_final_answer()</code>. Zero UX risk, proves the logic works before anything user-facing depends on it.</td></tr>
+        <tr><td><b>UI trust badge</b> (Phase 3, built)</td><td class="mono">Non-blocking green/red status in the browser. Low risk since it only informs, never gates.</td></tr>
+        <tr><td>Blocking/retry a flagged answer</td><td class="mono">Deferred, not built. Highest complexity and real risk — a verifier false-positive would become a live UX regression, not just log noise. See Known Limitations.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="phase-title">3. Every Turn, or Opt-In?</h3>
+    <p>Full always-on doubles the API call count per question. Pure opt-in feels bolted-on rather than integral. The chosen middle ground reuses a signal that already existed rather than adding new state: <b>skip verification when a turn made zero tool calls</b> — there's no evidence to check an answer against if none was gathered (e.g. "What can you do?"). <code>get_tool_calls(question_id, include_output=True)</code> returning an empty list <i>is</i> the gate.</p>
+
+    <h3 class="phase-title">4. Phase Breakdown</h3>
+    <p>Mirrors this project's established shape for every prior build: prove the mechanism standalone first (Phase 1, same pattern as <code>search_summaries.py</code> predating <code>tools.py</code>'s wired version), wire it into the real system second (Phase 2), surface it to a user third (Phase 3), then a stretch phase proving the mechanism actually catches failures rather than assuming it does (Phase 4) — the same rigor Build 4's eval harness already established for the main agent, applied here to the verifier itself.</p>
+  </section>
+
+  <section class="doc-section" id="phase1">
+    <h3 class="phase-title"><span class="badge">1</span>Standalone Verifier Proof</h3>
+    <p class="phase-goal">Goal: prove the verdict logic works in isolation, before touching <code>agent.py</code> — same standalone-first pattern as every prior build's Phase 1.</p>
+
+    <pre class="code"><span class="fn">verify_answer.py — the core judgment call</span><code>VERIFIER_SYSTEM_PROMPT = <span class="str">"""You check whether a proposed answer is actually supported by the tool evidence gathered for it. You are not answering the original question yourself and must not use any outside knowledge - judge only whether the proposed answer logically follows from the tool call inputs/outputs shown to you.
+
+Call report_verdict with supported=true only if every claim in the proposed answer is backed by the tool evidence. If the answer contradicts the evidence, overstates it, or claims something the evidence never shows, set supported=false and explain why in reason."""</span>
+
+<span class="kw">def</span> verify_answer(user_question, answer, tool_calls):
+    evidence = build_evidence_block(tool_calls)
+    response = client.messages.create(
+        model=<span class="str">"claude-haiku-4-5"</span>,
+        system=VERIFIER_SYSTEM_PROMPT,
+        tools=[VERIFIER_TOOL],
+        tool_choice={<span class="str">"type"</span>: <span class="str">"tool"</span>, <span class="str">"name"</span>: <span class="str">"report_verdict"</span>},
+        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: user_content}],
+    )
+    <span class="kw">for</span> block <span class="kw">in</span> response.content:
+        <span class="kw">if</span> block.type == <span class="str">"tool_use"</span> <span class="kw">and</span> block.name == <span class="str">"report_verdict"</span>:
+            <span class="kw">return</span> block.input[<span class="str">"supported"</span>], block.input[<span class="str">"reason"</span>]</code></pre>
+
+    <p>The script's CLI accepts a real <code>question_id</code> from <code>logs/tool_calls.jsonl</code>, plus an optional second argument that overrides the logged answer — one script proves both the good case (real evidence + real answer) and a deliberately-bad case (real evidence + a hand-typed wrong answer) without needing two separate scripts.</p>
+
+    <pre class="code"><span class="fn">Sample — live proof, both directions, same real tool evidence</span><code><span class="cmt"># python verify_answer.py b524250c6b11</span>
+question: What type of gear do you have?
+supported: True
+reason: The proposed answer is fully supported by the tool evidence. The SQL query
+  returned 20 sample summaries...all the gear types and specific products mentioned
+  in the proposed answer...are directly present in the query results.
+
+<span class="cmt"># python verify_answer.py b524250c6b11 "There is no camera equipment available in the inventory."</span>
+supported: False
+reason: The proposed answer contradicts the tool evidence. The SQL query output clearly
+  shows extensive camera equipment in the inventory, including: NIKON Z6 III MIRRORLESS
+  BODY, OLYMPUS OM-D E-M1 BODY, FUJIFILM X-T5 BODY...</code></pre>
+    <div class="callout good">Both verdicts cite specific evidence (item names, actual query rows) in their reasoning, not generic filler — the thing that actually matters for Phase 4 to later prove wasn't a coincidence.</div>
+  </section>
+
+  <section class="doc-section" id="phase2">
+    <h3 class="phase-title"><span class="badge">2</span>Wire the Verifier Into the Agent</h3>
+    <p class="phase-goal">Goal: run the verdict automatically on real traffic, gated on the zero-tool-call rule from the scoping decisions above, without ever risking the main answer.</p>
+
+    <pre class="code"><span class="fn">agent.py — the whole integration, inside ask_agent()'s success return</span><code><span class="kw">if</span> response.stop_reason != <span class="str">"tool_use"</span>:
+    log_final_answer(question_id, user_question, answer)
+    <span class="kw">try</span>:
+        evidence = get_tool_calls(question_id, include_output=<span class="kw">True</span>)
+        <span class="kw">if</span> evidence:
+            supported, reason = verify_answer(user_question, answer, evidence)
+            log_verification(question_id, user_question, answer, supported, reason)
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        print(f<span class="str">"[VERIFY ERROR] {e}"</span>)
+    <span class="kw">return</span> {<span class="str">"answer"</span>: answer, <span class="str">"error"</span>: <span class="kw">None</span>, <span class="str">"full_messages"</span>: messages, <span class="str">"question_id"</span>: question_id}</code></pre>
+
+    <div class="callout"><b><code>get_tool_calls</code> gained an <code>include_output</code> flag, default <code>False</code>.</b> The Phase 4 (Build 6) UI caller never needed raw tool output — only the verifier does, since judging an answer requires seeing what the tools actually returned, not just that they ran. Defaulting <code>False</code> means the existing UI caller and its tests are entirely unaffected by this change.</div>
+    <div class="callout"><b><code>log_verification()</code>'s entry deliberately uses <code>answer_text</code>, not <code>answer</code>, as the key.</b> <code>get_final_answer()</code> already filters on <code>"answer" in entry</code> to find <code>log_final_answer()</code>'s entries — reusing that exact key on a verification entry would create a fragile dependency on write order (the final-answer entry happening to be written first) rather than a structurally impossible collision. <code>get_verification()</code> filters on <code>"supported"</code>, a key only its own entries ever carry.</div>
+
+    <p>Verified live against real traffic, both branches of the gate:</p>
+    <pre class="code"><span class="fn">Sample — real question, real tool calls, real verifier call</span><code>Q: "What kind of camera equipment has been checked out recently?"
+-&gt; 3 tool calls (list_tables, search_summaries, run_sql_query), real answer
+-&gt; log entry: supported=True, reason cites specific allocation_ids and department codes
+   from the actual SQL result set
+
+Q: "What can you do?"
+-&gt; 0 tool calls, answered entirely from the system prompt
+-&gt; log entry: only the plain log_final_answer entry - no "supported" key anywhere,
+   gate correctly skipped verification entirely</code></pre>
+  </section>
+
+  <section class="doc-section" id="bugs">
+    <h2>Bugs Found &amp; Fixed</h2>
+    <p class="section-note">Two real, would-have-broken-production bugs, both caught by review before ever being run — a direct payoff of this project's standing "inspect the entry before testing" habit.</p>
+
+    <div class="callout warn"><b>1. A one-line indentation error in <code>agent.py</code> that would have raised <code>IndentationError</code> on the very first import.</b> The <code>if response.stop_reason != "tool_use":</code> line landed at 12 spaces instead of 8, one level deeper than the plain statement directly above it — Python requires the same indent level after a line that doesn't open a new block, so this wasn't just cosmetically wrong, it was a hard parse failure that would have stopped every question, not just verification.</div>
+    <div class="callout good"><b>Fixed:</b> dedented the single line back to 8 spaces. Confirmed via a precise per-line indentation dump (not eyeballing) that every line below it was already correctly nested relative to that fix — one line was the entire bug, not a cascade.</div>
+
+    <div class="callout warn"><b>2. The Dockerfile's <code>COPY</code> line never picked up <code>verify_answer.py</code> — same bug class as Build 4's <code>logging_utils.py</code> omission in Build 6.</b> <code>agent.py</code> now does <code>from verify_answer import verify_answer</code>, but the image would have built "successfully" and then failed with <code>ImportError</code> the moment the container actually started, since the file was never copied in at all.</div>
+    <div class="callout good"><b>Fixed:</b> <code>COPY agent.py tools.py logging_utils.py app.py verify_answer.py ./</code>. Verified directly inside the running container (not assumed from the build log) via <code>docker exec ... ls //app/verify_answer.py</code> and a <code>grep</code> confirming the container's own copy of <code>agent.py</code>/<code>app.py</code> actually has the new imports and calls.</div>
+  </section>
+
+  <section class="doc-section" id="phase3">
+    <h3 class="phase-title"><span class="badge">3</span>UI Trust Badge</h3>
+    <p class="phase-goal">Goal: surface the verdict to a human, non-blocking, matching the "log only, then UI flag" phased rollout from the design decisions above.</p>
+
+    <pre class="code"><span class="fn">app.py — the whole rendering logic</span><code><span class="kw">def</span> render_verification_badge(verification):
+    <span class="kw">if</span> verification <span class="kw">is</span> <span class="kw">None</span>:
+        <span class="kw">return</span>
+    <span class="kw">if</span> verification[<span class="str">"supported"</span>]:
+        st.success(<span class="str">"✓ Verified against tool evidence"</span>)
+    <span class="kw">else</span>:
+        st.error(f<span class="str">"⚠ Unverified: {verification['reason']}"</span>)</code></pre>
+
+    <div class="callout"><b>Streamlit built-ins over raw HTML, for a real reason, not just convenience.</b> A colored <code>&lt;span style='color:...'&gt;</code> via <code>unsafe_allow_html=True</code> was considered for exact color control — rejected because the <code>reason</code> text embedded inside it is LLM-generated, not trusted input, and rendering it as raw HTML would be a real (if low-probability) XSS surface if the model ever produced text that looked like a tag. <code>st.success()</code>/<code>st.error()</code> give the same green/red semantic with Streamlit's own safe text escaping and no new attack surface.</div>
+
+    <p><code>verification</code> is fetched via the same log-as-source-of-truth pattern <code>get_tool_calls</code>/<code>get_final_answer</code> already established, threaded into <code>round["verification"]</code> for both freshly-asked and persisted-history rounds, and rendered right before the existing Tools Used expander in all three places an answer appears on screen.</p>
+
+    <div class="callout good"><b>Live-confirmed in the browser: a real question through the fully rebuilt container correctly showed the green badge.</b> A deliberately adversarial question ("What's the total dollar value of all Nikon Z6 III equipment currently checked out?" — <code>clean.allocations</code> has no price column at all) produced a well-behaved answer: the agent correctly found zero active checkouts and correctly declined to invent a dollar figure, which the verifier correctly marked <code>supported: true</code> — a good outcome, not a missed catch, since nothing in the answer actually overreached.</div>
+  </section>
+
+  <section class="doc-section" id="phase4">
+    <h3 class="phase-title"><span class="badge">4</span>Verifier Eval Harness (Stretch)</h3>
+    <p class="phase-goal">Goal: prove the verifier actually catches a bad answer, not just that it never complains — the same bar Build 4's eval harness set for the main agent, applied here to the thing doing the checking.</p>
+
+    <p><b>Hand-constructed evidence, not the live log.</b> Reading real historical <code>question_id</code>s would make the cases non-reproducible and CI-unfriendly — the exact lesson Build 5's <code>ci_skip</code> fix already learned the hard way about depending on real historical state. All three cases use <code>clean.allocations</code>, the agent's actual in-scope table — an earlier draft referenced <code>customers</code>, caught and corrected mid-session since that table was removed from <code>list_tables()</code>/<code>describe_table()</code> discovery back in Build 6, meaning the live agent can no longer naturally produce a scenario involving it.</p>
+
+    <pre class="code"><span class="fn">run_verify_eval.py — mirrors run_eval.py's existing shape</span><code><span class="kw">for</span> case <span class="kw">in</span> VERIFY_EVAL_CASES:
+    supported, reason = verify_answer(case[<span class="str">"user_question"</span>], case[<span class="str">"answer"</span>], case[<span class="str">"tool_calls"</span>])
+    passed = supported == case[<span class="str">"expected_supported"</span>]
+    <span class="cmt"># full per-case report regardless of pass/fail, same as run_eval.py</span>
+<span class="kw">if</span> failures:
+    sys.exit(1)  <span class="cmt"># the same fix run_eval.py itself needed in Build 5</span></code></pre>
+
+    <pre class="code"><span class="fn">Real output — both deliberately-bad cases caught, not rubber-stamped</span><code>[PASS] grounded answer matches real evidence
+  expected_supported=True  actual_supported=True
+
+[PASS] answer contradicts the evidence outright
+  expected_supported=False  actual_supported=False
+  reason: The proposed answer directly contradicts the tool evidence. The SQL query
+  returned two camera products...which clearly demonstrates that camera equipment
+  does exist in the inventory.
+
+[PASS] answer invents a number the evidence never returned
+  expected_supported=False  actual_supported=False
+  reason: There is no pricing information, dollar values, or totals shown in the
+  output...This answer appears to be unsupported speculation.
+
+3/3 cases passed</code></pre>
+
+    <div class="callout"><b>The zero-tool-call skip path got a real pytest test instead of a costed API eval case.</b> Whether <code>get_verification()</code> correctly returns <code>None</code> when no matching entry exists is pure Python logic — no reason to spend an API call proving it. <code>test_verification.py</code> covers both the found and not-found branches via a temp log file + <code>monkeypatch</code>, the same pattern <code>test_chat_rounds.py</code> already established.</div>
+  </section>
+
+  <section class="doc-section" id="limitations">
+    <h2>Known Limitations &amp; Open Items</h2>
+
+    <div class="callout warn"><b>Blocking/retry behavior was scoped and explicitly deferred, not built.</b> If a real answer gets flagged <code>supported: false</code> today, nothing happens beyond the log entry and the red badge — the main answer is never retried, hedged, or withheld. This was a deliberate Phase 2 design-decision boundary (see Design Decisions above), not an oversight: a verifier false-positive blocking a correct answer would be a real UX regression, and that risk shouldn't be taken on until the log-only and UI-flag phases have proven the verifier trustworthy over real usage.</div>
+
+    <div class="callout"><b>The red/unsupported badge was proven at the data and component layer, not forced to render live in the browser.</b> <code>get_verification()</code> returning the right shape for a known-bad case, and <code>st.error()</code> being a standard well-tested Streamlit built-in (same reliability class as <code>st.success()</code>, which did render correctly live) together give strong confidence without needing to hand-craft a fake <code>chat_rounds</code>/<code>log_verification</code> pair just to force the browser render — judged not worth the more invasive test-fixture setup for a UI branch that's structurally identical to the already-confirmed green one.</div>
+
+    <div class="callout"><b>Process note, kept honest rather than smoothed over: the diagram-first ordering lapsed for Phase 1.</b> Every prior build in this project publishes a phase's flow diagram before writing its code, confirmed by the git log itself. Phase 1's diagram was built retroactively, after the code already existed and worked — caught by direct question, not self-caught. Phases 2 through 4 restored the correct order, including the full dual-verification pass (<code>--screenshot</code> and <code>--print-to-pdf</code>+<code>pdftoppm</code>) that Phase 1's diagram also initially skipped and had to be re-run for.</div>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification Log</h2>
+    <p class="section-note">What was actually run against a real environment, a real browser, or the real Anthropic API — not just read for plausibility.</p>
+    <ul class="check-list">
+      <li><b>Phase 1</b><span class="detail">Live-run twice against a real logged <code>question_id</code> (<code>b524250c6b11</code>) — once with the real logged answer (<code>supported: True</code>), once with a hand-typed wrong override answer (<code>supported: False</code>), both reasoning traces citing specific real evidence.</span></li>
+      <li><b>Phase 2</b><span class="detail"><code>py_compile</code> clean on all four touched files after the indentation fix; a real <code>ask_agent()</code> call with genuine tool calls confirmed a <code>supported: true</code> log entry with grounded reasoning; a second real call with zero tool calls confirmed no verification entry was written at all; full pytest suite 25/25 (unchanged — no regressions).</span></li>
+      <li><b>Phase 3</b><span class="detail"><code>py_compile</code> clean; <code>get_verification()</code> functionally confirmed against both real Phase 2 <code>question_id</code>s from a script; container rebuilt and recreated (catching the Dockerfile bug along the way), confirmed via <code>docker exec ... grep</code> that the running image actually has the new imports/calls; live-confirmed in the browser — a real question produced the correct green <code>st.success()</code> badge.</span></li>
+      <li><b>Phase 4</b><span class="detail"><code>run_verify_eval.py</code> — 3/3 cases passed, including both deliberately-bad cases correctly flagged <code>supported: False</code> with evidence-citing reasoning, not just a lucky guess; full pytest suite 27/27 (up from 25, the two new <code>get_verification()</code> tests included).</span></li>
+    </ul>
+  </section>
+
+  <section class="doc-section" id="env">
+    <h2>Environment State</h2>
+    <table class="ref-table">
+      <thead><tr><th>Component</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>New Python</td><td class="mono">verify_answer.py (the verifier itself, importable + CLI-runnable), verify_eval_cases.py, run_verify_eval.py, test_verification.py</td></tr>
+        <tr><td>Changed Python</td><td class="mono">agent.py (verify_answer import, verify-and-log block in ask_agent()'s success return, wrapped in try/except), logging_utils.py (get_tool_calls() gained include_output, new get_verification()/log_verification()), app.py (get_verification import, render_verification_badge(), verification threaded into both persisted and new rounds)</td></tr>
+        <tr><td>Changed infra</td><td class="mono">Dockerfile (COPY line fixed to include verify_answer.py)</td></tr>
+        <tr><td>New tests</td><td class="mono">test_verification.py — 2 tests (get_verification found/not-found, temp log + monkeypatch, no API cost)</td></tr>
+        <tr><td>Diagram folder</td><td class="mono">PROJECT_DIAGRAMS/BUILD_7_FLOW/ — phase1 through phase4 flow diagrams, this brief</td></tr>
+        <tr><td>Live app</td><td class="mono">http://localhost:8501 (streamlit_app service) — rebuilt and recreated to pick up all four phases</td></tr>
+        <tr><td>Project test suite</td><td class="mono">27/27 passing (up from 25 at the start of this build)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Build 7 complete — all four phases, live-verified in a real browser and against the real Anthropic API. Nothing else currently scoped in the original five-build-plus roadmap; "Project 2" (a separate, standalone future portfolio project synthesizing a verify-before-act theme across structured and unstructured data) is flagged in memory but explicitly deferred, not started. Ongoing cross-build command reference lives in <code>sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
+</body>
+</html>

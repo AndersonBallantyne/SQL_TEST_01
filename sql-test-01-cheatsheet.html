@@ -269,7 +269,7 @@
   <p class="lede">Every command, meta-command, and function actually used hands-on across this project — grouped by tool, in the order you met them, not alphabetized — plus a project-wide file map, and a running list of Claude's own working commands. Appended at the end of each build, not written once and frozen.</p>
 
   <dl class="meta">
-    <div><dt>Covers</dt><dd>Build 1 (agent) through Build 6 (front end for the agent) — all complete</dd></div>
+    <div><dt>Covers</dt><dd>Build 1 (agent) through Build 7 (verifier/critic agent) — all complete</dd></div>
     <div><dt>Environment</dt><dd>Windows 11 · PowerShell · Docker Desktop · GitHub Actions</dd></div>
     <div><dt>Databases</dt><dd>pg_local (appdb)</dd></div>
   </dl>
@@ -290,6 +290,7 @@
     <a href="#beautifulsoup">BeautifulSoup</a>
     <a href="#stdlib">Python stdlib</a>
     <a href="#streamlit">Streamlit</a>
+    <a href="#anthropic-sdk">Anthropic SDK</a>
     <a href="#claude-commands">Claude's Commands</a>
   </nav>
 
@@ -327,7 +328,7 @@
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">agent.py</td><td class="desc">The hand-built tool-use loop, wrapped in a callable <code>ask_agent()</code> since Build 4 — calls the Anthropic API, dispatches tool calls, enforces <code>MAX_TOOL_TURNS</code>, tags every logged call with a <code>question_id</code>.</td></tr>
+          <tr><td class="cmd">agent.py</td><td class="desc">The hand-built tool-use loop, wrapped in a callable <code>ask_agent()</code> since Build 4 — calls the Anthropic API, dispatches tool calls, enforces <code>MAX_TOOL_TURNS</code>, tags every logged call with a <code>question_id</code>. Build 7 — every successful answer with real tool evidence now also runs through <code>verify_answer()</code> before returning, wrapped in <code>try/except</code> so a verifier failure can never block the real answer.</td></tr>
           <tr><td class="cmd">tools.py</td><td class="desc">Every tool the agent can call: <code>run_sql_query</code>, <code>list_tables</code>, <code>describe_table</code>, <code>save_dataframe</code>, <code>search_summaries</code>, <code>search_docs</code>.</td></tr>
         </tbody>
       </table>
@@ -339,7 +340,7 @@
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">logging_utils.py</td><td class="desc">Structured JSON Lines tool-call logging — one line per call: timestamp, <code>question_id</code>, turn, tool name, input, output, error, latency.</td></tr>
+          <tr><td class="cmd">logging_utils.py</td><td class="desc">Structured JSON Lines tool-call logging — one line per call: timestamp, <code>question_id</code>, turn, tool name, input, output, error, latency. Build 7 — <code>get_tool_calls()</code> gained an <code>include_output</code> flag (default <code>False</code>, existing callers unaffected); new <code>get_verification()</code>/<code>log_verification()</code>, a third distinct log-entry shape keyed on <code>supported</code> so it can never collide with <code>get_final_answer()</code>'s <code>"answer"</code> filter.</td></tr>
           <tr><td class="cmd">eval_cases.py / eval_cases_round2.py</td><td class="desc">Fixed sets of test questions with an expected tool and expected answer keywords — run end-to-end against the live agent, not tested in isolation.</td></tr>
           <tr><td class="cmd">run_eval.py</td><td class="desc">Drives every case through <code>ask_agent()</code>, checks the tool-call log and answer text, reports pass/fail per question. Accepts an optional case-module argument.</td></tr>
           <tr><td class="cmd">metrics_rollup.py</td><td class="desc">Plain-text report over the tool-call log — tool-usage frequency, average turns per question (grouped by <code>question_id</code>), error rate.</td></tr>
@@ -366,10 +367,24 @@
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">app.py</td><td class="desc">The Streamlit entrypoint — chat UI wrapping <code>ask_agent()</code>, hybrid tiered history threading via <code>session_state.rounds</code>, a persisted feed (Phase 3.5) loaded from <code>agent_scratch.chat_rounds</code> on first load, and an FAQ-style render: only the newest round shows expanded, older rounds collapse into <code>st.expander(label=the question)</code>.</td></tr>
+          <tr><td class="cmd">app.py</td><td class="desc">The Streamlit entrypoint — chat UI wrapping <code>ask_agent()</code>, hybrid tiered history threading via <code>session_state.rounds</code>, a persisted feed (Phase 3.5) loaded from <code>agent_scratch.chat_rounds</code> on first load, and an FAQ-style render: only the newest round shows expanded, older rounds collapse into <code>st.expander(label=the question)</code>. Build 7 — <code>render_verification_badge()</code> shows a green <code>st.success()</code>/red <code>st.error()</code> status right after each answer (nothing rendered when there's no verification entry at all), using Streamlit's own safe text escaping rather than raw HTML since the verdict's <code>reason</code> text is LLM-generated.</td></tr>
           <tr><td class="cmd">test_agent_history.py</td><td class="desc">3 tests for <code>flatten_history()</code> — the pure function behind hybrid tiered conversation memory.</td></tr>
           <tr><td class="cmd">012_chat_rounds_schema.sql</td><td class="desc">Build 6 Phase 3.5 — <code>agent_scratch.chat_rounds</code>, the durable store behind the persisted chat feed. Reuses <code>appdb_agent_writer</code>, no new role. Grants <code>SELECT, INSERT, DELETE</code> — <code>DELETE</code> added after the fact once <code>MAX_CHAT_ROUNDS</code> needed it.</td></tr>
           <tr><td class="cmd">test_chat_rounds.py</td><td class="desc">3 tests — save/load round-trip, discovery exclusion, and <code>MAX_CHAT_ROUNDS</code>'s exact boundary via <code>monkeypatch</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — verifier/critic agent (Build 7)</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">verify_answer.py</td><td class="desc">The verifier itself — a second, narrower agent judging whether a proposed answer is supported by the tool evidence gathered for it. Forces <code>tool_choice</code> so the verdict is always a structured <code>{supported, reason}</code>, never prose. Importable (<code>agent.py</code> uses it directly) and CLI-runnable standalone against any real logged <code>question_id</code>, with an optional override-answer argument to prove the deliberately-bad case.</td></tr>
+          <tr><td class="cmd">verify_eval_cases.py</td><td class="desc">Hand-constructed evidence + answer pairs (not read from the live log, for CI-portability) proving the verifier catches a bad answer, not just that it never complains — one grounded case, one outright contradiction, one fabricated number.</td></tr>
+          <tr><td class="cmd">run_verify_eval.py</td><td class="desc">Mirrors <code>run_eval.py</code>'s shape — runs every case through <code>verify_answer()</code>, full per-case report, non-zero exit on any mismatch.</td></tr>
+          <tr><td class="cmd">test_verification.py</td><td class="desc">2 tests for <code>get_verification()</code>'s found/not-found paths — temp log file + <code>monkeypatch</code>, no API cost for the pure-logic half of Build 7.</td></tr>
         </tbody>
       </table>
     </div>
@@ -445,7 +460,7 @@
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td class="cmd">docker-compose.yml</td><td class="desc">Defines <code>pg_local</code>, <code>mssql_local</code>, the <code>agent</code> service, and (Build 6) <code>streamlit_app</code> — same image as <code>agent</code>, just a different <code>command:</code>. Postgres image is <code>pgvector/pgvector:pg17</code>.</td></tr>
-          <tr><td class="cmd">Dockerfile</td><td class="desc">Builds one shared image used by both the <code>agent</code> and <code>streamlit_app</code> services — differentiated only by each service's <code>command:</code> override, not two separate Dockerfiles.</td></tr>
+          <tr><td class="cmd">Dockerfile</td><td class="desc">Builds one shared image used by both the <code>agent</code> and <code>streamlit_app</code> services — differentiated only by each service's <code>command:</code> override, not two separate Dockerfiles. Build 7 — <code>COPY</code> line fixed to include <code>verify_answer.py</code>, the same omission-bug class as Build 6's <code>logging_utils.py</code> miss.</td></tr>
           <tr><td class="cmd">requirements.txt</td><td class="desc">Pinned Python dependencies — <code>anthropic</code>, <code>beautifulsoup4</code>, <code>psycopg</code>, <code>pgvector</code>, <code>sentence-transformers</code>, <code>pandas</code>, <code>pandera</code>, <code>pytest</code>, <code>python-dotenv</code>, <code>streamlit</code> (Build 6).</td></tr>
           <tr><td class="cmd">.env</td><td class="desc">Real local secrets (DB passwords) — gitignored, never committed.</td></tr>
           <tr><td class="cmd">.env.example</td><td class="desc">Template shape of <code>.env</code> with placeholder values, safe to commit.</td></tr>
@@ -466,7 +481,7 @@
           <tr><td class="cmd">DEPARTMENT_MAPPING.local.md</td><td class="desc">Build 5 — the real department-code mapping used by <code>synthesize_dataset.py</code>, human-readable. Gitignored, same treatment as <code>CREDENTIALS.local.md</code> — publishing it would let anyone reverse the department masking.</td></tr>
           <tr><td class="cmd">data/ALLOCATION-synthesized.csv</td><td class="desc">Build 5 — the project's one official dataset (1535 rows), real temporal/quantitative fields kept, everything else synthesized. Used identically by local dev, CI, and the eval harness.</td></tr>
           <tr><td class="cmd">sql-test-01-cheatsheet.html / .pdf</td><td class="desc">This living document — every command actually typed, plus this file map.</td></tr>
-          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_6_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
+          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_7_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
           <tr><td class="cmd">PROJECT_DIAGRAMS/project-overview.html</td><td class="desc">Build 3.5 — a seed document written to answer whole-project overview questions, so the docs-RAG corpus has something to match against.</td></tr>
           <tr><td class="cmd">logs/</td><td class="desc">Build 4 — gitignored directory holding <code>tool_calls.jsonl</code> (live, JSON Lines) and <code>tool_calls.pre-question-id.jsonl</code> (archived). Durable, queryable tool-call tracing — not a Postgres table, deliberately.</td></tr>
           <tr><td class="cmd">Local Postgres.session.sql</td><td class="desc">Empty scratch file created by a VS Code SQL client extension — not authored content.</td></tr>
@@ -778,6 +793,20 @@
     <div class="callout" style="border:1px solid var(--rule); border-left:4px solid var(--accent); background:var(--surface); border-radius:8px; padding:14px 18px; margin:14px 0; font-size:13.5px;"><b>Build 6 Phase 3.5 — <code>st.expander</code> cannot nest inside another <code>st.expander</code>.</b> Hit while building the FAQ-style collapsed-round view (each older round wraps its answer in an expander labeled with the question) — a round's <code>Tools used</code> detail (itself normally an expander, Phase 4) has to render as plain inline text/captions instead whenever it's inside an already-collapsed round, and only get the real widget when that round is the one currently shown expanded.</div>
   </section>
 
+  <section class="group" id="anthropic-sdk">
+    <div class="group-head"><h2>Anthropic SDK</h2><span class="group-tag">Build 7 · verify_answer.py</span></div>
+    <p class="group-note">One genuinely new API pattern this build — forcing a specific tool call instead of letting the model choose freely.</p>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <colgroup><col style="width:44%"><col></colgroup>
+        <thead><tr><th>Call</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">tool_choice={"type": "tool", "name": "report_verdict"}</td><td class="desc">Forces the model to call one specific tool, every time — no <code>stop_reason == "end_turn"</code> text-only path exists. How the verifier's output is guaranteed structured (<code>{supported, reason}</code>) instead of prose that would need parsing.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="group" id="claude-commands">
     <div class="group-head"><h2>Claude's Commands</h2><span class="group-tag">Diagrams · verification · publishing</span></div>
     <p class="group-note">A separate running list from everything above — not what <i>you've</i> typed, but the commands Claude actually runs behind the scenes while building diagrams, verifying renders, and publishing docs for this project. Appended to as new patterns come up, same as every other section.</p>
@@ -803,7 +832,7 @@
   </section>
 
   <footer>
-    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 6, complete end to end including Phase 3.5 — a real Streamlit chat UI runs alongside the CLI agent, both as docker-compose services sharing one image, with chat history now surviving a real container restart. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
+    Living document — appended at the end of each build, not written once and frozen. Reflects hands-on usage through Build 7, complete end to end — a second, cheaper agent now checks every real tool-backed answer against the actual evidence before it's returned, surfaced as a green/red badge in the Streamlit UI and proven (via a dedicated eval harness) to actually catch a bad answer, not just rubber-stamp everything. Not exhaustive documentation for any of these tools, just what's actually been typed in this project so far.
   </footer>
 
 </div>
