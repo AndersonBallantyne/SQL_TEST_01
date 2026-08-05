@@ -180,14 +180,21 @@
     <h2>Verification</h2>
     <ul class="check-list">
       <li><b><code>py_compile</code> across every moved file</b><span class="detail">Clean on all 22 <code>src/</code> files and all 7 <code>tests/</code> files.</span></li>
-      <li><b>Full Docker image build</b><span class="detail">Built against the reorganized paths end to end before committing, not assumed from reading the Dockerfile diff.</span></li>
-      <li><b>Live CI run, watched to completion</b><span class="detail"><code>detect-changes</code> ✓, <code>test</code> ✓ (all 27), <code>eval</code> correctly gated — confirmed via <code>gh run watch</code>, the same live-verification standard every prior build in this project has used.</span></li>
+      <li><b>Full Docker image build</b><span class="detail">Built against the reorganized paths end to end before committing, not assumed from reading the Dockerfile diff. Confirmed inside the running container (not just a successful build exit code) that <code>agent.py</code> and <code>verify_answer.py</code> both resolve every import correctly from their new <code>src/</code> location.</span></li>
+      <li><b>Live CI run, watched to completion</b><span class="detail"><code>detect-changes</code> ✓, <code>test</code> ✓ (all 27) — confirmed via <code>gh run watch</code>, the same live-verification standard every prior build in this project has used.</span></li>
       <li><b>Cheat sheet re-verified both ways</b><span class="detail"><code>--screenshot</code> and <code>--print-to-pdf</code>/<code>pdftoppm</code>, after every path reference across the Project Files table was rewritten to match the new structure.</span></li>
     </ul>
+
+    <div class="callout warn"><b>The reorg's own CI run found one more real bug, on the first genuine <code>eval</code> run since Build 6.</b> Because this commit's rename touched <code>src/agent.py</code> (a paths-filter match), <code>eval</code> actually ran — not gated out — for the first time since <code>log_final_answer</code> was added weeks earlier. It failed immediately: <code>run_eval.py</code>'s <code>tools_called = sorted({entry["tool_name"] for entry in new_entries})</code> assumes every log line appended during a question is a tool-call entry. It isn't — every question has logged a <code>log_final_answer</code> entry (no <code>tool_name</code> key) since Build 6, and a <code>log_verification</code> entry since Build 7, both sharing the same <code>tool_calls.jsonl</code> file. <code>KeyError: 'tool_name'</code>, every time.</div>
+    <div class="callout good"><b>Fixed, commit <code>071f784</code>:</b> added the same <code>"tool_name" in entry</code> guard <code>logging_utils.get_tool_calls()</code> and <code>view_recent_questions.py</code> already use elsewhere in this codebase — this file just never got the memo when the log gained new entry shapes.</div>
+
+    <div class="callout warn"><b>The fix commit itself then didn't get re-verified by CI — a second, related gap.</b> A push touching only <code>src/run_eval.py</code> doesn't match the paths-filter (<code>agent.py</code>/<code>tools.py</code>/<code>verify_answer.py</code>/the case files — never the runner scripts that actually execute them), so <code>eval</code> correctly stayed gated on that push, silently. The fix would have gone unverified by CI entirely.</div>
+    <div class="callout good"><b>Fixed two ways, commit <code>eec4707</code>:</b> <code>src/run_eval.py</code> and <code>src/run_verify_eval.py</code> added to the paths-filter, so a change to either runner now correctly re-triggers <code>eval</code>. And rather than push again and wait on a third CI round trip, both were verified directly against <code>pg_local</code> first — <code>run_eval.py</code> 6/7 (the one failure is a pre-existing eval case about "order revenue," a concept that isn't part of this project's actual domain anymore, unrelated to either fix) and <code>run_verify_eval.py</code> 3/3, both with real API calls, before pushing.</div>
+    <p><b>Why this matters beyond the two one-line fixes:</b> the original bug had been sitting live in <code>main</code> for roughly two weeks, silently unverified, because nothing had reached <code>origin/main</code> since before it was introduced. A green CI badge that hasn't actually run recently isn't verifying anything — the same lesson this whole maintenance pass started from, twice over in one afternoon.</p>
   </section>
 
   <footer>
-    Repo audit and reorganization complete — CI green against the real, current file structure for the first time since Build 6 Phase 2. Ongoing cross-build command reference lives in <code>docs/sql-test-01-cheatsheet.html</code>.
+    Repo audit and reorganization complete — CI green against the real, current file structure, including a genuinely new bug the reorg's own CI run caught and this document then fixed. Ongoing cross-build command reference lives in <code>docs/sql-test-01-cheatsheet.html</code>.
   </footer>
 
 </div>
