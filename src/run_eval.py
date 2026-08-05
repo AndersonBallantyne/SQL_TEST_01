@@ -69,7 +69,13 @@ for case in EVAL_CASES:
     response = ask_agent(case["question"])
     new_entries = _new_log_entries(start_line)
 
-    tools_called = sorted({entry["tool_name"] for entry in new_entries})
+    # new_entries also includes the log_final_answer/log_verification entries every question
+    # now produces (Build 6/Build 7) - neither carries tool_name, so this must filter to only
+    # the real tool-call entries first. Same "tool_name" in entry check logging_utils.py and
+    # view_recent_questions.py already use to tell the log's entry shapes apart. Found 2026-08-05
+    # the first time this eval job ran against that logging shape at all - it's been broken
+    # since log_final_answer was added, just never actually exercised in CI until now.
+    tools_called = sorted({entry["tool_name"] for entry in new_entries if "tool_name" in entry})
     tool_ok = case["expected_tool"] in tools_called
 
     # Strips commas so "1,243" still matches an expected_keywords entry of "1243" - found
