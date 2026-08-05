@@ -296,195 +296,184 @@
 
   <section class="group" id="files">
     <div class="group-head"><h2>Project Files</h2><span class="group-tag">What's actually in this folder</span></div>
-    <p class="group-note">A map of the project root as of Build 5's completion — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
+    <p class="group-note">A map of the project root as of the 2026-08-05 repo reorganization — what each file is for, not what commands it contains (that's every section below). Excludes auto-generated folders (<code>.venv/</code>, <code>__pycache__/</code>, <code>.git/</code>).</p>
+    <div class="callout good" style="margin:14px 0 26px;"><b>Reorg, 2026-08-05:</b> a full project audit (prompted by a real CI failure — see the Claude's Commands section for what it found) turned up a flat ~50-file root that had never been reorganized as the project grew across seven builds, plus two stray files and a badly out-of-date <code>.env.example</code>. Everything below reflects the result: first-party Python in <code>src/</code> (kept flat — the import graph between <code>agent.py</code>/<code>tools.py</code>/<code>verify_answer.py</code>/the eval harnesses rules out further splitting without adding <code>sys.path</code> config), SQL migrations in <code>migrations/</code>, tests in <code>tests/</code> (<code>pytest.ini</code> gained <code>pythonpath = src</code>), diagrams/briefs/cheat sheet in <code>docs/</code> (renamed from <code>PROJECT_DIAGRAMS/</code>), and the two vestigial SQL Server lab files in <code>legacy/</code>. <code>db_test_py.py</code> and an empty VS Code scratch file were deleted outright — same disposition Build 5 gave <code>api_test.py</code>.</div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">SQL migrations — run in order, numbered for reproducibility</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">SQL migrations — migrations/, run in order, numbered for reproducibility</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">001_schema.sql</td><td class="desc">Original <code>appdb</code> schema — <code>customers</code>/<code>orders</code>, the seed data every later build extends.</td></tr>
-          <tr><td class="cmd">002_seed.sql</td><td class="desc">Idempotent seed data for <code>customers</code>/<code>orders</code>.</td></tr>
-          <tr><td class="cmd">003_readonly_role.sql</td><td class="desc"><code>appdb_reader</code> — the read-only role Build 1's agent runs as.</td></tr>
-          <tr><td class="cmd">004_raw_schema.sql</td><td class="desc">Build 2 Phase 1 — <code>raw.allocations</code>, all-<code>TEXT</code> ingestion target.</td></tr>
-          <tr><td class="cmd">005_clean_schema.sql</td><td class="desc">Build 2 Phase 2 — <code>clean.allocations</code>, real types plus the computed <code>duration_seconds</code> column.</td></tr>
-          <tr><td class="cmd">006_agent_scratch_role.sql</td><td class="desc">Build 2.5 Phase 1 — <code>appdb_agent_writer</code>, the agent's write-scoped role.</td></tr>
-          <tr><td class="cmd">007_agent_scratch_schema.sql</td><td class="desc">Build 2.5 Phase 1 — the <code>agent_scratch</code> schema and its grants.</td></tr>
-          <tr><td class="cmd">008_add_summary_embedding.sql</td><td class="desc">Build 3 Phase 1 — adds <code>clean.allocations.summary_embedding vector(384)</code>.</td></tr>
-          <tr><td class="cmd">009_add_summary_embedding_hnsw_index.sql</td><td class="desc">Build 3 follow-up — HNSW index on <code>summary_embedding</code> for indexed similarity search.</td></tr>
-          <tr><td class="cmd">010_docs_chunks_schema.sql</td><td class="desc">Build 3.5 Phase 1 — the <code>docs.chunks</code> table (<code>vector(384)</code>) for the documentation RAG corpus.</td></tr>
-          <tr><td class="cmd">011_metrics_history_schema.sql</td><td class="desc">Build 4 follow-up — <code>observability.metrics_history</code>, a tracked time series over <code>metrics_rollup.py</code>'s runs.</td></tr>
-          <tr><td class="cmd">012_chat_rounds_schema.sql</td><td class="desc">Build 6 Phase 3.5 — <code>agent_scratch.chat_rounds</code>, persistent shared chat history surviving a real container restart.</td></tr>
-          <tr><td class="cmd">schema_mssql.sql</td><td class="desc">The SQL Server counterpart to <code>001_schema.sql</code> — same <code>appdb</code> shape, T-SQL dialect.</td></tr>
-          <tr><td class="cmd">seed_mssql.sql</td><td class="desc">SQL Server counterpart to <code>002_seed.sql</code>.</td></tr>
+          <tr><td class="cmd">migrations/001_schema.sql</td><td class="desc">Original <code>appdb</code> schema — <code>customers</code>/<code>orders</code>, the seed data every later build extends.</td></tr>
+          <tr><td class="cmd">migrations/002_seed.sql</td><td class="desc">Idempotent seed data for <code>customers</code>/<code>orders</code>.</td></tr>
+          <tr><td class="cmd">migrations/003_readonly_role.sql</td><td class="desc"><code>appdb_reader</code> — the read-only role Build 1's agent runs as.</td></tr>
+          <tr><td class="cmd">migrations/004_raw_schema.sql</td><td class="desc">Build 2 Phase 1 — <code>raw.allocations</code>, all-<code>TEXT</code> ingestion target.</td></tr>
+          <tr><td class="cmd">migrations/005_clean_schema.sql</td><td class="desc">Build 2 Phase 2 — <code>clean.allocations</code>, real types plus the computed <code>duration_seconds</code> column.</td></tr>
+          <tr><td class="cmd">migrations/006_agent_scratch_role.sql</td><td class="desc">Build 2.5 Phase 1 — <code>appdb_agent_writer</code>, the agent's write-scoped role.</td></tr>
+          <tr><td class="cmd">migrations/007_agent_scratch_schema.sql</td><td class="desc">Build 2.5 Phase 1 — the <code>agent_scratch</code> schema and its grants.</td></tr>
+          <tr><td class="cmd">migrations/008_add_summary_embedding.sql</td><td class="desc">Build 3 Phase 1 — adds <code>clean.allocations.summary_embedding vector(384)</code>.</td></tr>
+          <tr><td class="cmd">migrations/009_add_summary_embedding_hnsw_index.sql</td><td class="desc">Build 3 follow-up — HNSW index on <code>summary_embedding</code> for indexed similarity search.</td></tr>
+          <tr><td class="cmd">migrations/010_docs_chunks_schema.sql</td><td class="desc">Build 3.5 Phase 1 — the <code>docs.chunks</code> table (<code>vector(384)</code>) for the documentation RAG corpus.</td></tr>
+          <tr><td class="cmd">migrations/011_metrics_history_schema.sql</td><td class="desc">Build 4 follow-up — <code>observability.metrics_history</code>, a tracked time series over <code>metrics_rollup.py</code>'s runs.</td></tr>
+          <tr><td class="cmd">migrations/012_chat_rounds_schema.sql</td><td class="desc">Build 6 Phase 3.5 — <code>agent_scratch.chat_rounds</code>, persistent shared chat history surviving a real container restart. Missing from CI's hardcoded migration list from the day it was written until the 2026-08-05 audit caught it — see Claude's Commands.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — the agent itself</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — the agent itself (src/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">agent.py</td><td class="desc">The hand-built tool-use loop, wrapped in a callable <code>ask_agent()</code> since Build 4 — calls the Anthropic API, dispatches tool calls, enforces <code>MAX_TOOL_TURNS</code>, tags every logged call with a <code>question_id</code>. Build 7 — every successful answer with real tool evidence now also runs through <code>verify_answer()</code> before returning, wrapped in <code>try/except</code> so a verifier failure can never block the real answer.</td></tr>
-          <tr><td class="cmd">tools.py</td><td class="desc">Every tool the agent can call: <code>run_sql_query</code>, <code>list_tables</code>, <code>describe_table</code>, <code>save_dataframe</code>, <code>search_summaries</code>, <code>search_docs</code>.</td></tr>
+          <tr><td class="cmd">src/agent.py</td><td class="desc">The hand-built tool-use loop, wrapped in a callable <code>ask_agent()</code> since Build 4 — calls the Anthropic API, dispatches tool calls, enforces <code>MAX_TOOL_TURNS</code>, tags every logged call with a <code>question_id</code>. Build 7 — every successful answer with real tool evidence now also runs through <code>verify_answer()</code> before returning, wrapped in <code>try/except</code> so a verifier failure can never block the real answer.</td></tr>
+          <tr><td class="cmd">src/tools.py</td><td class="desc">Every tool the agent can call: <code>run_sql_query</code>, <code>list_tables</code>, <code>describe_table</code>, <code>save_dataframe</code>, <code>search_summaries</code>, <code>search_docs</code>.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — observability &amp; eval harness (Build 4)</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — observability &amp; eval harness (Build 4, src/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">logging_utils.py</td><td class="desc">Structured JSON Lines tool-call logging — one line per call: timestamp, <code>question_id</code>, turn, tool name, input, output, error, latency. Build 7 — <code>get_tool_calls()</code> gained an <code>include_output</code> flag (default <code>False</code>, existing callers unaffected); new <code>get_verification()</code>/<code>log_verification()</code>, a third distinct log-entry shape keyed on <code>supported</code> so it can never collide with <code>get_final_answer()</code>'s <code>"answer"</code> filter.</td></tr>
-          <tr><td class="cmd">eval_cases.py / eval_cases_round2.py</td><td class="desc">Fixed sets of test questions with an expected tool and expected answer keywords — run end-to-end against the live agent, not tested in isolation.</td></tr>
-          <tr><td class="cmd">run_eval.py</td><td class="desc">Drives every case through <code>ask_agent()</code>, checks the tool-call log and answer text, reports pass/fail per question. Accepts an optional case-module argument.</td></tr>
-          <tr><td class="cmd">metrics_rollup.py</td><td class="desc">Plain-text report over the tool-call log — tool-usage frequency, average turns per question (grouped by <code>question_id</code>), error rate.</td></tr>
+          <tr><td class="cmd">src/logging_utils.py</td><td class="desc">Structured JSON Lines tool-call logging — one line per call: timestamp, <code>question_id</code>, turn, tool name, input, output, error, latency. Build 7 — <code>get_tool_calls()</code> gained an <code>include_output</code> flag (default <code>False</code>, existing callers unaffected); new <code>get_verification()</code>/<code>log_verification()</code>, a third distinct log-entry shape keyed on <code>supported</code> so it can never collide with <code>get_final_answer()</code>'s <code>"answer"</code> filter.</td></tr>
+          <tr><td class="cmd">src/eval_cases.py / src/eval_cases_round2.py</td><td class="desc">Fixed sets of test questions with an expected tool and expected answer keywords — run end-to-end against the live agent, not tested in isolation.</td></tr>
+          <tr><td class="cmd">src/run_eval.py</td><td class="desc">Drives every case through <code>ask_agent()</code>, checks the tool-call log and answer text, reports pass/fail per question. Accepts an optional case-module argument.</td></tr>
+          <tr><td class="cmd">src/metrics_rollup.py</td><td class="desc">Plain-text report over the tool-call log — tool-usage frequency, average turns per question (grouped by <code>question_id</code>), error rate.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — live deployment with CI (Build 5)</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — live deployment with CI (Build 5, src/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">synthesize_dataset.py</td><td class="desc">Builds <code>data/ALLOCATION-synthesized.csv</code> from the real export — real dates/duration/renewal/resource counts kept, department/email/summary synthesized. Imports the real department-code mapping from a git-ignored local file, never hardcodes it.</td></tr>
-          <tr><td class="cmd">department_mapping.local.py</td><td class="desc">Git-ignored — the real department-code mapping <code>synthesize_dataset.py</code> actually runs from. Never committed; see <code>DEPARTMENT_MAPPING.local.md</code> for the human-readable copy.</td></tr>
-          <tr><td class="cmd">pytest.ini</td><td class="desc"><code>python_files = test_*.py</code> — scopes pytest discovery to this project's actual test-file convention, after a stray non-test script (<code>api_test.py</code>) was found being silently collected by pytest's broader default.</td></tr>
+          <tr><td class="cmd">src/synthesize_dataset.py</td><td class="desc">Builds <code>data/ALLOCATION-synthesized.csv</code> from the real export — real dates/duration/renewal/resource counts kept, department/email/summary synthesized. Imports the real department-code mapping from a git-ignored local file, never hardcodes it.</td></tr>
+          <tr><td class="cmd">department_mapping.local.py</td><td class="desc">Git-ignored, repo root — the real department-code mapping <code>synthesize_dataset.py</code> actually runs from. Never committed; see <code>DEPARTMENT_MAPPING.local.md</code> for the human-readable copy.</td></tr>
+          <tr><td class="cmd">pytest.ini</td><td class="desc">Repo root — <code>python_files = test_*.py</code> scopes discovery to this project's actual test-file convention, after a stray non-test script (<code>api_test.py</code>) was found being silently collected by pytest's broader default. Gained <code>testpaths = tests</code> / <code>pythonpath = src</code> in the 2026-08-05 reorg.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — front end for the agent (Build 6)</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — front end for the agent (Build 6, src/ + tests/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">app.py</td><td class="desc">The Streamlit entrypoint — chat UI wrapping <code>ask_agent()</code>, hybrid tiered history threading via <code>session_state.rounds</code>, a persisted feed (Phase 3.5) loaded from <code>agent_scratch.chat_rounds</code> on first load, and an FAQ-style render: only the newest round shows expanded, older rounds collapse into <code>st.expander(label=the question)</code>. Build 7 — <code>render_verification_badge()</code> shows a green <code>st.success()</code>/red <code>st.error()</code> status right after each answer (nothing rendered when there's no verification entry at all), using Streamlit's own safe text escaping rather than raw HTML since the verdict's <code>reason</code> text is LLM-generated.</td></tr>
-          <tr><td class="cmd">test_agent_history.py</td><td class="desc">3 tests for <code>flatten_history()</code> — the pure function behind hybrid tiered conversation memory.</td></tr>
-          <tr><td class="cmd">012_chat_rounds_schema.sql</td><td class="desc">Build 6 Phase 3.5 — <code>agent_scratch.chat_rounds</code>, the durable store behind the persisted chat feed. Reuses <code>appdb_agent_writer</code>, no new role. Grants <code>SELECT, INSERT, DELETE</code> — <code>DELETE</code> added after the fact once <code>MAX_CHAT_ROUNDS</code> needed it.</td></tr>
-          <tr><td class="cmd">test_chat_rounds.py</td><td class="desc">3 tests — save/load round-trip, discovery exclusion, and <code>MAX_CHAT_ROUNDS</code>'s exact boundary via <code>monkeypatch</code>.</td></tr>
+          <tr><td class="cmd">src/app.py</td><td class="desc">The Streamlit entrypoint — chat UI wrapping <code>ask_agent()</code>, hybrid tiered history threading via <code>session_state.rounds</code>, a persisted feed (Phase 3.5) loaded from <code>agent_scratch.chat_rounds</code> on first load, and an FAQ-style render: only the newest round shows expanded, older rounds collapse into <code>st.expander(label=the question)</code>. Build 7 — <code>render_verification_badge()</code> shows a green <code>st.success()</code>/red <code>st.error()</code> status right after each answer (nothing rendered when there's no verification entry at all), using Streamlit's own safe text escaping rather than raw HTML since the verdict's <code>reason</code> text is LLM-generated.</td></tr>
+          <tr><td class="cmd">tests/test_agent_history.py</td><td class="desc">3 tests for <code>flatten_history()</code> — the pure function behind hybrid tiered conversation memory.</td></tr>
+          <tr><td class="cmd">tests/test_chat_rounds.py</td><td class="desc">3 tests — save/load round-trip, discovery exclusion, and <code>MAX_CHAT_ROUNDS</code>'s exact boundary via <code>monkeypatch</code>.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — verifier/critic agent (Build 7)</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — verifier/critic agent (Build 7, src/ + tests/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">verify_answer.py</td><td class="desc">The verifier itself — a second, narrower agent judging whether a proposed answer is supported by the tool evidence gathered for it. Forces <code>tool_choice</code> so the verdict is always a structured <code>{supported, reason}</code>, never prose. Importable (<code>agent.py</code> uses it directly) and CLI-runnable standalone against any real logged <code>question_id</code>, with an optional override-answer argument to prove the deliberately-bad case.</td></tr>
-          <tr><td class="cmd">verify_eval_cases.py</td><td class="desc">Hand-constructed evidence + answer pairs (not read from the live log, for CI-portability) proving the verifier catches a bad answer, not just that it never complains — one grounded case, one outright contradiction, one fabricated number.</td></tr>
-          <tr><td class="cmd">run_verify_eval.py</td><td class="desc">Mirrors <code>run_eval.py</code>'s shape — runs every case through <code>verify_answer()</code>, full per-case report, non-zero exit on any mismatch.</td></tr>
-          <tr><td class="cmd">test_verification.py</td><td class="desc">2 tests for <code>get_verification()</code>'s found/not-found paths — temp log file + <code>monkeypatch</code>, no API cost for the pure-logic half of Build 7.</td></tr>
+          <tr><td class="cmd">src/verify_answer.py</td><td class="desc">The verifier itself — a second, narrower agent judging whether a proposed answer is supported by the tool evidence gathered for it. Forces <code>tool_choice</code> so the verdict is always a structured <code>{supported, reason}</code>, never prose. Importable (<code>agent.py</code> uses it directly) and CLI-runnable standalone against any real logged <code>question_id</code>, with an optional override-answer argument to prove the deliberately-bad case.</td></tr>
+          <tr><td class="cmd">src/verify_eval_cases.py</td><td class="desc">Hand-constructed evidence + answer pairs (not read from the live log, for CI-portability) proving the verifier catches a bad answer, not just that it never complains — one grounded case, one outright contradiction, one fabricated number.</td></tr>
+          <tr><td class="cmd">src/run_verify_eval.py</td><td class="desc">Mirrors <code>run_eval.py</code>'s shape — runs every case through <code>verify_answer()</code>, full per-case report, non-zero exit on any mismatch. Never wired into CI until the 2026-08-05 audit — see Claude's Commands.</td></tr>
+          <tr><td class="cmd">tests/test_verification.py</td><td class="desc">2 tests for <code>get_verification()</code>'s found/not-found paths — temp log file + <code>monkeypatch</code>, no API cost for the pure-logic half of Build 7.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — data pipeline (Build 2)</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — data pipeline (Build 2, src/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">ingest.py</td><td class="desc">Loads the source CSV into <code>raw.allocations</code>, one <code>executemany</code> call.</td></tr>
-          <tr><td class="cmd">profile_raw_data.py</td><td class="desc">Pandas exploration of <code>raw.allocations</code> that informed <code>005_clean_schema.sql</code>'s design. Renamed from <code>profile.py</code> — it silently shadowed Python's stdlib <code>profile</code> module.</td></tr>
-          <tr><td class="cmd">transform.py</td><td class="desc">Raw → clean transform: type coercion, blank→NULL handling, populates <code>clean.allocations</code>.</td></tr>
+          <tr><td class="cmd">src/ingest.py</td><td class="desc">Loads the source CSV into <code>raw.allocations</code>, one <code>executemany</code> call.</td></tr>
+          <tr><td class="cmd">src/profile_raw_data.py</td><td class="desc">Pandas exploration of <code>raw.allocations</code> that informed <code>005_clean_schema.sql</code>'s design. Renamed from <code>profile.py</code> — it silently shadowed Python's stdlib <code>profile</code> module.</td></tr>
+          <tr><td class="cmd">src/transform.py</td><td class="desc">Raw → clean transform: type coercion, blank→NULL handling, populates <code>clean.allocations</code>.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — semantic search (Build 3)</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — semantic search (Build 3, src/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">embed_summaries.py</td><td class="desc">Idempotent backfill — embeds every <code>summary</code> row still missing a <code>summary_embedding</code>.</td></tr>
-          <tr><td class="cmd">search_summaries.py</td><td class="desc">Standalone script proving raw cosine-distance search works, before any agent wiring.</td></tr>
-          <tr><td class="cmd">calibrate_threshold.py</td><td class="desc">Statistical calibration of the 0.63 relevance-distance cutoff, from 40 curated in-/out-of-domain queries.</td></tr>
+          <tr><td class="cmd">src/embed_summaries.py</td><td class="desc">Idempotent backfill — embeds every <code>summary</code> row still missing a <code>summary_embedding</code>.</td></tr>
+          <tr><td class="cmd">src/search_summaries.py</td><td class="desc">Standalone script proving raw cosine-distance search works, before any agent wiring.</td></tr>
+          <tr><td class="cmd">src/calibrate_threshold.py</td><td class="desc">Statistical calibration of the 0.63 relevance-distance cutoff, from 40 curated in-/out-of-domain queries.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — documentation RAG (Build 3.5)</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — documentation RAG (Build 3.5, src/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">extract_doc_chunks.py</td><td class="desc">Parses this project's own docs into embeddable chunks — four extraction shapes across two design eras, plus narrative prose. <code>SOURCE_FILES</code> auto-discovers every handoff brief via <code>glob</code> (Build 6 fix) rather than a hand-maintained list, after that list twice silently fell behind a newly-written brief.</td></tr>
-          <tr><td class="cmd">embed_chunks.py</td><td class="desc">Idempotent backfill for <code>docs.chunks</code> — same <code>WHERE embedding IS NULL</code> pattern as <code>embed_summaries.py</code>.</td></tr>
-          <tr><td class="cmd">search_chunks.py</td><td class="desc">Standalone script proving raw similarity search over the docs corpus works, before any agent wiring.</td></tr>
+          <tr><td class="cmd">src/extract_doc_chunks.py</td><td class="desc">Parses this project's own docs into embeddable chunks — four extraction shapes across two design eras, plus narrative prose. <code>SOURCE_FILES</code> auto-discovers every handoff brief via <code>glob</code> (Build 6 fix) rather than a hand-maintained list, after that list twice silently fell behind a newly-written brief. Glob target updated to <code>docs/</code> in the 2026-08-05 reorg (was <code>PROJECT_DIAGRAMS/</code>).</td></tr>
+          <tr><td class="cmd">src/embed_chunks.py</td><td class="desc">Idempotent backfill for <code>docs.chunks</code> — same <code>WHERE embedding IS NULL</code> pattern as <code>embed_summaries.py</code>.</td></tr>
+          <tr><td class="cmd">src/search_chunks.py</td><td class="desc">Standalone script proving raw similarity search over the docs corpus works, before any agent wiring.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Python — early sanity checks (pre-Build-1)</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Tests (tests/)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">db_test_py.py</td><td class="desc">The very first Postgres connectivity check — plain <code>psycopg</code>, no agent involved.</td></tr>
+          <tr><td class="cmd">tests/test_data_quality.py</td><td class="desc">Build 2 — <code>pandera</code> schema checks against <code>clean.allocations</code>.</td></tr>
+          <tr><td class="cmd">tests/test_agent_scratch_boundary.py</td><td class="desc">Build 2.5 — role-boundary tests plus the <code>MAX_SCRATCH_TABLES</code> cap test.</td></tr>
+          <tr><td class="cmd">tests/test_semantic_search.py</td><td class="desc">Build 3 — embedding coverage, relevant/irrelevant query behavior, HNSW index existence.</td></tr>
+          <tr><td class="cmd">tests/test_docs_search.py</td><td class="desc">Build 3.5 — same shape as <code>test_semantic_search.py</code>, applied to the documentation corpus.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Tests</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Configuration &amp; infrastructure (repo root)</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">test_data_quality.py</td><td class="desc">Build 2 — <code>pandera</code> schema checks against <code>clean.allocations</code>.</td></tr>
-          <tr><td class="cmd">test_agent_scratch_boundary.py</td><td class="desc">Build 2.5 — role-boundary tests plus the <code>MAX_SCRATCH_TABLES</code> cap test.</td></tr>
-          <tr><td class="cmd">test_semantic_search.py</td><td class="desc">Build 3 — embedding coverage, relevant/irrelevant query behavior, HNSW index existence.</td></tr>
-          <tr><td class="cmd">test_docs_search.py</td><td class="desc">Build 3.5 — same shape as <code>test_semantic_search.py</code>, applied to the documentation corpus.</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Configuration &amp; infrastructure</p>
-    <div class="ref-table-wrap">
-      <table class="ref">
-        <colgroup><col style="width:44%"><col></colgroup>
-        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
-        <tbody>
-          <tr><td class="cmd">docker-compose.yml</td><td class="desc">Defines <code>pg_local</code>, <code>mssql_local</code>, the <code>agent</code> service, and (Build 6) <code>streamlit_app</code> — same image as <code>agent</code>, just a different <code>command:</code>. Postgres image is <code>pgvector/pgvector:pg17</code>.</td></tr>
-          <tr><td class="cmd">Dockerfile</td><td class="desc">Builds one shared image used by both the <code>agent</code> and <code>streamlit_app</code> services — differentiated only by each service's <code>command:</code> override, not two separate Dockerfiles. Build 7 — <code>COPY</code> line fixed to include <code>verify_answer.py</code>, the same omission-bug class as Build 6's <code>logging_utils.py</code> miss.</td></tr>
+          <tr><td class="cmd">README.md</td><td class="desc">Added in the 2026-08-05 reorg — the repo's actual entry point (what this is, quickstart, folder layout, trust boundary). Didn't exist before.</td></tr>
+          <tr><td class="cmd">docker-compose.yml</td><td class="desc">Defines <code>pg_local</code>, <code>mssql_local</code>, the <code>agent</code> service, and (Build 6) <code>streamlit_app</code> — same image as <code>agent</code>, just a different <code>command:</code>. Postgres image is <code>pgvector/pgvector:pg17</code>. <code>streamlit_app</code>'s command updated to <code>src/app.py</code> in the reorg.</td></tr>
+          <tr><td class="cmd">Dockerfile</td><td class="desc">Builds one shared image used by both the <code>agent</code> and <code>streamlit_app</code> services — differentiated only by each service's <code>command:</code> override, not two separate Dockerfiles. Build 7 — <code>COPY</code> line fixed to include <code>verify_answer.py</code>. Reorg — <code>COPY</code>/<code>CMD</code> updated to <code>src/</code> paths.</td></tr>
           <tr><td class="cmd">requirements.txt</td><td class="desc">Pinned Python dependencies — <code>anthropic</code>, <code>beautifulsoup4</code>, <code>psycopg</code>, <code>pgvector</code>, <code>sentence-transformers</code>, <code>pandas</code>, <code>pandera</code>, <code>pytest</code>, <code>python-dotenv</code>, <code>streamlit</code> (Build 6).</td></tr>
-          <tr><td class="cmd">.env</td><td class="desc">Real local secrets (DB passwords) — gitignored, never committed.</td></tr>
-          <tr><td class="cmd">.env.example</td><td class="desc">Template shape of <code>.env</code> with placeholder values, safe to commit.</td></tr>
-          <tr><td class="cmd">.gitignore</td><td class="desc">Excludes secrets (<code>.env</code>, <code>CREDENTIALS.local.md</code>, <code>DEPARTMENT_MAPPING.local.md</code>, <code>department_mapping.local.py</code>), OS/editor cruft, <code>__pycache__/</code>, logs/dumps.</td></tr>
-          <tr><td class="cmd">.github/workflows/ci.yml</td><td class="desc">Build 5 — GitHub Actions: migrations + full pipeline + pytest on every push; a gated eval-harness job on a relevant merge to <code>main</code> only.</td></tr>
+          <tr><td class="cmd">.env</td><td class="desc">Real local secrets (DB passwords, API key) — gitignored, never committed.</td></tr>
+          <tr><td class="cmd">.env.example</td><td class="desc">Template shape of <code>.env</code>. Rewritten in the 2026-08-05 audit — the prior version documented 4 of the 10 vars the code actually requires (missing <code>ANTHROPIC_API_KEY</code> and both reader/writer role credentials entirely), meaning a fresh clone following it hit an immediate <code>KeyError</code>.</td></tr>
+          <tr><td class="cmd">.gitignore</td><td class="desc">Excludes secrets (<code>.env</code>, <code>CREDENTIALS.local.md</code>, <code>DEPARTMENT_MAPPING.local.md</code>, <code>department_mapping.local.py</code>), OS/editor cruft, <code>__pycache__/</code>, logs/dumps. Personal working-style reference path updated to <code>docs/Working-Style_Prompt/</code> in the reorg.</td></tr>
+          <tr><td class="cmd">.github/workflows/ci.yml</td><td class="desc">Build 5 — GitHub Actions: migrations + full pipeline + pytest on every push; a gated eval-harness job on a relevant merge to <code>main</code> only. 2026-08-05 — migration list gained <code>012_chat_rounds_schema.sql</code> (was silently missing), gained a step running the verifier's own eval harness (was never wired in at all), and every path updated for <code>src/</code>/<code>migrations/</code>.</td></tr>
           <tr><td class="cmd">.gitattributes</td><td class="desc">Forces consistent line endings for <code>.sql</code>/<code>.yml</code>/<code>.md</code> across Windows/Unix.</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Docs, secrets &amp; generated artifacts</p>
+    <p class="group-note" style="margin-top:22px; font-weight:600; color:var(--ink);">Docs, secrets, legacy &amp; generated artifacts</p>
     <div class="ref-table-wrap">
       <table class="ref">
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>File</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">CREDENTIALS.local.md</td><td class="desc">Unredacted local companion to <code>.env</code> — gitignored, never shared or committed.</td></tr>
-          <tr><td class="cmd">DEPARTMENT_MAPPING.local.md</td><td class="desc">Build 5 — the real department-code mapping used by <code>synthesize_dataset.py</code>, human-readable. Gitignored, same treatment as <code>CREDENTIALS.local.md</code> — publishing it would let anyone reverse the department masking.</td></tr>
-          <tr><td class="cmd">data/ALLOCATION-synthesized.csv</td><td class="desc">Build 5 — the project's one official dataset (1535 rows), real temporal/quantitative fields kept, everything else synthesized. Used identically by local dev, CI, and the eval harness.</td></tr>
-          <tr><td class="cmd">sql-test-01-cheatsheet.html / .pdf</td><td class="desc">This living document — every command actually typed, plus this file map.</td></tr>
-          <tr><td class="cmd">PROJECT_DIAGRAMS/</td><td class="desc">One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_7_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
-          <tr><td class="cmd">PROJECT_DIAGRAMS/project-overview.html</td><td class="desc">Build 3.5 — a seed document written to answer whole-project overview questions, so the docs-RAG corpus has something to match against.</td></tr>
-          <tr><td class="cmd">logs/</td><td class="desc">Build 4 — gitignored directory holding <code>tool_calls.jsonl</code> (live, JSON Lines) and <code>tool_calls.pre-question-id.jsonl</code> (archived). Durable, queryable tool-call tracing — not a Postgres table, deliberately.</td></tr>
-          <tr><td class="cmd">Local Postgres.session.sql</td><td class="desc">Empty scratch file created by a VS Code SQL client extension — not authored content.</td></tr>
+          <tr><td class="cmd">CREDENTIALS.local.md</td><td class="desc">Repo root — unredacted local companion to <code>.env</code> — gitignored, never shared or committed.</td></tr>
+          <tr><td class="cmd">DEPARTMENT_MAPPING.local.md</td><td class="desc">Repo root, Build 5 — the real department-code mapping used by <code>synthesize_dataset.py</code>, human-readable. Gitignored, same treatment as <code>CREDENTIALS.local.md</code> — publishing it would let anyone reverse the department masking.</td></tr>
+          <tr><td class="cmd">data/ALLOCATION-synthesized.csv</td><td class="desc">Build 5 — the project's one official dataset (1535 rows), real temporal/quantitative fields kept, everything else synthesized. Used identically by local dev, CI, and the eval harness. Location unchanged by the reorg.</td></tr>
+          <tr><td class="cmd">docs/sql-test-01-cheatsheet.html / .pdf</td><td class="desc">This living document — every command actually typed, plus this file map. Moved from the repo root into <code>docs/</code> in the 2026-08-05 reorg.</td></tr>
+          <tr><td class="cmd">docs/</td><td class="desc">Renamed from <code>PROJECT_DIAGRAMS/</code> in the reorg. One subfolder per build (<code>BUILD_1_FLOW</code> … <code>BUILD_7_FLOW</code>) — flow diagrams (<code>.svg</code>/<code>.html</code>/<code>.png</code>) and handoff briefs (<code>.html</code>/<code>.pdf</code>). Build 1's two handoff briefs live here too, recovered from Artifacts during Build 3.5.</td></tr>
+          <tr><td class="cmd">docs/project-overview.html</td><td class="desc">Build 3.5 — a seed document written to answer whole-project overview questions, so the docs-RAG corpus has something to match against.</td></tr>
+          <tr><td class="cmd">logs/</td><td class="desc">Build 4 — gitignored directory holding <code>tool_calls.jsonl</code> (live, JSON Lines) and <code>tool_calls.pre-question-id.jsonl</code> (archived). Durable, queryable tool-call tracing — not a Postgres table, deliberately. Location unchanged by the reorg (still repo root, matching the <code>./logs:/app/logs</code> volume mount).</td></tr>
+          <tr><td class="cmd">legacy/schema_mssql.sql</td><td class="desc">The SQL Server counterpart to <code>001_schema.sql</code> — same <code>appdb</code> shape, T-SQL dialect. Moved to <code>legacy/</code> in the reorg — unreferenced by any code, CI, or Docker config in this project; part of the original dual-database lab, not the seven-build agent narrative.</td></tr>
+          <tr><td class="cmd">legacy/seed_mssql.sql</td><td class="desc">SQL Server counterpart to <code>002_seed.sql</code>. Same disposition as <code>schema_mssql.sql</code> above.</td></tr>
           <tr><td class="cmd">.vscode/, .pytest_cache/</td><td class="desc">Editor settings and pytest's own cache — auto-generated, not source.</td></tr>
         </tbody>
       </table>
@@ -777,7 +766,7 @@
         <colgroup><col style="width:44%"><col></colgroup>
         <thead><tr><th>Call</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td class="cmd">streamlit run app.py --server.address=0.0.0.0</td><td class="desc">Starts the dev server. The address flag is only needed inside Docker — Streamlit defaults to binding <code>localhost</code> only, unreachable through a container's port mapping otherwise; not needed for a plain local run.</td></tr>
+          <tr><td class="cmd">streamlit run src/app.py --server.address=0.0.0.0</td><td class="desc">Starts the dev server. The address flag is only needed inside Docker — Streamlit defaults to binding <code>localhost</code> only, unreachable through a container's port mapping otherwise; not needed for a plain local run.</td></tr>
           <tr><td class="cmd">st.session_state</td><td class="desc">A dict-like store that survives Streamlit's full-script rerun on every interaction — a plain Python variable would reset to its initial value every time. Holds live Python objects directly; no JSON serialization needed within one session.</td></tr>
           <tr><td class="cmd">if "key" not in st.session_state: st.session_state.key = default</td><td class="desc">The standard init-once guard — runs on every rerun, but only actually sets the default the first time.</td></tr>
           <tr><td class="cmd">st.chat_message(role)</td><td class="desc">A styled message bubble for a given role (<code>"user"</code>/<code>"assistant"</code>) — used as a <code>with</code> block, contents render inside it.</td></tr>
@@ -825,6 +814,8 @@
           <tr><td class="cmd">cygpath -m "$(pwd)/file.html"</td><td class="desc">Converts a Git Bash path to a Windows-style forward-slash path (<code>C:/...</code>) — necessary before building a <code>file:///</code> URL for headless Edge, since Git Bash's own <code>/c/...</code> path style isn't a valid Windows path and silently fails to load.</td></tr>
           <tr><td class="cmd">git log --oneline &lt;hash&gt;^..&lt;hash&gt;</td><td class="desc">The exact commit range between two specific commits (the leading <code>^</code> makes it inclusive of the first one) — used to pin down a build's full commit range for its handoff brief, rather than <code>-n</code>'s "last N commits."</td></tr>
           <tr><td class="cmd">pdftotext file.pdf -</td><td class="desc">Build 5 — extracts a PDF's actual text to stdout. Used specifically because a plain <code>grep</code> on a PDF's raw bytes can silently miss encoded/compressed text — the real check after redacting something from a rendered document.</td></tr>
+          <tr><td class="cmd">gh run view &lt;id&gt; --log-failed</td><td class="desc">2026-08-05 — a real CI failure email led here: 23 commits (all of Build 6 Phase 2 onward) had been sitting local-only, never pushed, so CI had never actually run against any of it until a history rewrite finally pushed everything. Root cause was <code>ci.yml</code>'s migration list silently missing <code>012_chat_rounds_schema.sql</code> — same bug class as <code>extract_doc_chunks.py</code>'s old hand-maintained <code>SOURCE_FILES</code> list. Fixed, then watched a fresh <code>gh run watch</code> go green before trusting it.</td></tr>
+          <tr><td class="cmd">git mv old/path new/path</td><td class="desc">2026-08-05 — used for the full repo reorg (<code>src/</code>, <code>migrations/</code>, <code>tests/</code>, <code>docs/</code>, <code>legacy/</code>), preserving each file's git history as a rename rather than a delete+add. The same CI failure that surfaced the migration-list bug prompted a full audit, which also found <code>.env.example</code> documenting 4 of the 10 required env vars and no <code>README.md</code> at all — both fixed in the same pass.</td></tr>
         </tbody>
       </table>
     </div>

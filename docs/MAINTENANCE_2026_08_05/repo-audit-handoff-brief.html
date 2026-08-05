@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Repo Audit &amp; Reorganization — Maintenance Handoff Brief</title>
+<style>
+  :root {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+      --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+      --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    --teal-tint: #17282A; --accent: #E2916A; --accent-tint: #2C2019;
+    --good: #6FCB9F; --good-tint: #16281F; --shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE; --accent: #B5502B; --accent-tint: #F7E9E2;
+    --good: #2E7D5B; --good-tint: #E4F1EA; --shadow: 0 1px 2px rgba(16,24,39,0.06);
+  }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  .eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none; }
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4vw, 38px); line-height: 1.15;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 66ch; margin: 0 0 28px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 28px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin-bottom: 40px; }
+  .meta dt { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 48px; }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    color: var(--teal); text-decoration: none; padding: 6px 12px; border: 1px solid var(--rule);
+    border-radius: 999px; background: var(--surface);
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+  section.doc-section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  section.doc-section > h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 24px; margin: 0 0 6px;
+    border-bottom: 2px solid var(--teal); padding-bottom: 10px;
+  }
+  section.doc-section > .section-note { font-size: 13.5px; color: var(--ink-2); margin: 10px 0 20px; max-width: 68ch; }
+  pre.code {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+    line-height: 1.55; margin: 10px 0 18px;
+  }
+  pre.code .fn { color: var(--muted); font-size: 11px; display: block; margin-bottom: 8px; letter-spacing: 0.04em; }
+  code { color: var(--ink); }
+  .cmt { color: var(--muted); }
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--teal); background: var(--surface); border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-size: 13.5px; }
+  .callout.warn { border-left-color: var(--accent); }
+  .callout.good { border-left-color: var(--good); }
+  .callout b { color: var(--ink); }
+  table.ref-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 14px 0 22px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); table-layout: fixed; }
+  table.ref-table thead th { text-align: left; background: var(--teal); color: var(--teal-ink); font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; padding: 10px 16px; }
+  table.ref-table td { padding: 10px 16px; border-top: 1px solid var(--rule); vertical-align: top; word-break: break-word; }
+  table.ref-table td.mono { font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace; font-size: 12px; color: var(--accent); white-space: normal; }
+  ul.check-list { list-style: none; margin: 0 0 18px; padding: 0; border-left: 2px solid var(--good); }
+  ul.check-list li { position: relative; padding: 4px 0 12px 22px; font-size: 13.5px; }
+  ul.check-list li::before { content: "✓"; position: absolute; left: -11px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--good); color: var(--surface); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  ul.check-list b { display: block; color: var(--ink); margin-bottom: 2px; }
+  ul.check-list span.detail { color: var(--ink-2); }
+  ol.step-list { margin: 0 0 18px; padding-left: 22px; font-size: 13.5px; }
+  ol.step-list li { margin-bottom: 8px; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); }
+  @media print {
+    @page { margin: 0.5in; }
+    .page { padding: 0; max-width: 100%; }
+    section.doc-section { break-inside: avoid-page; }
+    pre.code { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Maintenance · Handoff Brief</p>
+  <h1>Repo Audit &amp; Reorganization</h1>
+  <p class="lede">Prompted by a real GitHub Actions failure email, not a scheduled review — what the audit found, the folder restructure that came out of it, and every reference that had to be updated to keep it working. Standalone, not tied to a numbered build.</p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Complete — repo reorganized, CI re-verified green</dd></div>
+    <div><dt>Trigger</dt><dd>A CI failure email after the first push of Build 6 Phase 2 onward</dd></div>
+    <div><dt>Follows</dt><dd>Build 7 (verifier/critic agent)</dd></div>
+  </dl>
+
+  <nav class="toc">
+    <a href="#trigger">What Triggered This</a>
+    <a href="#ci-bug">The CI Bug</a>
+    <a href="#audit">Full Audit Findings</a>
+    <a href="#reorg">The Reorganization</a>
+    <a href="#verification">Verification</a>
+  </nav>
+
+  <section class="doc-section" id="trigger">
+    <h2>What Triggered This</h2>
+    <p class="section-note">
+      Not a scheduled review — a GitHub Actions failure email arrived after a routine push (stripping a co-author trailer from git history). Checking it against real run data surfaced something bigger than the immediate failure: <code>origin/main</code> had been 23 commits behind local for a while. All of Build 6 Phase 2 onward, and all of Build 7, had been built and committed locally but never pushed — that push was the first time any of it reached CI at all.
+    </p>
+    <div class="callout"><b>The lesson generalizes past this one incident.</b> A green CI badge only means something if CI actually ran against the code being described. Work sitting local-only, however well-tested by hand, isn't verified by a CI pipeline that's never seen it.</div>
+  </section>
+
+  <section class="doc-section" id="ci-bug">
+    <h2>The CI Bug Itself</h2>
+    <p class="section-note">CI correctly went red. 25 of 27 tests passed; <code>test_chat_rounds.py</code>'s two DB-touching tests failed with <code>relation "agent_scratch.chat_rounds" does not exist</code>.</p>
+    <p><b>Root cause:</b> <code>ci.yml</code>'s migration step is a hardcoded file list. <code>012_chat_rounds_schema.sql</code> (Build 6 Phase 3.5, persistent chat history) was added to the repo but never added to that list — in either the <code>test</code> job or the <code>eval</code> job. Same bug class as <code>extract_doc_chunks.py</code>'s old hand-maintained <code>SOURCE_FILES</code> list, which had already caused two separate incidents earlier in the project before being fixed with directory-scan auto-discovery.</p>
+    <div class="callout good"><b>Fixed:</b> both migration lists now include <code>012_chat_rounds_schema.sql</code>. Confirmed via a real <code>gh run watch</code> to a fully green run, not assumed from the diff alone.</div>
+  </section>
+
+  <section class="doc-section" id="audit">
+    <h2>Full Audit Findings</h2>
+    <p class="section-note">The CI bug prompted a wider question: what else has drifted the same way? Checked every hardcoded list, generated-vs-real-file relationship, and config-vs-code dependency in the project.</p>
+
+    <ul class="check-list">
+      <li><b>Build 7's verifier eval harness never ran in CI.</b><span class="detail"><code>run_verify_eval.py</code>/<code>verify_eval_cases.py</code> weren't invoked anywhere in <code>ci.yml</code>, and <code>verify_answer.py</code> wasn't in the <code>detect-changes</code> paths-filter — a change to the verifier's own logic wouldn't even re-trigger the eval job. Fixed: both added.</span></li>
+      <li><b><code>.env.example</code> documented 4 of the 10 env vars the code actually requires.</b><span class="detail"><code>ANTHROPIC_API_KEY</code> and both reader/writer role credentials were entirely absent. <code>tools.py</code> reads most of these with no default (<code>os.environ[...]</code>), so a fresh clone following the file as written hits an immediate <code>KeyError</code>. Rewritten with all 10, each with a one-line note on why it's needed.</span></li>
+      <li><b>No <code>README.md</code> existed.</b><span class="detail">A repo whose entire purpose is a portfolio artifact had no entry point for a visitor landing on it. Added.</span></li>
+      <li><b><code>db_test_py.py</code> — a stray early debugging script.</b><span class="detail">Same spirit as Build 5's deleted <code>api_test.py</code>: an early Postgres connectivity check querying a <code>customers</code> table no longer in the agent's actual scope. Its filename doesn't match either of pytest's discovery globs, so it was never at risk of silent collection — but it was dead, untested code sitting in the project root. Deleted.</span></li>
+      <li><b>An empty VS Code scratch file was tracked in git.</b><span class="detail"><code>Local Postgres.session.sql</code>, 0 bytes, auto-created by a SQL client extension. Deleted.</span></li>
+      <li><b>Two vestigial SQL Server files, unreferenced by anything.</b><span class="detail"><code>schema_mssql.sql</code>/<code>seed_mssql.sql</code> — part of the original dual-database lab environment, not connected to any code, CI step, or Docker config in the actual seven-build narrative. Relocated to <code>legacy/</code> rather than deleted, since <code>docker-compose.yml</code>'s <code>mssql_local</code> service still exists.</span></li>
+    </ul>
+
+    <p><b>Verified clean, not assumed:</b> <code>Dockerfile</code>'s <code>COPY</code> list against the actual file set, <code>requirements.txt</code> against every top-level import actually used, <code>.gitignore</code> coverage (including confirming <code>.venv/</code> was never at risk — it has its own internal <code>.gitignore</code>), and <code>extract_doc_chunks.py</code>'s glob-based doc discovery (already fixed correctly in an earlier build, confirmed not regressed).</p>
+  </section>
+
+  <section class="doc-section" id="reorg">
+    <h2>The Reorganization</h2>
+    <p class="section-note">A flat ~50-file repo root had never been restructured as the project grew across seven builds. Before moving anything, the actual Python import graph was checked directly — <code>run_eval.py</code>/<code>run_verify_eval.py</code> import <code>agent</code>/<code>verify_answer</code> directly, and every test file imports <code>tools</code>/<code>agent</code>/<code>logging_utils</code> directly. That ruled out splitting "core app" from "pipeline/eval scripts" into separate directories without adding <code>sys.path</code> configuration everywhere — so every first-party <code>.py</code> file stays together, flat, in one directory.</p>
+
+    <table class="ref-table">
+      <thead><tr><th>Folder</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">src/</td><td>All 22 first-party Python modules and scripts, flat — required by the import graph above.</td></tr>
+        <tr><td class="mono">migrations/</td><td>The 12 numbered SQL migrations, unchanged content.</td></tr>
+        <tr><td class="mono">tests/</td><td>All 7 <code>test_*.py</code> files. <code>pytest.ini</code> gained <code>testpaths = tests</code> and <code>pythonpath = src</code> so <code>import tools</code> etc. keeps resolving with zero changes to the test files themselves.</td></tr>
+        <tr><td class="mono">docs/</td><td>Renamed from <code>PROJECT_DIAGRAMS/</code>. Every per-build diagram/brief folder, plus the cheat sheet, moved in.</td></tr>
+        <tr><td class="mono">legacy/</td><td>The two vestigial SQL Server files.</td></tr>
+        <tr><td class="mono">data/</td><td>Unchanged location — already its own folder.</td></tr>
+      </tbody>
+    </table>
+
+    <p><b>Every reference updated, not just the files themselves:</b> <code>Dockerfile</code> (<code>COPY</code>/<code>CMD</code> now target <code>src/</code>), <code>docker-compose.yml</code> (<code>streamlit_app</code>'s command), <code>ci.yml</code> (both migration-loop path prefixes, every <code>python script.py</code> invocation, the paths-filter list), <code>extract_doc_chunks.py</code> (its glob target and hardcoded seed-file paths, since it reads <code>docs/</code> by relative path from the repo root regardless of its own new location in <code>src/</code>), and <code>.gitignore</code> (the personal working-style folder's path).</p>
+
+    <div class="callout"><b>All moves done via <code>git mv</code>, not delete-and-recreate.</b> Git records each as a rename, preserving <code>git log --follow</code> history for every file rather than starting it over.</div>
+
+    <div class="callout warn"><b>One known follow-up, not yet done:</b> <code>pg_local</code>'s <code>docs.chunks</code> table still has rows keyed by the old <code>PROJECT_DIAGRAMS/...</code> source-file strings. The next time <code>extract_doc_chunks.py</code> runs locally, those become orphaned duplicates alongside the new <code>docs/...</code>-keyed rows — same failure shape as the backslash/forward-slash duplicate bug from Build 6, different cause. Fix when next touching the docs-RAG pipeline locally: <code>DELETE FROM docs.chunks WHERE source_file LIKE 'PROJECT_DIAGRAMS/%' OR source_file = 'sql-test-01-cheatsheet.html'</code> before re-running the extract/embed pair. CI is unaffected — it always starts from an empty database.</div>
+  </section>
+
+  <section class="doc-section" id="verification">
+    <h2>Verification</h2>
+    <ul class="check-list">
+      <li><b><code>py_compile</code> across every moved file</b><span class="detail">Clean on all 22 <code>src/</code> files and all 7 <code>tests/</code> files.</span></li>
+      <li><b>Full Docker image build</b><span class="detail">Built against the reorganized paths end to end before committing, not assumed from reading the Dockerfile diff.</span></li>
+      <li><b>Live CI run, watched to completion</b><span class="detail"><code>detect-changes</code> ✓, <code>test</code> ✓ (all 27), <code>eval</code> correctly gated — confirmed via <code>gh run watch</code>, the same live-verification standard every prior build in this project has used.</span></li>
+      <li><b>Cheat sheet re-verified both ways</b><span class="detail"><code>--screenshot</code> and <code>--print-to-pdf</code>/<code>pdftoppm</code>, after every path reference across the Project Files table was rewritten to match the new structure.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    Repo audit and reorganization complete — CI green against the real, current file structure for the first time since Build 6 Phase 2. Ongoing cross-build command reference lives in <code>docs/sql-test-01-cheatsheet.html</code>.
+  </footer>
+
+</div>
+</body>
+</html>

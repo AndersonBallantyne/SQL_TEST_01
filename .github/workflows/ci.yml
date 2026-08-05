@@ -24,9 +24,11 @@ jobs:
           base: ${{ github.ref }}
           filters: |
             eval:
-              - 'agent.py'
-              - 'tools.py'
-              - 'eval_cases*.py'
+              - 'src/agent.py'
+              - 'src/tools.py'
+              - 'src/verify_answer.py'
+              - 'src/eval_cases*.py'
+              - 'src/verify_eval_cases.py'
 
   test:
     runs-on: ubuntu-latest
@@ -71,12 +73,12 @@ jobs:
       - name: Run schema migrations
         run: |
           export PGPASSWORD="$POSTGRES_PASSWORD"
-          for f in 001_schema.sql 002_seed.sql 003_readonly_role.sql \
-                   004_raw_schema.sql 005_clean_schema.sql \
-                   006_agent_scratch_role.sql 007_agent_scratch_schema.sql \
-                   008_add_summary_embedding.sql 009_add_summary_embedding_hnsw_index.sql \
-                   010_docs_chunks_schema.sql 011_metrics_history_schema.sql \
-                   012_chat_rounds_schema.sql; do
+          for f in migrations/001_schema.sql migrations/002_seed.sql migrations/003_readonly_role.sql \
+                   migrations/004_raw_schema.sql migrations/005_clean_schema.sql \
+                   migrations/006_agent_scratch_role.sql migrations/007_agent_scratch_schema.sql \
+                   migrations/008_add_summary_embedding.sql migrations/009_add_summary_embedding_hnsw_index.sql \
+                   migrations/010_docs_chunks_schema.sql migrations/011_metrics_history_schema.sql \
+                   migrations/012_chat_rounds_schema.sql; do
             echo "Applying $f"
             psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
           done
@@ -96,29 +98,30 @@ jobs:
       # dataset for the whole project - CI and local dev use the exact same file via ingest.py's
       # default, so there's no separate fixture concept left to keep in sync.
       - name: Ingest the official dataset
-        run: python ingest.py
+        run: python src/ingest.py
 
       - name: Transform raw -> clean
-        run: python transform.py
+        run: python src/transform.py
 
       - name: Embed allocation summaries
-        run: python embed_summaries.py
+        run: python src/embed_summaries.py
 
       - name: Extract & embed doc chunks
         run: |
-          python extract_doc_chunks.py
-          python embed_chunks.py
+          python src/extract_doc_chunks.py
+          python src/embed_chunks.py
 
       - name: Run pytest
         run: pytest -v
 
   eval:
-    # Runs only on a merge to main that actually touches agent behavior (agent.py, tools.py,
-    # eval_cases*.py) - both conditions decided explicitly earlier in Build 5: the real cost of
-    # a full eval run is cents on claude-haiku-4-5, but running it on every WIP push would still
-    # be pure noise, and ANTHROPIC_API_KEY becoming a live Actions secret is worth minimizing
-    # exposure on. `needs: test` also means this never fires against a build that already
-    # failed its regular tests.
+    # Runs only on a merge to main that actually touches agent or verifier behavior (agent.py,
+    # tools.py, verify_answer.py, eval_cases*.py, verify_eval_cases.py) - both conditions decided
+    # explicitly earlier in Build 5: the real cost of a full eval run is cents on
+    # claude-haiku-4-5, but running it on every WIP push would still be pure noise, and
+    # ANTHROPIC_API_KEY becoming a live Actions secret is worth minimizing exposure on.
+    # `needs: test` also means this never fires against a build that already failed its
+    # regular tests.
     needs: [test, detect-changes]
     if: github.ref == 'refs/heads/main' && needs.detect-changes.outputs.eval == 'true'
     runs-on: ubuntu-latest
@@ -166,12 +169,12 @@ jobs:
       - name: Run schema migrations
         run: |
           export PGPASSWORD="$POSTGRES_PASSWORD"
-          for f in 001_schema.sql 002_seed.sql 003_readonly_role.sql \
-                   004_raw_schema.sql 005_clean_schema.sql \
-                   006_agent_scratch_role.sql 007_agent_scratch_schema.sql \
-                   008_add_summary_embedding.sql 009_add_summary_embedding_hnsw_index.sql \
-                   010_docs_chunks_schema.sql 011_metrics_history_schema.sql \
-                   012_chat_rounds_schema.sql; do
+          for f in migrations/001_schema.sql migrations/002_seed.sql migrations/003_readonly_role.sql \
+                   migrations/004_raw_schema.sql migrations/005_clean_schema.sql \
+                   migrations/006_agent_scratch_role.sql migrations/007_agent_scratch_schema.sql \
+                   migrations/008_add_summary_embedding.sql migrations/009_add_summary_embedding_hnsw_index.sql \
+                   migrations/010_docs_chunks_schema.sql migrations/011_metrics_history_schema.sql \
+                   migrations/012_chat_rounds_schema.sql; do
             echo "Applying $f"
             psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
           done
@@ -185,21 +188,29 @@ jobs:
             "ALTER ROLE appdb_agent_writer WITH PASSWORD '$POSTGRES_AGENT_WRITER_PASSWORD';"
 
       - name: Ingest the official dataset
-        run: python ingest.py
+        run: python src/ingest.py
 
       - name: Transform raw -> clean
-        run: python transform.py
+        run: python src/transform.py
 
       - name: Embed allocation summaries
-        run: python embed_summaries.py
+        run: python src/embed_summaries.py
 
       - name: Extract & embed doc chunks
         run: |
-          python extract_doc_chunks.py
-          python embed_chunks.py
+          python src/extract_doc_chunks.py
+          python src/embed_chunks.py
 
       - name: Run eval harness (round 1)
-        run: python run_eval.py
+        run: python src/run_eval.py
 
       - name: Run eval harness (round 2)
-        run: python run_eval.py eval_cases_round2
+        run: python src/run_eval.py eval_cases_round2
+
+      # Build 7 added a second agent (the verifier) with its own eval harness - this never got
+      # wired into CI when it was built (found 2026-08-05 during a full project audit, same bug
+      # class as the migration-list staleness fix above: a new capability shipped without its
+      # own CI coverage). Confirms the verifier's grounded/ungrounded judgment stays correct,
+      # not just that the main agent's answers do.
+      - name: Run verifier eval harness
+        run: python src/run_verify_eval.py

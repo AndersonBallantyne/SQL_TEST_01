@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY agent.py tools.py logging_utils.py app.py verify_answer.py ./
+COPY src/agent.py src/tools.py src/logging_utils.py src/app.py src/verify_answer.py ./src/
 
-CMD ["python", "agent.py"]
+CMD ["python", "src/agent.py"]
 

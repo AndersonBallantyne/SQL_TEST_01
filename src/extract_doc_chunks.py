@@ -12,16 +12,19 @@ load_dotenv(encoding="utf-8-sig")
 # verifying "are the agent's docs current"). Same root cause both times: a manual list
 # with no directory-scan fallback. Fixed at the root this time instead of patched again -
 # every file matching this glob is included automatically, present and future.
+# Paths are relative to the repo root (CWD when this script is invoked as
+# `python src/extract_doc_chunks.py`, matching every other script in this project), not to
+# this file's own location in src/ - docs/ was PROJECT_DIAGRAMS/ before the 2026-08-05 reorg.
 SOURCE_FILES = [
-    "sql-test-01-cheatsheet.html",
-    "PROJECT_DIAGRAMS/project-overview.html",
+    "docs/sql-test-01-cheatsheet.html",
+    "docs/project-overview.html",
 ] + sorted(
     # glob returns os.sep-joined paths - backslash on Windows - which would silently create
     # a second, duplicate set of rows under a different source_file string every time this
     # runs on Windows vs. however it ran before. Normalized to "/" so source_file stays a
     # stable key across OSes and reruns, matching every other path string in this file.
     path.replace(os.sep, "/")
-    for path in glob.glob("PROJECT_DIAGRAMS/**/*handoff-brief*.html", recursive=True)
+    for path in glob.glob("docs/**/*handoff-brief*.html", recursive=True)
 )
 
 
