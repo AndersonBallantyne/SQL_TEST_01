@@ -29,6 +29,8 @@ jobs:
               - 'src/verify_answer.py'
               - 'src/eval_cases*.py'
               - 'src/verify_eval_cases.py'
+              - 'src/run_eval.py'
+              - 'src/run_verify_eval.py'
 
   test:
     runs-on: ubuntu-latest
