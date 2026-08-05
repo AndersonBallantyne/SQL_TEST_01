@@ -75,7 +75,8 @@ jobs:
                    004_raw_schema.sql 005_clean_schema.sql \
                    006_agent_scratch_role.sql 007_agent_scratch_schema.sql \
                    008_add_summary_embedding.sql 009_add_summary_embedding_hnsw_index.sql \
-                   010_docs_chunks_schema.sql 011_metrics_history_schema.sql; do
+                   010_docs_chunks_schema.sql 011_metrics_history_schema.sql \
+                   012_chat_rounds_schema.sql; do
             echo "Applying $f"
             psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
           done
@@ -169,7 +170,8 @@ jobs:
                    004_raw_schema.sql 005_clean_schema.sql \
                    006_agent_scratch_role.sql 007_agent_scratch_schema.sql \
                    008_add_summary_embedding.sql 009_add_summary_embedding_hnsw_index.sql \
-                   010_docs_chunks_schema.sql 011_metrics_history_schema.sql; do
+                   010_docs_chunks_schema.sql 011_metrics_history_schema.sql \
+                   012_chat_rounds_schema.sql; do
             echo "Applying $f"
             psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
           done
