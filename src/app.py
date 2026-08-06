@@ -1,7 +1,7 @@
 import json
 import streamlit as st
 from agent import ask_agent, PROCESS_ID
-from logging_utils import get_tool_calls, get_verification
+from logging_utils import get_tool_calls, get_verification, get_usage
 from tools import save_chat_round, load_chat_rounds
 
 # Streamlit reruns this whole script on every interaction, so history has to live in
@@ -22,23 +22,33 @@ if "rounds" not in st.session_state:
         # re-derives display data the same way a live session already does, no duplication.
         round["tool_calls"] = get_tool_calls(round["question_id"])
         round["verification"] = get_verification(round["question_id"])
+        round["usage"] = get_usage(round["question_id"])
 
     st.session_state.rounds = persisted
 
 
-def render_tool_call_details(tool_calls, nested):
+def render_tool_call_details(tool_calls, usage, nested):
     # Streamlit doesn't allow nesting st.expander inside another st.expander - nested=True
     # (a collapsed FAQ round) renders this plainly instead; nested=False (the one expanded
     # round) keeps the real collapsible widget, since it's never itself inside an expander.
     tool_calls = tool_calls or []
+    # Token usage is per-question (every API turn, not per tool call) - logged alongside the
+    # final answer in logs/tool_calls.jsonl, so it's available for reloaded rounds too, not
+    # just ones answered live this session. None only for entries logged before this existed.
+    token_note = ""
+    if usage:
+        total = usage["input_tokens"] + usage["output_tokens"]
+        token_note = f" · {total:,} tokens ({usage['input_tokens']:,} in / {usage['output_tokens']:,} out)"
+
     if nested:
-        st.caption(f"Tools used ({len(tool_calls)})" if tool_calls else "Answered directly - no tools were called for this question.")
+        summary = f"Tools used ({len(tool_calls)})" if tool_calls else "Answered directly - no tools were called for this question."
+        st.caption(summary + token_note)
         for call in tool_calls:
             st.markdown(f"**{call['tool_name']}**")
             st.code(json.dumps(call["input"], indent=2), language="json")
             st.caption(f"{call['latency_ms']:.0f} ms")
     else:
-        with st.expander(f"Tools used ({len(tool_calls)})"):
+        with st.expander(f"Tools used ({len(tool_calls)}){token_note}"):
             if not tool_calls:
                 st.caption("Answered directly - no tools were called for this question.")
             for call in tool_calls:
@@ -63,7 +73,7 @@ def render_expanded_round(round):
     with st.chat_message("assistant"):
         st.markdown(round["answer_text"])
         render_verification_badge(round["verification"])
-        render_tool_call_details(round["tool_calls"], nested=False)
+        render_tool_call_details(round["tool_calls"], round["usage"], nested=False)
 
 
 def render_collapsed_round(round):
@@ -73,7 +83,7 @@ def render_collapsed_round(round):
     with st.expander(f"Q: {round['user_question']}"):
         st.markdown(round["answer_text"])
         render_verification_badge(round["verification"])
-        render_tool_call_details(round["tool_calls"], nested=True)
+        render_tool_call_details(round["tool_calls"], round["usage"], nested=True)
 
 
 rounds = st.session_state.rounds
@@ -105,7 +115,7 @@ if user_question:
         else:
             st.markdown(response["answer"])
         render_verification_badge(verification)
-        render_tool_call_details(tool_calls, nested=False)
+        render_tool_call_details(tool_calls, response.get("usage"), nested=False)
 
     st.session_state.rounds.append({
         "question_id": response["question_id"],
@@ -114,6 +124,7 @@ if user_question:
         "full_messages": response["full_messages"],
         "tool_calls": tool_calls,
         "verification": verification,
+        "usage": response.get("usage"),
     })
 
     save_chat_round(response["question_id"], user_question, response["answer"], response["full_messages"])

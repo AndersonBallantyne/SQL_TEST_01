@@ -75,11 +75,30 @@ def get_final_answer(question_id):
                 return entry["answer"]
     return None
 
-def log_final_answer(question_id, user_question, answer, error=None):
+def get_usage(question_id):
+    # Same log_final_answer entry as get_final_answer, just pulling the token fields instead -
+    # a separate getter rather than overloading get_final_answer's plain-string return, since
+    # most callers (verify_answer.py's CLI, run_eval.py) want just the answer text. Returns
+    # None for entries logged before input_tokens/output_tokens existed (.get(...) default),
+    # not just for a missing question_id.
+    if not os.path.exists(LOG_PATH):
+        return None
+
+    with open(LOG_PATH) as f:
+        for line in f:
+            entry = json.loads(line)
+            if entry.get("question_id") == question_id and "answer" in entry:
+                if entry.get("input_tokens") is None and entry.get("output_tokens") is None:
+                    return None
+                return {"input_tokens": entry.get("input_tokens"), "output_tokens": entry.get("output_tokens")}
+    return None
+
+def log_final_answer(question_id, user_question, answer, error=None, input_tokens=None, output_tokens=None):
     # A distinct event shape from log_tool_call's entries (no tool_name/turn/input/output/
     # latency_ms) - the model's final answer isn't a tool call, it's what ask_agent() returns
     # to the caller. Added 2026-07-29 after discovering the log had no record of it at all,
-    # while verifying Build 6 Phase 2's boundary test against real browser Q&A.
+    # while verifying Build 6 Phase 2's boundary test against real browser Q&A. Token counts
+    # added 2026-08-06 (display was already showing them - now durable across a restart too).
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
     entry = {
         "timestamp": datetime.now().isoformat(),
@@ -87,6 +106,8 @@ def log_final_answer(question_id, user_question, answer, error=None):
         "user_question": user_question,
         "answer": answer,
         "error": error,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
     }
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry, default=str) + "\n")

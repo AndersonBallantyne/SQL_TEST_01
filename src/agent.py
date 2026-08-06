@@ -160,6 +160,11 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
 
     turn = 0
     answer = ""
+    # Running total across every API turn for this question - surfaced in the console and the
+    # Streamlit "Tools used" caption, and logged alongside the final answer so it survives a
+    # restart the same way the answer itself does.
+    total_input_tokens = 0
+    total_output_tokens = 0
     while turn < max_tool_turns:
         turn += 1
         try:
@@ -172,9 +177,12 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
             )
         except anthropic.APIError as e:
             print(f"Anthropic API error: {e}")
-            log_final_answer(question_id, user_question, answer, error=str(e))
-            return {"answer": answer, "error": str(e), "full_messages": messages, "question_id": question_id}
+            log_final_answer(question_id, user_question, answer, error=str(e), input_tokens=total_input_tokens, output_tokens=total_output_tokens)
+            usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
+            return {"answer": answer, "error": str(e), "full_messages": messages, "question_id": question_id, "usage": usage}
 
+        total_input_tokens += response.usage.input_tokens
+        total_output_tokens += response.usage.output_tokens
 
         for block in response.content:
             if block.type == "text":
@@ -182,12 +190,12 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
                 answer = block.text
             elif block.type == "tool_use":
                 print(f"[TOOL CALL] {block.name}({block.input})")
-        print(f"[stop_reason: {response.stop_reason}]")
+        print(f"[stop_reason: {response.stop_reason}] [tokens: in={response.usage.input_tokens} out={response.usage.output_tokens}]")
 
         messages.append({"role": "assistant", "content": response.content})
 
         if response.stop_reason != "tool_use":
-            log_final_answer(question_id, user_question, answer)
+            log_final_answer(question_id, user_question, answer, input_tokens=total_input_tokens, output_tokens=total_output_tokens)
             try:
                 evidence = get_tool_calls(question_id, include_output=True)
                 if evidence:
@@ -195,7 +203,9 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
                     log_verification(question_id, user_question, answer, supported, reason)
             except Exception as e:
                 print(f"[VERIFY ERROR] {e}")
-            return {"answer": answer, "error": None, "full_messages": messages, "question_id": question_id}
+            usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
+            print(f"[TOTAL TOKENS] in={total_input_tokens} out={total_output_tokens} total={total_input_tokens + total_output_tokens}")
+            return {"answer": answer, "error": None, "full_messages": messages, "question_id": question_id, "usage": usage}
 
 
 
@@ -251,8 +261,9 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
         messages.append({"role": "user", "content": tool_results})
 
     print(f"Stopped after reaching the {max_tool_turns}-turn limit.")
-    log_final_answer(question_id, user_question, answer, error="max_turns_reached")
-    return {"answer": answer, "error": "max_turns_reached", "full_messages": messages, "question_id": question_id}
+    log_final_answer(question_id, user_question, answer, error="max_turns_reached", input_tokens=total_input_tokens, output_tokens=total_output_tokens)
+    usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
+    return {"answer": answer, "error": "max_turns_reached", "full_messages": messages, "question_id": question_id, "usage": usage}
 
 
 
