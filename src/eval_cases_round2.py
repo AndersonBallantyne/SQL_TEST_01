@@ -14,7 +14,13 @@ EVAL_CASES = [
         "expected_keywords": ["DRAW"],
     },
     {
-        "question": "How many customers are in the database?",
+        # Was "How many customers are in the database?" - genuinely ambiguous once the
+        # legacy customers table left scope (2026-07-30, SYSTEM_PROMPT's "ignore any
+        # unrelated seed tables" line): "customer" has no real column to map to, so the
+        # model non-deterministically picked either patron_email_domain (4, intended) or
+        # patron_department (16) - confirmed flaky via 3 live re-runs, 2/3 vs 1/3, not a
+        # one-off. Reworded to name the actual column so there's nothing left to guess.
+        "question": "How many distinct patron email domains are there?",
         "expected_tool": "run_sql_query",
         "expected_keywords": ["4"],
     },

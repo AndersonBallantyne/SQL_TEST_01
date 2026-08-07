@@ -54,10 +54,12 @@ EVAL_CASES = [
         # [] - see tools.py) before ever answering; once that was fixed, it still failed
         # because "docs.chunks" (the original keyword) is an internal table name no correct
         # prose answer would ever say back to the user. Real filenames, first/last in
-        # sequence, catch truncation too.
+        # sequence, catch truncation too - the "last" keyword needs updating each time a new
+        # migration lands (was 009, now 013 after 2026-08-06's allocation_items normalization),
+        # or it stops actually testing for truncation of the current full list.
         "question": "List all the SQL migration files used in this project.",
         "expected_tool": "run_sql_query",
-        "expected_keywords": ["001_schema.sql", "009_add_summary_embedding_hnsw_index.sql"],
+        "expected_keywords": ["001_schema.sql", "013_allocation_items_schema.sql"],
     },
     {
         # cleanup_table uses a distinct eval-only name (not the real domain_avg_duration
