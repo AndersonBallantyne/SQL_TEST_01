@@ -1,8 +1,18 @@
 import os
+import sys
 import json
 import uuid
 from dotenv import load_dotenv
 import anthropic
+
+# Windows' Git Bash/PowerShell terminals default Python's stdout to cp1252, which can't
+# encode plenty of characters Claude's own formatted output routinely uses (arrows, smart
+# quotes, checkmarks) - a real crash (UnicodeEncodeError), not hypothetical: hit live
+# 2026-08-06 mid eval-run, non-deterministically, only on whichever run's answer text
+# happened to include one. reconfigure() (Python 3.7+) is a no-op on platforms that already
+# default to UTF-8 (Linux CI runners), so this is safe everywhere, not Windows-only code.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 #from tools import run_sql_query, list_tables, describe_table, save_dataframe
 from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries, search_docs
 import time
@@ -22,7 +32,7 @@ PROCESS_ID = uuid.uuid4().hex[:8]
 tools = [
     {
         "name": "run_sql_query",
-        "description": "Run a read-only SQL query against the appdb Postgres database and return the resulting rows. Results are capped at 200 rows - if more rows matched, a final {'message': ...} entry says so. Add your own LIMIT/WHERE to narrow the query, or use an aggregate query (COUNT/GROUP BY) instead of fetching individual rows when you need a total or a breakdown rather than the raw rows themselves.",
+        "description": "Run a read-only SQL query against the appdb Postgres database and return the resulting rows. Results are capped at 200 rows - if more rows matched, a final {'message': ...} entry says so. Add your own LIMIT/WHERE to narrow the query, or use an aggregate query (COUNT/GROUP BY) instead of fetching individual rows when you need a total or a breakdown rather than the raw rows themselves. Any single value over 500 characters is also truncated with a '...[truncated, N total chars]' marker - this affects long summary text and especially the summary_embedding vector column, so avoid selecting summary_embedding directly (use SELECT with explicit column names, not SELECT *, when a table has one).",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -131,7 +141,13 @@ For questions about the general kind or theme of equipment (e.g. "camera gear", 
 For questions about this project's own history, design decisions, or documentation, use search_docs; for "list every X" style questions about the documentation itself, prefer run_sql_query against docs.chunks instead.
 docs.chunks has columns chunk_id, source_file, chunk_text (plus an embedding column) - describe_table won't show these since it's a bare-name lookup, not schema-qualified. For "list every X" questions, don't guess keywords with ILIKE against chunk_text; instead query chunk_text WHERE source_file = 'sql-test-01-cheatsheet.html' - that file is this project's own living cheat sheet and already enumerates every file, command, and SQL migration used, in order.
 
-clean.allocations has no separate table for individual checked-out items - each allocation's specific equipment list is stored as a single delimited text string in the summary column (e.g., "ITEM NAME - TAG | ITEM NAME - TAG | ..."). Don't look for or assume a separate items/resources table exists.
+clean.allocations' summary column stores each checkout's equipment as one delimited text string (e.g., "ITEM NAME - TAG | ITEM NAME - TAG | ...", sometimes prefixed "Returned: "). Don't parse it yourself.
+
+For anything about individual items - counts, categories/types, accessories vs. base equipment, or return status - use clean.allocation_items instead, one row per item already extracted from summary: allocation_id, item_name, category, is_accessory (boolean), is_returned (boolean), tag. It was built once, offline, from a full audit of every summary value, so category and is_accessory are already-resolved facts, not something to re-derive from keywords - e.g. filter WHERE category = 'camera' AND is_accessory = false rather than guessing brand names or ILIKE-matching on 'camera' (which would wrongly include "NIKON Z6 III CAMERA CASE" and wrongly exclude "NIKON Z6 III MIRRORLESS BODY", which has no literal "camera" in its name). Run describe_table on it, or SELECT DISTINCT category to see what's available, before assuming a category name.
+
+Default rule, not just an example: "how many X do you have" or "how many types of X" always means base equipment, not its accessories - always add AND is_accessory = false to these queries, for every category, unless the user explicitly asks about accessories/parts/chargers/cases themselves. A category (e.g. 'laptop', 'microphone') groups an item with its accessories together on purpose, precisely so a query can separate them with this one flag - dropping the filter silently folds chargers, cases, batteries, and cables into the count.
+
+If a question needs a subcategory count compared against a broader total (e.g. per-model counts vs. an overall count), compute both with the exact same WHERE condition - counts computed under different filters will look contradictory even when each is individually correct.
 """
 MAX_TOOL_TURNS = 15
 
