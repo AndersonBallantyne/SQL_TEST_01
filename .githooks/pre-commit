@@ -1,0 +1,43 @@
+#!/bin/sh
+# Re-syncs the docs.chunks RAG index whenever a commit touches a source doc for it,
+# so the local search index never lags behind what actually gets committed.
+#
+# Why this exists: 2026-08-07 - a doc was updated (a new incident callout added to
+# the cheat sheet) and docs.chunks was never re-extracted/re-embedded locally
+# afterward. A real question ("what was the latest incident?") then got answered
+# from a day-stale index - not a code bug, the agent and verifier both behaved
+# correctly against the evidence they had, the evidence itself was just old.
+# CI already rebuilds this index from scratch on every push, so production is
+# never actually stale; this closes the same gap for local testing between commits.
+#
+# Must match extract_doc_chunks.py's own SOURCE_FILES exactly, or this hook and the
+# real indexing logic can drift apart - the three patterns below are that file's
+# explicit list (cheatsheet, project-overview) plus its handoff-brief glob.
+changed_docs=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^docs/(sql-test-01-cheatsheet\.html|project-overview\.html|.*handoff-brief.*\.html)$')
+
+if [ -z "$changed_docs" ]; then
+    exit 0
+fi
+
+echo "docs changed, refreshing docs.chunks search index:"
+echo "$changed_docs" | sed 's/^/  /'
+
+# Windows venv layout (Scripts/python.exe) vs. POSIX (bin/python) - CI never uses
+# this hook at all (it has its own explicit extract/embed steps), so this only
+# needs to cover whatever platform a human is actually committing from.
+if [ -x ".venv/Scripts/python.exe" ]; then
+    PYTHON=".venv/Scripts/python.exe"
+elif [ -x ".venv/bin/python" ]; then
+    PYTHON=".venv/bin/python"
+else
+    echo "No .venv found - can't refresh docs.chunks. Set one up (see .env.example) or commit with --no-verify to skip this check."
+    exit 1
+fi
+
+"$PYTHON" src/extract_doc_chunks.py && "$PYTHON" src/embed_chunks.py
+if [ $? -ne 0 ]; then
+    echo "docs.chunks refresh failed - commit aborted. Fix the error above, or commit with --no-verify to skip (the index will just stay stale until the next successful refresh)."
+    exit 1
+fi
+
+exit 0

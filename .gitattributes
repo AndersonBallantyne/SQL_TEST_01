@@ -2,3 +2,4 @@
 *.sql text
 *.yml text
 *.md text
+.githooks/* text eol=lf
