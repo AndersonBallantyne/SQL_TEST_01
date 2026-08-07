@@ -16,6 +16,30 @@ load_dotenv(encoding="utf-8-sig")
 # turn's prompt past the 200k-token API ceiling (Build 6 Phase 2 testing, 2026-07-29).
 MAX_SQL_RESULT_ROWS = 200
 
+# A second, distinct guard from MAX_SQL_RESULT_ROWS above - that one caps row COUNT, this
+# caps a single VALUE's size, and a query can blow past the token budget with either one
+# alone even while respecting the other. Confirmed necessary live, not hypothetical
+# (2026-08-06): real questions asking about equipment "checkouts"/"breakdowns" produced
+# GROUP BY summary / SELECT DISTINCT summary results well under 200 rows (as few as 20)
+# where each row's summary field - a pipe-delimited concatenation of every item in one
+# checkout - ran 1,500-2,000+ characters on its own; one real case hit 70,007 total tokens
+# for a single question from this alone. A historical sweep of the whole log found the
+# same shape 31 separate times (docs.chunks full-text pulls and a stray SELECT * that
+# included the summary_embedding vector column show the identical pattern), including one
+# 936,551-character single result that's the likely root cause of the exact API-ceiling
+# outage MAX_SQL_RESULT_ROWS above was built to prevent.
+MAX_FIELD_CHARS = 500
+
+def _cap_field_size(value):
+    # Only touches values that actually exceed the cap - a short int/date/string round-trips
+    # unchanged, in its native type, so this can't silently corrupt normal small results.
+    if value is None:
+        return value
+    text = str(value)
+    if len(text) <= MAX_FIELD_CHARS:
+        return value
+    return f"{text[:MAX_FIELD_CHARS]}... [truncated, {len(text):,} total chars]"
+
 def run_sql_query(sql: str, params: list | None = None) -> list[dict]:
     # App-level guard, not the real boundary - a model that ignored this entirely still
     # can't write anything, since this connects as appdb_reader (read-only at the DB level).
@@ -46,7 +70,7 @@ def run_sql_query(sql: str, params: list | None = None) -> list[dict]:
     if truncated:
         rows = rows[:MAX_SQL_RESULT_ROWS]
 
-    result = [dict(zip(columns, row)) for row in rows]
+    result = [{col: _cap_field_size(val) for col, val in zip(columns, row)} for row in rows]
     if truncated:
         # Same sentinel-dict pattern as search_summaries/search_docs's no-match message
         # below - signals the limitation back to the model through the normal result

@@ -76,7 +76,13 @@ for case in EVAL_CASES:
     # the first time this eval job ran against that logging shape at all - it's been broken
     # since log_final_answer was added, just never actually exercised in CI until now.
     tools_called = sorted({entry["tool_name"] for entry in new_entries if "tool_name" in entry})
-    tool_ok = case["expected_tool"] in tools_called
+    # expected_tool can be a single tool name (most cases - one clear right answer) or a list
+    # (a case where several different tools are all legitimate ways to reach the same correct
+    # conclusion, e.g. discovering a question is out of scope - checking one exact tool would
+    # itself be a flaky assertion, confirmed live 2026-08-06 when the same question grounded
+    # itself via list_tables most of the time but search_docs or run_sql_query some runs).
+    expected_tools = case["expected_tool"] if isinstance(case["expected_tool"], list) else [case["expected_tool"]]
+    tool_ok = any(t in tools_called for t in expected_tools)
 
     # Strips commas so "1,243" still matches an expected_keywords entry of "1243" - found
     # necessary live when a round-2 case's real answer used comma-formatted numbers.
