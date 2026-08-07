@@ -1,0 +1,14 @@
+# fileWatcherType = "none" disables Streamlit's dev-mode file watcher entirely - the right
+# trade for a running/deployed app that isn't being actively hot-edited while in use, not just
+# a cosmetic fix. That watcher is what previously produced harmless-looking
+# "ModuleNotFoundError: No module named 'torchvision'" noise (it walks every loaded module's
+# path to know what to watch, and hits transformers' optional vision submodules along the way -
+# see project memory, first investigated Build 6/7). What was never measured until real
+# latency tracking existed (2026-08-06): that walk isn't just noisy, it's slow - the first
+# search_summaries/search_docs call in a fresh process measured 2.8-2.9s in every plain-Python
+# test today, but 36.5 SECONDS through the live Streamlit app, with the torchvision walk
+# timestamped inside that exact window. This turns a real, user-facing latency spike (not just
+# log noise) into the same ~3s cold-start cost search_docs/search_summaries already have
+# outside Streamlit.
+[server]
+fileWatcherType = "none"
