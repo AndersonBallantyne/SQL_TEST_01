@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Incident Audit — Token-Burn &amp; Verifier Investigation, 2026-08-06</title>
+<style>
+  :root {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768; --muted: #7C8894;
+    --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9; --teal-tint: #E7EEEE;
+    --accent: #B5502B; --accent-tint: #F7E9E2; --red: #9A2B2B; --red-tint: #F6E6E6;
+    --green: #1E6B3A; --green-tint: #E6F1EA; --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD; --muted: #8CA0A3;
+      --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB; --teal-tint: #17282A;
+      --accent: #E2916A; --accent-tint: #2C2019; --red: #E28A8A; --red-tint: #2A1B1B;
+      --green: #7FD9A0; --green-tint: #16241C; --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD; --muted: #8CA0A3;
+    --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB; --teal-tint: #17282A;
+    --accent: #E2916A; --accent-tint: #2C2019; --red: #E28A8A; --red-tint: #2A1B1B;
+    --green: #7FD9A0; --green-tint: #16241C; --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768; --muted: #7C8894;
+    --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9; --teal-tint: #E7EEEE;
+    --accent: #B5502B; --accent-tint: #F7E9E2; --red: #9A2B2B; --red-tint: #F6E6E6;
+    --green: #1E6B3A; --green-tint: #E6F1EA; --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+  h1 { font-size: 1.7rem; margin: 0 0 0.3rem; }
+  h2 { font-size: 1.25rem; margin: 2.4rem 0 0.8rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); color: var(--teal); }
+  h3 { font-size: 1.02rem; margin: 1.4rem 0 0.5rem; }
+  .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.6rem; }
+  .meta-box { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 1rem 1.3rem; box-shadow: var(--shadow); font-size: 0.9rem; }
+  .meta-box div { margin: 0.2rem 0; }
+  .meta-box b { color: var(--ink-2); }
+  code { font-family: "Consolas", "IBM Plex Mono", monospace; background: var(--teal-tint); color: var(--teal); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.88em; }
+  pre code { display: block; padding: 0.8rem 1rem; overflow-x: auto; white-space: pre; }
+  a { color: var(--teal); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-radius: 10px; padding: 1rem 1.3rem; margin: 1rem 0; font-size: 0.92rem; }
+  .callout.finding { background: var(--accent-tint); border-left: 4px solid var(--accent); }
+  .callout.decision { background: var(--teal-tint); border-left: 4px solid var(--teal); }
+  .callout.bad { background: var(--red-tint); border-left: 4px solid var(--red); }
+  .callout.good { background: var(--green-tint); border-left: 4px solid var(--green); }
+  .phase { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 1.3rem 1.5rem; margin: 1.2rem 0; box-shadow: var(--shadow); }
+  .phase-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .phase-head h3 { margin: 0; }
+  .ts { font-family: "Consolas", monospace; font-size: 0.8rem; color: var(--muted); background: var(--teal-tint); border-radius: 6px; padding: 0.15rem 0.5rem; }
+  .qid { font-family: "Consolas", monospace; font-size: 0.75rem; color: var(--muted); }
+  .verdict { font-family: "Consolas", monospace; font-size: 0.75rem; font-weight: 600; border-radius: 5px; padding: 0.1rem 0.5rem; }
+  .verdict.pass { background: var(--green-tint); color: var(--green); }
+  .verdict.fail { background: var(--red-tint); color: var(--red); }
+  .verdict.correct-fail { background: var(--accent-tint); color: var(--accent); }
+  ul.tight li { margin: 0.3rem 0; }
+  .caveat { font-size: 0.85rem; color: var(--muted); font-style: italic; }
+  img.evidence { max-width: 100%; border-radius: 8px; border: 1px solid var(--rule); box-shadow: var(--shadow); margin: 0.8rem 0; }
+  .figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 0.3rem; }
+  @media print { body { font-size: 12px; } .phase { box-shadow: none; break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Incident Audit: Token-Burn &amp; Verifier Investigation</h1>
+<p class="subtitle">SQL_TEST_01 — Ask-Your-Database Agent (Builds 6/7) — 2026-08-06</p>
+
+<div class="meta-box">
+  <div><b>Scope:</b> everything from the token/latency/tool-use tracking request through full browser-confirmed resolution, same working day.</div>
+  <div><b>Timezone:</b> all times below are Pacific (UTC-7), matching the git commit history and local machine clock. Raw application logs (<code>logs/tool_calls.jsonl</code>) are recorded in UTC by the container; every timestamp in this report has been converted (UTC − 7h) for consistency.</div>
+  <div><b>Evidence basis:</b> every timestamp and token count below is pulled directly from <code>logs/tool_calls.jsonl</code>, git commit history, or command output captured live during the investigation — not reconstructed from memory. Where a stretch of work (prompt edits, code review, diagnosis) produced no independently-timestamped log entry, this report says so explicitly rather than inventing a time for it.</div>
+</div>
+
+<h2>Executive summary</h2>
+<p>A routine feature request — add token count to the UI alongside the existing latency/tool-use display — surfaced, in order: a verifier false-positive, a 36.5-second latency regression, and a single question that cost <b>177,090 tokens</b> and returned a <b>wrong answer</b>. Chasing the wrong-answer bug through four iterations of prompt engineering repeatedly fixed one symptom while exposing another, until the user identified the actual root cause: the source data stored every checkout as one unstructured, delimited text blob, and every fix so far had been the agent (and the verifier) compensating for that at query time, on every question, instead of the data being modeled correctly once. Normalizing the data (a new <code>clean.allocation_items</code> table, one row per item, built once offline) resolved every open symptom at once — token cost, correctness, and the verifier's blind spots — without needing further prompt patches. Final state, browser-confirmed: the original 177,090-token/wrong-answer case now costs <b>8,024 tokens</b> and answers correctly (a 95.5% reduction), and three other categories tested for the first time in the browser (laptops, microphones, accessories) all also answer correctly and cheaply on the first try.</p>
+
+<h2>Timeline</h2>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 0 — Feature ships, first blind spot surfaces</h3><span class="ts">11:28 – 11:41 PDT</span></div>
+  <table>
+    <tr><th>Time</th><th>Event</th><th></th></tr>
+    <tr><td class="ts">11:28:20</td><td>Commit <code>eee58cb</code> — token usage tracking added to <code>agent.py</code>/<code>logging_utils.py</code>/<code>app.py</code>, alongside the existing latency and tool-use display. (This followed a plan change mid-request: the user's first instruction was answer-only, no logging; corrected almost immediately to "include logs, refactor.")</td><td></td></tr>
+    <tr><td class="ts">11:39:26</td><td>"What can you do?" — first live post-deploy question</td><td class="qid">49908cb5e5d6</td></tr>
+    <tr><td class="ts">11:39:58</td><td>"What's in the database?"</td><td class="qid">4674e8df6d97</td></tr>
+    <tr><td class="ts">11:41:22</td><td>"How many cameras do you have?" — <b>68,853 input tokens</b>, verifier: <span class="verdict fail">Unverified</span></td><td class="qid">edbce40d1a73</td></tr>
+  </table>
+  <div class="callout finding"><b>Finding:</b> the verifier's own reasoning claimed a "critical contradiction" in a correctly-answered question — a false positive. The user paused to ask directly whether this was really the first genuine test of the verifier working, rather than accepting the red badge at face value.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 0.5 — Verifier self-correction, MAX_FIELD_CHARS, eval-harness stabilization</h3><span class="ts">reconstructed — bounded by real timestamps, not individually logged</span></div>
+  <p class="caveat">This stretch of work (prompt diagnosis, code edits, review) produced no individually-timestamped log entries of its own — the evidence for it is the eval/verification log entries at its start and end (11:41 PDT above, 13:32 PDT below), plus the resulting code changes.</p>
+  <ul class="tight">
+    <li><b>User: "Yes, investigate."</b> First diagnosis attempted a fix (teaching the verifier that a sum exceeding a total isn't automatically a contradiction) — this did not fully hold up under closer review.</li>
+    <li><b>Self-correction, not user-prompted:</b> re-reading the full evidence block (not just the last tool call) found 2 of 5 per-category counts individually <i>exceeded</i> the stricter total they were being compared against — a sign the categories were measured under a broader SQL condition than the total, not a benign overlap. Reported this directly to the user as a walk-back of the first diagnosis.</li>
+    <li><b><code>VERIFIER_SYSTEM_PROMPT</code> fixed</b> to check whether a per-category condition is a true logical subset of a stricter total's condition, not just compare the resulting numbers.</li>
+    <li><b>2 new permanent regression cases</b> added to <code>verify_eval_cases.py</code> — the real camera false-positive case, and a genuine-overlap look-alike (laptop/tablet) that must still pass — both stable across 10/10 repeated runs.</li>
+    <li><b>User: "How do we stop the token burn?"</b> → "Review the other token counts logged today for similar pattern." A historical sweep of the day's logged tool-call sizes found the same "large single result" shape recurring. <b><code>MAX_FIELD_CHARS = 500</code></b> added to <code>tools.py</code>, capping any individual field value (not row count, which was already capped) — verified a GROUP BY result drop from 18,751→9,456 chars and a <code>SELECT *</code> drop from 55,504→12,051 chars.</li>
+    <li><b>Eval-harness flakiness ("dig in and resolve"):</b> 2 flaky eval cases fixed (one reworded to a more directive question, one widened to accept a list of legitimate tool choices via <code>run_eval.py</code> supporting <code>expected_tool</code> as a list) — plus an unrelated <b><code>UnicodeEncodeError</code> crash</b> found incidentally during repeated stress-testing, fixed with a UTF-8 stdout reconfigure in both <code>agent.py</code> and <code>verify_answer.py</code>.</li>
+  </ul>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 1 — Latency anomaly surfaces</h3><span class="ts">13:32 PDT</span></div>
+  <table>
+    <tr><td class="ts">13:32:58</td><td>"How many cameras do you have?" — 10,375 in / 482 out = <b>10,857 tokens</b> (normal), but <code>search_summaries</code> latency = <b>36,468.83ms</b></td><td class="qid">32506ed31cb4</td></tr>
+  </table>
+  <p>User pasted the real browser transcript (10,857 tokens, 36,469ms shown against <code>search_summaries</code>) and asked to confirm whether the token count was too high. It wasn't — it matched the day's per-turn baseline — but the 36.5-second latency was a real, separate anomaly, flagged and then investigated on explicit instruction ("Investigate").</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 2 — Latency root-cause investigation</h3><span class="ts">~13:35 – 14:05 PDT</span></div>
+  <div class="callout bad"><b>Hypothesis 1 (disproven):</b> Streamlit's dev-mode file watcher, which walks <code>transformers</code>' optional vision submodules and produces a harmless-looking <code>torchvision</code> <code>ModuleNotFoundError</code> — timestamped inside the exact 36-second window. Implemented <code>.streamlit/config.toml</code> (<code>fileWatcherType = "none"</code>), rebuilt, and tested with a <b>non-Streamlit</b> process inside the container: still 36,198.6ms. Disproven by direct test, not assumption. (The config change itself was kept — it's still a legitimate fix for the documented log-noise issue, just not the latency cause.)</div>
+  <div class="callout good"><b>Hypothesis 2 (confirmed):</b> the container had no persistent volume for the HuggingFace model cache — every fresh container re-downloads the ~90MB <code>all-MiniLM-L6-v2</code> model from HuggingFace Hub on its first embedding call. Confirmed directly: the cache directory didn't exist before the test call, and a second fresh process after the cache was warm measured 2,391.0ms.</div>
+  <p>User asked what it would take for the agent to drive the browser itself (a genuine capability question) — answer: a browser-automation MCP server (e.g. Playwright) with real browser binaries, which isn't configured in this environment; <code>WebFetch</code> can't click/type/wait on a reactive Streamlit session. This kept browser confirmation a manual, user-driven step throughout the rest of the incident, consistent with the project's standing rule.</p>
+  <p><b>Decision (user-selected, "option 2"):</b> bake the model into the Docker image at build time (a <code>RUN</code> step in the <code>Dockerfile</code>) rather than a runtime-mounted cache volume — no runtime network dependency at all, at the cost of a longer image build. Implemented, rebuilt (57.9s at <i>build</i> time, not runtime), force-recreated. <b>Verified:</b> a genuinely fresh, just-recreated container's first embedding call measured <b>2,690.1ms</b> (vs. the original 36,468.83ms).</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 3 — The real token-burn incident</h3><span class="ts">14:19 PDT</span></div>
+  <table>
+    <tr><td class="ts">14:19:00</td><td>"How many different types of cameras do you have?" — 9 tool calls, 174,605 in / 2,485 out = <b>177,090 tokens</b></td><td class="qid">98ec17db8b97</td></tr>
+  </table>
+  <div class="callout finding"><b>This time the verifier was right, not wrong.</b> <span class="verdict correct-fail">Unverified (correctly)</span> — the proposed answer mixed per-model counts (98/96/89/102) pulled under one SQL <code>WHERE</code> filter with a different count (207) pulled under a broader filter, presenting them as one consistent measurement. Same underlying skill the verifier had just been taught in Phase 0.5, now catching a genuine defect instead of a phantom one.</div>
+  <p>Root cause traced directly from the log: turn 4 ran <code>SELECT DISTINCT summary ... LIMIT 50</code>, dumping 18,230 characters of raw, unaggregated checkout-bundle text instead of an aggregate query — and because the Anthropic API is stateless, every one of the 9 turns re-sent the full growing history of the round. On top of that, Build 6's tiered memory (<code>MAX_FULL_FIDELITY_ROUNDS = 3</code>) meant this entire round would replay in full into the next 3 questions' context too, not just this one.</p>
+  <div class="figcaption">The screenshot below (saved by the user at 15:29:43 PDT, capturing this same result) documents the verifier's exact reasoning and the 177,090-token total from this question.</div>
+  <img class="evidence" src="Screenshot 2026-08-06 at 15-29-43 Ask-Your-Database Agent.png" alt="Screenshot showing the verifier correctly flagging the 5-camera-types answer as Unverified, with 177,090 total tokens across 9 tool calls" />
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 4 — Four fix iterations, each tested and honestly reported</h3><span class="ts">14:38 – 15:00 PDT</span></div>
+
+  <h3>v1 — steer toward one aggregate query <span class="ts">14:38:19</span></h3>
+  <table><tr><td class="qid">2b5ba182c7da</td><td>11,288 in / 638 out = <b>11,926 tokens</b> (93% reduction)</td><td class="verdict correct-fail">Unverified (correctly)</td></tr></table>
+  <div class="callout bad">Cheap, but wrong: the new single query mislabeled "NIKON Z6 III CAMERA CASE" as a camera type, and didn't strip the allocation-level "Returned: " prefix, creating a spurious duplicate "type." The verifier caught this correctly too.</div>
+
+  <div class="callout decision"><b>User: "Yes! ... there are other such scenarios that exist. Audit the summary column for such other possibilities."</b> A full audit parsed every <code>summary</code> value directly in Python (bypassing keyword-based bias entirely) and found the closed universe: <b>55 distinct item names</b>. Confirmed the accessory/category-keyword trap recurs across at least 7 other product families (projector/cable, light/stand, laptop/case+charger, mic/battery, tripod/case, recorder/case, drawing-tablet/pen) — plus a second, sneakier bug: real cameras are inconsistently named ("... BODY"/"... MIRRORLESS" for 4 of 5 brands, only INSTA360 literally says "CAMERA"), so a keyword search both over- and under-counts at once.</div>
+
+  <h3>v2 — generalized accessory/naming guidance <span class="ts">14:50 – 14:51</span></h3>
+  <table>
+    <tr><td class="qid">4096e3913ff4</td><td>camera</td><td>58,232 in / 2,892 out = <b>61,124 tokens</b></td><td class="verdict pass">Verified — correct (5 types incl. Fujifilm)</td></tr>
+    <tr><td class="qid">ddce9ba7b2e8</td><td>laptop</td><td>12,565 in / 750 out = <b>13,315 tokens</b></td><td class="verdict pass">Verified — correct</td></tr>
+  </table>
+  <p>Camera finally correct — but at 61,124 tokens, worse than v1's (wrong) 11,926. Making the model "pull the full list when ambiguous" as a soft suggestion caused more exploratory back-and-forth, not less.</p>
+
+  <h3>v3 — mandatory full-list-first rule <span class="ts">14:59 – 15:00</span></h3>
+  <table>
+    <tr><td class="qid">955e09204a29</td><td>camera</td><td>22,471 in / 1,450 out = <b>23,921 tokens</b></td><td class="verdict pass">Verified — correct</td></tr>
+    <tr><td class="qid">7e40945aa1fe</td><td>laptop</td><td>44,066 in / 1,403 out = <b>45,469 tokens</b></td><td class="verdict pass">Verified — correct, but 3.4x more expensive than v2's laptop run</td></tr>
+    <tr><td class="qid">fd8ed1d3fad1</td><td>microphone</td><td>14,115 in / 686 out = <b>14,801 tokens</b></td><td class="verdict fail">Unverified — agent was RIGHT, verifier was WRONG</td></tr>
+  </table>
+  <div class="callout bad"><b>New failure mode:</b> making the full-list step unconditional fixed camera's correctness but taxed laptop (which never needed it) with a 3.4x cost increase. Worse: the microphone answer correctly excluded "RODE MIC BATTERY" as an accessory — exactly the judgment the prompt now teaches — but the verifier flagged it unsupported anyway, calling the exclusion "an editorial judgment not evident in the tool evidence." A verifier false <i>negative</i> this time: the mirror image of Phase 0's false positive, caused by the verifier never having received the same domain knowledge the agent's prompt now had.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 5 — Root-cause fix: normalize the data</h3><span class="ts">~15:00 – 15:16 PDT</span></div>
+  <div class="callout decision"><b>User's diagnosis, verbatim in substance:</b> "If the data was cleaned and transformed fully these issues will not occur... the agent/model is working harder than it needs to due to the data naming convention inconsistencies." Confirmed correct — every fix in Phase 0.5 and Phase 4 had been the agent (and verifier) compensating at query time for the same underlying problem: no structured <code>item_name</code>/<code>category</code>/<code>is_accessory</code>/<code>is_returned</code> columns existed at all.</div>
+  <ul class="tight">
+    <li><code>migrations/013_allocation_items_schema.sql</code> — new <code>clean.allocation_items</code> table, one row per item.</li>
+    <li><code>src/build_allocation_items.py</code> — ETL script with a closed, audited <code>ITEM_CLASSIFICATION</code> lookup for all 55 known item names; fails loudly on any unclassified name rather than silently miscategorizing. Run: <b>14,347 item rows loaded from 1,535 allocations, zero unclassified names.</b></li>
+    <li><code>.github/workflows/ci.yml</code> updated in <b>both</b> jobs (migration list + a new "Build normalized allocation items" step) — deliberately checked both places, since a prior incident this same week (commit <code>08b807b</code>) was exactly a migration missing from one of two duplicated CI lists.</li>
+    <li><code>SYSTEM_PROMPT</code> <b>shrank</b>, rather than grew, once it could point at resolved facts instead of teaching keyword heuristics.</li>
+  </ul>
+
+  <h3>v4 — point the agent at the normalized table <span class="ts">15:16 – 15:17</span></h3>
+  <table>
+    <tr><td class="qid">f1683cc1d48c</td><td>camera</td><td>7,377 in / 302 out = <b>7,679 tokens</b></td><td class="verdict pass">Verified — correct AND cheap</td></tr>
+    <tr><td class="qid">e0097d958349</td><td>laptop</td><td>13,338 in / 343 out = <b>13,681 tokens</b></td><td class="verdict fail">Verified — but WRONG (1,501, forgot <code>is_accessory</code> filter)</td></tr>
+    <tr><td class="qid">1527035daac7</td><td>microphone</td><td>4,588 in / 169 out = <b>4,757 tokens</b></td><td class="verdict fail">Verified — but WRONG (2 types, counted the battery)</td></tr>
+  </table>
+  <div class="callout bad">The new table's data was correct, but the prompt showed the <code>is_accessory = false</code> filter as one worked example (camera), not a stated rule — the model applied it to camera but dropped it for laptop and microphone. The verifier passed both wrong answers, because both were internally consistent with their own (wrong) SQL — the same blind spot as before, one level downstream.</div>
+
+  <h3>v5 — final: default rule, not an example <span class="ts">15:20 PDT</span></h3>
+  <table>
+    <tr><td class="qid">26fc383faaaa</td><td>camera</td><td><b>8,753 tokens</b></td><td class="verdict pass">Correct</td></tr>
+    <tr><td class="qid">b6de9284effb</td><td>laptop</td><td><b>7,859 tokens</b></td><td class="verdict pass">Correct — 482</td></tr>
+    <tr><td class="qid">992486b0a2be</td><td>microphone</td><td><b>7,944 tokens</b></td><td class="verdict pass">Correct — 1</td></tr>
+    <tr><td class="qid">c69fca33055a</td><td>tripod (untested category)</td><td><b>7,857 tokens</b></td><td class="verdict pass">Correct — 245, first-try, no further prompt changes needed</td></tr>
+  </table>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 6 — Regression check &amp; browser confirmation</h3><span class="ts">15:20 – 15:43 PDT</span></div>
+  <ul class="tight">
+    <li>Eval suite: 6/7 → 7/7 → 7/7 across three runs. The one failure was confirmed non-systematic by re-running that exact question standalone and getting the expected tool choice back — pre-existing tool-choice non-determinism, not a regression from today's changes.</li>
+    <li><b>15:34:56 PDT</b> — checked <code>agent_scratch.chat_rounds</code> before recommending a browser test: found 3 persisted rounds, <i>all from before today's fixes</i>, including the original 177,090-token round. Since Build 6's tiered memory replays the last 3 rounds in full into every new question, the very next browser question would have re-inherited that cost regardless of whether the fix worked. Truncated the table (chat history only — no project data touched) before testing.</li>
+    <li><b>15:40:51 – 15:43:09 PDT — browser-confirmed, live, by the user:</b></li>
+  </ul>
+  <table>
+    <tr><td class="qid">6c2f9c45d3b9</td><td>camera</td><td><b>8,024 tokens</b></td><td class="verdict pass">5 types ✓</td></tr>
+    <tr><td class="qid">c5c66ded6b00</td><td>laptop</td><td><b>6,018 tokens</b></td><td class="verdict pass">482 ✓</td></tr>
+    <tr><td class="qid">13d4b9704d14</td><td>microphone</td><td><b>7,434 tokens</b></td><td class="verdict pass">1 type ✓</td></tr>
+    <tr><td class="qid">f7613e03fc17</td><td>accessories</td><td><b>10,221 tokens</b></td><td class="verdict pass">5,762 ✓ (independently confirmed: sums exactly to the total of every accessory item's count in the audit)</td></tr>
+  </table>
+</div>
+
+<h2>Token savings — before vs. after</h2>
+<table>
+  <tr><th>Question</th><th class="num">Before</th><th class="num">After</th><th class="num">Reduction</th><th>Correctness change</th></tr>
+  <tr><td>"How many different types of cameras do you have?" (the incident question)</td><td class="num">177,090</td><td class="num">8,024</td><td class="num">95.5%</td><td>Wrong (4 types) → Correct (5 types)</td></tr>
+  <tr><td>"How many laptops do you have?"</td><td class="num">45,469 (v3, still wrong at 1,501 by v4)</td><td class="num">6,018</td><td class="num">86.8%</td><td>Wrong (1,501) → Correct (482)</td></tr>
+  <tr><td>"How many types of microphones do you have?"</td><td class="num">14,801</td><td class="num">7,434</td><td class="num">49.8%</td><td>Correct answer, but a false-negative verifier badge → Correct + verified</td></tr>
+  <tr><td>"How many tripods do you have?" (never asked before the fix)</td><td class="num">—</td><td class="num">7,857</td><td class="num">—</td><td>Correct on first try, no category-specific tuning needed</td></tr>
+</table>
+<p class="caveat">"Before" figures use each question's first attempt after the underlying bug was reproducible, not necessarily the single worst run recorded — the incident question's 177,090 tokens is the actual value from the original failing round.</p>
+
+<h2>Decision log</h2>
+<table>
+  <tr><th>Decision</th><th>Chosen over</th><th>Why</th></tr>
+  <tr><td>Bake the embedding model into the Docker image at build time</td><td>A runtime-mounted persistent cache volume</td><td>User's explicit choice ("option 2") — zero runtime network dependency on any container start, not just after the first one.</td></tr>
+  <tr><td>Normalize checkout items into a new table</td><td>Continuing to patch <code>SYSTEM_PROMPT</code>/<code>VERIFIER_SYSTEM_PROMPT</code></td><td>User's diagnosis: four prompt iterations kept trading one symptom for another because the root problem was in the data, not the prompt. One offline ETL pass fixed cost, correctness, and the verifier's blind spot simultaneously.</td></tr>
+  <tr><td>State the accessory-exclusion filter as a default rule, not a worked example</td><td>Leaving it as an example the model could generalize from</td><td>v4 showed the model applies a worked example inconsistently across categories; a stated default rule (v5) generalized correctly to an entirely untested category (tripod) on the first try.</td></tr>
+  <tr><td>Truncate <code>agent_scratch.chat_rounds</code> before browser testing</td><td>Testing on top of existing history</td><td>All 3 persisted rounds predated the fix; Build 6's tiered memory would have replayed the original 177,090-token round into every new question's context regardless of whether the fix itself worked.</td></tr>
+</table>
+
+<h2>Verifier: two distinct failure modes found, both fixed differently</h2>
+<table>
+  <tr><th>Mode</th><th>Example</th><th>Fix</th></tr>
+  <tr><td>False positive — flagged a correct answer as unsupported</td><td>Phase 0 (11:41 PDT): per-category counts under different SQL conditions looked contradictory by number alone</td><td><code>VERIFIER_SYSTEM_PROMPT</code> taught to check condition subset-ness, not just compare numbers</td></tr>
+  <tr><td>False negative — passed a wrong answer as supported</td><td>Phase 4 v3 (15:00 PDT) and Phase 5 v4 (15:16-15:17 PDT): the verifier can only check consistency between an answer and its own evidence, not whether that evidence itself used the right filter</td><td>Fixed indirectly — once the underlying data was normalized and the query became simple and directly correct, there was nothing left for the verifier to be blind to. No further verifier prompt changes were needed after Phase 5.</td></tr>
+</table>
+
+<h2>Files and artifacts changed</h2>
+<ul class="tight">
+  <li><code>src/agent.py</code> — token usage tracking, stdout UTF-8 fix, <code>SYSTEM_PROMPT</code> rewritten twice (compensating rules added in Phase 4, then replaced with a short pointer to the normalized table in Phase 5)</li>
+  <li><code>src/tools.py</code> — <code>MAX_FIELD_CHARS</code> cap</li>
+  <li><code>src/verify_answer.py</code> — <code>VERIFIER_SYSTEM_PROMPT</code> subset-condition check, stdout UTF-8 fix</li>
+  <li><code>src/verify_eval_cases.py</code> — 2 new permanent regression cases</li>
+  <li><code>src/eval_cases.py</code>, <code>src/run_eval.py</code> — 2 flaky cases fixed, list-valued <code>expected_tool</code> support</li>
+  <li><code>src/logging_utils.py</code>, <code>src/app.py</code> — usage display, already committed earlier the same day (<code>eee58cb</code>)</li>
+  <li><code>migrations/013_allocation_items_schema.sql</code>, <code>src/build_allocation_items.py</code> — new normalized table + ETL (new)</li>
+  <li><code>.github/workflows/ci.yml</code> — migration + build step added to both jobs (new)</li>
+  <li><code>Dockerfile</code> — model baked in at build time, <code>.streamlit/config.toml</code> copied in</li>
+  <li><code>.streamlit/config.toml</code> — file watcher disabled (new)</li>
+</ul>
+<p class="caveat">As of this report, this batch is fully tested and browser-confirmed but not yet committed to git.</p>
+
+<h2>Lessons</h2>
+<ul class="tight">
+  <li>A verifier catching a real defect and a verifier producing a false positive can look identical from the outside (a red badge) — both require reading the actual evidence before accepting or dismissing the flag.</li>
+  <li>A prompt-level fix that removes one failure mode can introduce a new one in the same turn (v1's cost win came with a new correctness bug; v3's correctness fix came with a new cost regression and a new verifier blind spot). Each iteration in this incident was tested and honestly reported before being called "done," including the ones that didn't work.</li>
+  <li>Compensating for messy data at inference time is a recurring, per-question cost; fixing the data once is a one-time cost. The fourth prompt iteration would likely not have been the last one — the fifth data-layer fix was.</li>
+  <li>Persisted conversation history can silently reintroduce a just-fixed bug's cost into the very next test, if verification doesn't check what's actually sitting in that history first.</li>
+</ul>
+
+</div>
+</body>
+</html>
