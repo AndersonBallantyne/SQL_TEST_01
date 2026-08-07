@@ -245,7 +245,7 @@
   <li><code>Dockerfile</code> — model baked in at build time, <code>.streamlit/config.toml</code> copied in</li>
   <li><code>.streamlit/config.toml</code> — file watcher disabled (new)</li>
 </ul>
-<p class="caveat">As of this report, this batch is fully tested and browser-confirmed but not yet committed to git.</p>
+<p class="caveat">Committed across 5 logical commits (<code>920f2bf</code> through <code>5c1eeef</code>) and pushed to <code>origin/main</code> the same day.</p>
 
 <h2>Lessons</h2>
 <ul class="tight">
@@ -254,6 +254,8 @@
   <li>Compensating for messy data at inference time is a recurring, per-question cost; fixing the data once is a one-time cost. The fourth prompt iteration would likely not have been the last one — the fifth data-layer fix was.</li>
   <li>Persisted conversation history can silently reintroduce a just-fixed bug's cost into the very next test, if verification doesn't check what's actually sitting in that history first.</li>
 </ul>
+
+<div class="callout good"><b>The pattern held on the next incident too.</b> The 2026-08-07 deployment-verification incident hit the same shape twice more (a narrow phrasing-based fix that needed generalizing to the underlying category it was actually about) - see that report's "Cross-incident comparison" section for the combined before/after numbers across both incidents and the throughline this project kept re-learning: resolve an ambiguity once, as data or a stated rule, not as a heuristic re-derived on every question.</div>
 
 </div>
 </body>
