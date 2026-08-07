@@ -5,6 +5,12 @@ from dotenv import load_dotenv
 import anthropic
 from logging_utils import get_tool_calls, get_final_answer
 
+# Same fix as agent.py, needed independently here: this file's own CLI (__main__ below)
+# and run_verify_eval.py both print LLM-generated reason text without ever importing
+# agent.py, so they don't inherit that file's stdout reconfiguration for free.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 load_dotenv(encoding="utf-8-sig")
 
 client = anthropic.Anthropic()
@@ -14,7 +20,11 @@ client = anthropic.Anthropic()
 # that would make it just a second opinion instead of an actual evidence check.
 VERIFIER_SYSTEM_PROMPT = """You check whether a proposed answer is actually supported by the tool evidence gathered for it. You are not answering the original question yourself and must not use any outside knowledge - judge only whether the proposed answer logically follows from the tool call inputs/outputs shown to you.
 
-Call report_verdict with supported=true only if every claim in the proposed answer is backed by the tool evidence. If the answer contradicts the evidence, overstates it, or claims something the evidence never shows, set supported=false and explain why in reason."""
+When the evidence includes a SQL query, read its actual WHERE/ILIKE conditions, not just the column aliases or the proposed answer's own labels for them. If several per-category counts are compared against a stricter total (e.g. five brand-name counts against a count that additionally requires one specific keyword), check whether each category's own condition is actually a subset of the total's condition:
+- If a per-category count is individually LARGER than a stricter total it's being compared against, that count cannot be a valid subset of that total - it is measuring something broader (e.g. a brand-name match with no keyword requirement, versus a total that requires the keyword). An answer that presents such a count as if it belonged to the same narrower category as the total is misleading, even if no single number is fabricated - explain specifically which condition is broader than which, don't just say the numbers "don't add up."
+- Multiple per-category counts summing to MORE than a total, on its own, is not a contradiction - a single row can satisfy more than one category's condition at once. Do not flag this pattern by itself when every individual category count is still less than or equal to the total.
+
+Call report_verdict with supported=true only if every claim in the proposed answer is backed by the tool evidence. If the answer contradicts the evidence, overstates it, mislabels what a count actually measures, or claims something the evidence never shows, set supported=false and explain why in reason."""
 
 # tool_choice forces this call every time (see verify_answer()) so the verdict is always a
 # structured field, never prose that would need parsing.
