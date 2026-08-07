@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Incident Audit — Deployment Verification Gap, 2026-08-07</title>
+<style>
+  :root {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768; --muted: #7C8894;
+    --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9; --teal-tint: #E7EEEE;
+    --accent: #B5502B; --accent-tint: #F7E9E2; --red: #9A2B2B; --red-tint: #F6E6E6;
+    --green: #1E6B3A; --green-tint: #E6F1EA; --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD; --muted: #8CA0A3;
+      --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB; --teal-tint: #17282A;
+      --accent: #E2916A; --accent-tint: #2C2019; --red: #E28A8A; --red-tint: #2A1B1B;
+      --green: #7FD9A0; --green-tint: #16241C; --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD; --muted: #8CA0A3;
+    --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB; --teal-tint: #17282A;
+    --accent: #E2916A; --accent-tint: #2C2019; --red: #E28A8A; --red-tint: #2A1B1B;
+    --green: #7FD9A0; --green-tint: #16241C; --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768; --muted: #7C8894;
+    --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9; --teal-tint: #E7EEEE;
+    --accent: #B5502B; --accent-tint: #F7E9E2; --red: #9A2B2B; --red-tint: #F6E6E6;
+    --green: #1E6B3A; --green-tint: #E6F1EA; --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+  h1 { font-size: 1.7rem; margin: 0 0 0.3rem; }
+  h2 { font-size: 1.25rem; margin: 2.4rem 0 0.8rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); color: var(--teal); }
+  h3 { font-size: 1.02rem; margin: 1.4rem 0 0.5rem; }
+  .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.6rem; }
+  .meta-box { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 1rem 1.3rem; box-shadow: var(--shadow); font-size: 0.9rem; }
+  .meta-box div { margin: 0.2rem 0; }
+  .meta-box b { color: var(--ink-2); }
+  code { font-family: "Consolas", "IBM Plex Mono", monospace; background: var(--teal-tint); color: var(--teal); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.88em; }
+  pre code { display: block; padding: 0.8rem 1rem; overflow-x: auto; white-space: pre; }
+  a { color: var(--teal); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-radius: 10px; padding: 1rem 1.3rem; margin: 1rem 0; font-size: 0.92rem; }
+  .callout.finding { background: var(--accent-tint); border-left: 4px solid var(--accent); }
+  .callout.decision { background: var(--teal-tint); border-left: 4px solid var(--teal); }
+  .callout.bad { background: var(--red-tint); border-left: 4px solid var(--red); }
+  .callout.good { background: var(--green-tint); border-left: 4px solid var(--green); }
+  .phase { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 1.3rem 1.5rem; margin: 1.2rem 0; box-shadow: var(--shadow); }
+  .phase-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .phase-head h3 { margin: 0; }
+  .ts { font-family: "Consolas", monospace; font-size: 0.8rem; color: var(--muted); background: var(--teal-tint); border-radius: 6px; padding: 0.15rem 0.5rem; }
+  .qid { font-family: "Consolas", monospace; font-size: 0.75rem; color: var(--muted); }
+  .verdict { font-family: "Consolas", monospace; font-size: 0.75rem; font-weight: 600; border-radius: 5px; padding: 0.1rem 0.5rem; }
+  .verdict.pass { background: var(--green-tint); color: var(--green); }
+  .verdict.fail { background: var(--red-tint); color: var(--red); }
+  .verdict.correct-fail { background: var(--accent-tint); color: var(--accent); }
+  ul.tight li { margin: 0.3rem 0; }
+  .caveat { font-size: 0.85rem; color: var(--muted); font-style: italic; }
+  img.evidence { max-width: 100%; border-radius: 8px; border: 1px solid var(--rule); box-shadow: var(--shadow); margin: 0.8rem 0; }
+  .figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 0.3rem; }
+  @media print { body { font-size: 12px; } .phase { box-shadow: none; break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Incident Audit: Deployment Verification Gap</h1>
+<p class="subtitle">SQL_TEST_01 — Ask-Your-Database Agent (Build 6) — 2026-08-07</p>
+
+<div class="meta-box">
+  <div><b>Scope:</b> a same-day follow-on to the 2026-08-06 token-burn incident — from the CI fix that closed that incident, through discovering the fix never reached the running browser service, to a distinct, still-open finding surfaced by the user's own re-test afterward.</div>
+  <div><b>Timezone:</b> Pacific (UTC-7), converted from the container's UTC-recorded logs, consistent with the prior audit.</div>
+  <div><b>Evidence basis:</b> every timestamp and token count below is pulled directly from <code>logs/tool_calls.jsonl</code>, <code>agent_scratch.chat_rounds</code>, <code>docker ps</code> output, and GitHub Actions run history — not reconstructed from memory.</div>
+</div>
+
+<h2>Executive summary</h2>
+<p>The eval-harness fix that closed out the 2026-08-06 incident was correct and passed CI cleanly. It never reached the actual running application. The browser-facing Streamlit service had been running continuously since the previous day's last container recreate, and every verification step taken that day — repeated local test runs, a clean CI pass — used <em>fresh subprocesses</em> that re-import code from disk on every call. None of them exercised the one thing that mattered: whether the long-running server process itself had picked up the change. It hadn't. Three real user questions were answered by stale code, including one that cost <b>270,961 tokens</b> — the single largest token count logged in this project to date, worse than the original incident being fixed. The root cause was a testing-methodology gap, not a code defect: the fix was proven correct in isolation and never proven deployed. Corrected by an actual image rebuild and container recreate, confirmed by a fresh test (9,878 tokens, fully correct), and confirmed a second time independently by the user's own live re-test (15,799 tokens — a 94% reduction from the broken run). That second re-test also surfaced a distinct, unrelated finding: an open gap where the agent can answer an open-ended question from an incomplete semantic-search sample and narrate connective claims the evidence doesn't support — caught correctly by the verifier, so no wrong answer reached the user, but a real gap worth its own fix. Three same-day follow-ons closed the loop further: an automatic pre-commit guard so the documentation search index can't silently go stale again; a fix, surfaced by testing that guard end to end, for a second case where semantic search has no concept of chronological recency and can rank an older document above a genuinely newer one; and a fix for the original narrative-fabrication finding itself, generalizing the same underlying rule that closed the recency gap.</p>
+
+<h2>Timeline</h2>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 0 — Last known-good deploy</h3><span class="ts">2026-08-06, 15:20 PDT</span></div>
+  <p>The <code>askdb_streamlit</code> container was last rebuilt and recreated the previous day, at the end of the 2026-08-06 token-burn incident (Fix v5, the working default-rule <code>SYSTEM_PROMPT</code>). Confirmed directly: <code>docker ps</code> showed <code>CreatedAt: 2026-08-06 15:19:40 -0700 PDT</code> at the moment this new incident was diagnosed, roughly 20 hours before the fix described below.</p>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 1 — A real CI failure, correctly diagnosed and fixed</h3><span class="ts">11:02 – 11:56 PDT</span></div>
+  <ul class="tight">
+    <li>A push (closing out the 2026-08-06 incident's documentation) triggered CI at 11:02:21 PDT; the <code>eval</code> job failed on a pre-existing, unrelated flaky case ("How many customers are in the database?").</li>
+    <li>User: <b>"Fix the eval issue and any other. We'd like to wrap this project up cleanly."</b> Investigation found two real bugs, not one: the ambiguous customers question, and a stale hardcoded path in <code>SYSTEM_PROMPT</code> (<code>source_file = 'sql-test-01-cheatsheet.html'</code>, a bare filename unused since the 2026-08-05 reorg — the real value has been <code>docs/sql-test-01-cheatsheet.html'</code> ever since). The bare string only ever "worked" locally because 462 orphaned pre-reorg rows were still sitting in the local database, a cleanup flagged and never completed back on 2026-08-05.</li>
+    <li>Both fixed, verified stable across multiple fresh local runs (7/7, 5/5, 5/5 verifier cases), committed (<code>4d8a87f</code>), pushed, and confirmed via <code>gh run watch</code> — CI run <code>31208524967</code> passed fully at approximately 11:56 PDT.</li>
+  </ul>
+  <div class="callout good"><b>Every verification step in this phase was real and passed.</b> That's what makes the next phase worth documenting carefully — a genuinely green CI run and multiple stable local test passes still weren't sufficient evidence that the fix had reached production.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 2 — Stale code answers three real questions</h3><span class="ts">11:29 – 11:40 PDT</span></div>
+  <p>Unknown to the person fixing the issue at the time, the user was independently testing the live browser app during this exact window — before the fix's own commit had even finished its CI run. All three questions were answered by the container created the previous day, which had never re-imported any code touched today:</p>
+  <table>
+    <tr><td class="ts">11:29:53</td><td>"What information is contained in your docs?"</td><td class="qid">e66197f0bce0</td></tr>
+    <tr><td class="ts">11:32:29</td><td>"Give ma a list of commands used"</td><td class="qid">8a680229d01f</td></tr>
+    <tr><td class="ts">11:40:27</td><td>"Tell me about SQL migrations" — 9 tool calls, <b>269,042 in / 1,919 out = 270,961 tokens</b></td><td class="qid">cba37f905ef6</td></tr>
+  </table>
+  <div class="callout bad"><b>The largest single-question token count logged in this project.</b> The log shows exactly the bug the Phase 1 fix was meant to close: three separate attempts against the stale <code>source_file = 'sql-test-01-cheatsheet.html'</code> (returning nothing), before the model discovered the correct <code>docs/</code>-prefixed path on its own — likely from <code>search_docs</code>'s own result payload, which includes real <code>source_file</code> values — then ran three more narrow, ad hoc <code>LIKE</code>-pattern queries against the correct path instead of one direct query. Both problems compounded across all 9 turns via the same stateless-API mechanism documented in the 2026-08-06 audit.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 3 — Diagnosis: the fix was correct, the deployment was not</h3><span class="ts">~12:05 – 12:10 PDT</span></div>
+  <p>User: <b>"Browser app test question with results. Token count still seems extremely high."</b> First check: <code>docker exec askdb_streamlit grep source_file agent.py</code> — the file on disk had the fix. That result was almost misleading on its own; it confirms the file, not the running process. The real check was <code>docker ps --format "{{.CreatedAt}}"</code>, which showed the container predated every change made that day.</p>
+  <div class="callout finding"><b>Root cause:</b> every verification step taken in Phase 1 — <code>docker exec python -c "..."</code> test calls, and CI itself — spawns a fresh process that imports <code>agent.py</code> from disk on every invocation, so each one correctly picked up the fix. The actual Streamlit server is a single long-running process that imports its dependencies once, at startup. A file changing on disk after that has zero effect on it. Nothing in that day's testing had exercised the one distinction that mattered: <i>proving code correct</i> is not the same evidence as <i>proving a long-running service has reloaded it</i>.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 4 — Fix and first re-verification</h3><span class="ts">12:10 – 12:13 PDT</span></div>
+  <ul class="tight">
+    <li><code>docker compose build streamlit_app && docker compose up -d --force-recreate streamlit_app</code> — a real image rebuild and container recreate, not a file patch. Confirmed fresh: <code>CreatedAt: 2026-08-07 12:10:28 -0700 PDT</code>, and the fix line present on re-check.</li>
+    <li>The 3 chat rounds from Phase 2 removed from <code>agent_scratch.chat_rounds</code> (evidence preserved in <code>logs/tool_calls.jsonl</code>, which is append-only and untouched) — Build 6's tiered memory would otherwise have replayed that 270,961-token round into the next 3 questions' context regardless of whether the fix worked, the same risk documented in the 2026-08-06 audit.</li>
+    <li>Re-ran the exact same question in a fresh process: <b>9,201 in / 677 out = 9,878 tokens</b>, one clean <code>run_sql_query</code> call, a complete and correct 13-migration list.</li>
+  </ul>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 5 — Independent confirmation, and a second, distinct finding</h3><span class="ts">12:13 PDT</span></div>
+  <table>
+    <tr><td class="ts">12:13:30</td><td>"Tell me about SQL migrations" (user's own live re-test, browser) — 1 tool call, 15,408 in / 391 out = <b>15,799 tokens</b></td><td class="qid">96cd2fb2f2e8</td></tr>
+  </table>
+  <p>A 94% reduction from the broken run, confirming the deployment fix independently of the test above. But this run took a different path — <code>search_docs</code> only, no <code>run_sql_query</code> follow-up — and answered from an incomplete top-5 semantic-search sample (4 migrations, not 13), then added connective narrative the evidence never stated: that migrations are "cumulative," "idempotent," and "repeatable," and that <code>008_add_summary_embedding.sql</code> "adds vector/embedding support for equipment summaries" (the actual evidence only mentioned an unrelated fix to that file in passing).</p>
+  <div class="callout good"><b>The verifier caught this correctly, specifically, and completely</b> — <span class="verdict fail">Unverified</span>, citing all four unsupported claims individually rather than a generic "doesn't match." Unlike the false positive that opened the 2026-08-06 incident, this is a true positive: a real gap in the answer, correctly identified, that never reached the user unflagged. The system worked as designed here even though the underlying agent behavior — settling for a partial sample and narrating past it on open-ended "tell me about X" questions, as opposed to the more literal "list every X" phrasing <code>SYSTEM_PROMPT</code> already steers away from raw search — remains a real, separately-scoped gap, flagged here but intentionally not fixed as part of the incident itself, pending a decision on scope. (Fixed the same day — see Phase 7.)</div>
+  <img class="evidence" src="Screenshot 2026-08-07 at 12-28-01 Ask-Your-Database Agent.png" alt="Screenshot of the Ask-Your-Database Agent UI showing the verifier's red Unverified message, itemizing all four unsupported claims in the SQL migrations answer" />
+  <div class="figcaption">The actual verifier output from this question (<span class="qid">96cd2fb2f2e8</span>), captured live in the browser — the same reasoning quoted above, unedited.</div>
+</div>
+
+<h2>Before / after</h2>
+<table>
+  <tr><th>Run</th><th class="num">Tokens</th><th>Path taken</th><th>Correctness</th></tr>
+  <tr><td>Stale process (Phase 2)</td><td class="num">270,961</td><td>3 failed bare-path guesses + 3 narrow re-guesses on the correct path</td><td>Eventually correct, at 27x the cost of the fixed version</td></tr>
+  <tr><td>Fresh subprocess, post-fix (Phase 4)</td><td class="num">9,878</td><td>One direct, correctly-pathed query</td><td>Correct, complete (all 13 migrations)</td></tr>
+  <tr><td>Live browser, post-fix (Phase 5)</td><td class="num">15,799</td><td><code>search_docs</code> only, no follow-up</td><td>Incomplete + unsupported narrative — correctly flagged Unverified</td></tr>
+</table>
+
+<h2>Decision log</h2>
+<table>
+  <tr><th>Decision</th><th>Why</th></tr>
+  <tr><td>Rebuild the image and force-recreate the container, not just re-verify the file on disk</td><td>The only way to actually change what a long-running process has loaded into memory; a docker cp or grep against the file proves the source is correct, not that the service is running it.</td></tr>
+  <tr><td>Remove the 3 stale-process chat rounds from persisted history before re-testing</td><td>Build 6's tiered memory replays the last 3 rounds in full into every new question's context — leaving them in would have re-cost their token weight regardless of whether the underlying fix worked, the same risk already documented and handled the same way in the 2026-08-06 incident.</td></tr>
+  <tr><td>Document the search_docs narrative-fabrication finding without fixing it in the same pass</td><td>It's a distinct problem from the deployment gap this incident is actually about, correctly caught by the verifier rather than reaching the user silently, and scoping it as its own decision rather than bundling an unrelated fix into an incident report.</td></tr>
+</table>
+
+<h2>Lessons</h2>
+<ul class="tight">
+  <li>A fresh subprocess test and a long-running service are not interchangeable evidence. <code>docker exec python -c "..."</code> proves code correctness; only an actual restart of the service being tested proves deployment. Both are needed, and neither substitutes for the other.</li>
+  <li>CI passing is real evidence the code is correct in a clean environment — it says nothing about whether a separately-running local or production service has picked up that same code, since CI always builds its own container from scratch.</li>
+  <li>The most convincing-looking check ("the file on disk has the fix") can be the wrong one. The right question wasn't "does the source contain the change" but "when was the process that's actually serving requests last started."</li>
+  <li>A verifier correctly flagging a bad answer is a successful outcome, not an incident on its own — Phase 5 is worth documenting as a finding, but it's evidence Build 7 is doing its job, not a new failure of the system as a whole.</li>
+</ul>
+
+<h2>Phase 6 — Two follow-on fixes, same day</h2>
+
+<div class="phase">
+  <div class="phase-head"><h3>6a — an automatic guard against the index going stale again</h3></div>
+  <p>Asked directly: "Can this update process be automatic?" — referring to <code>docs.chunks</code> needing a manual <code>extract_doc_chunks.py</code> + <code>embed_chunks.py</code> re-run after any doc edit, the same class of gap (data this time, not code) as the deployment gap earlier in this incident.</p>
+  <div class="callout decision"><b>Chosen fix, over two lighter alternatives (a single combined convenience script; a startup staleness warning):</b> a git pre-commit hook, tracked in the repo (<code>.githooks/pre-commit</code>, wired in via <code>git config core.hooksPath .githooks</code> — not the untracked <code>.git/hooks/</code>, which never survives a clone) that re-runs the extract/embed pair whenever a commit touches <code>docs/sql-test-01-cheatsheet.html</code>, <code>docs/project-overview.html</code>, or any handoff brief. Runs on the host directly (confirmed the host <code>.venv</code> already has every required package, and <code>pg_local</code> is reachable at <code>127.0.0.1:5432</code>) — no container involved. Blocks the commit on failure, the same strictness CI already applies, with <code>--no-verify</code> as the standard escape hatch. Tested directly (staged a real pending doc change, ran the hook without committing): correctly detected the change, refreshed 522 chunks, confirmed the 2026-08-07 incident content was queryable immediately afterward.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>6b — testing the fix immediately surfaced the finding Phase 5 had left open</h3></div>
+  <p>Re-running "what was the latest incident reported in the docs" against the now-fresh index still returned <b>2026-08-06</b>, not 2026-08-07 — confirmed the new chunk was indexed (a direct query found it), so this wasn't the staleness bug recurring. <code>search_docs</code> ranks by embedding similarity, which has no concept of chronological order; two thematically similar incident callouts don't rank by date just because one is newer. This is the same category of gap Phase 5 flagged and left open (settling for a search result that isn't actually the right kind of answer for the question asked) — "latest/most recent X" needed the identical treatment already given to "list every X."</p>
+  <div class="callout good"><b>Fix:</b> <code>SYSTEM_PROMPT</code> extended to steer "latest/most recent X" documentation questions toward <code>run_sql_query</code> with <code>ORDER BY chunk_id DESC</code>, alongside the existing "list every X" guidance — correct specifically because the cheat sheet is append-only (new entries added at the end, never edited in place), so a higher <code>chunk_id</code> within that one file reliably means "added more recently." Deployed via a real <code>docker compose build</code> + <code>up -d --force-recreate</code>, confirmed fresh via <code>CreatedAt</code> before testing — applying Phase 3's own lesson immediately rather than repeating the mistake it describes. Re-tested: 2026-08-07 correctly identified as the latest incident, both incidents correctly ordered, 10,064 tokens. Regression-checked against the full eval suite (7/7, 5/5) before considering it done.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 7 — closing Phase 5's finding: grounding search_docs against incomplete samples</h3></div>
+  <p>The narrative-fabrication gap flagged in Phase 5 and left open — an open-ended question answered from an incomplete <code>search_docs</code> sample, then narrated past what the evidence actually showed — got the same treatment as Phase 6b's fix, generalized further. Root cause common to all three fixes in this incident: a keyword-phrasing trigger ("list every X", then "latest/most recent X") is too narrow, because the real signal isn't the phrasing, it's whether the question is about a category the cheat sheet already tracks as a complete table (every file, every command, every SQL migration) regardless of how it's asked - "tell me about the SQL migrations" needs the same query as "list every SQL migration," even though only one of those literally says "list."</p>
+  <div class="callout good"><b>Fix:</b> <code>SYSTEM_PROMPT</code>'s SQL-routing rule widened from matching specific phrasings to matching the underlying category - file/command/migration questions route to <code>run_sql_query</code> regardless of phrasing. Separately, added an explicit grounding rule for the cases where <code>search_docs</code> genuinely is the right tool (narrative/thematic questions with no enumerable category behind them): state only what the retrieved chunks actually say, don't generalize a pattern across the whole system unless a chunk states it explicitly, and say what's missing rather than filling a partial sample with something plausible-sounding.</div>
+  <p>Re-tested the exact original question ("Tell me about SQL migrations") on a freshly rebuilt and recreated container: this time <code>run_sql_query</code> retrieved all 13 migrations in one call (vs. the original 4-migration sample), and the answer's claims all trace directly to retrieved evidence - verified <code>supported: true</code>, with the verifier's reasoning specifically confirming each claim against its source chunk rather than a generic pass. 6,959 in / 835 out = 7,794 tokens. Regression-checked against the full eval suite and the verifier eval harness (7/7, 5/5, 5/5) before considering it done.</p>
+</div>
+
+<h2>Cross-incident comparison: token burn, before and after</h2>
+<p>Pulling every real logged number across both 2026-08-06 and this incident into one view:</p>
+<table>
+  <tr><th>Question</th><th class="num">Before</th><th class="num">After</th><th class="num">Reduction</th><th>Correctness</th></tr>
+  <tr><td>"How many different types of cameras?" (2026-08-06)</td><td class="num">177,090</td><td class="num">8,024</td><td class="num">95.5%</td><td>Wrong (4 types) → correct (5)</td></tr>
+  <tr><td>"How many laptops do you have?" (2026-08-06)</td><td class="num">45,469</td><td class="num">6,018</td><td class="num">86.8%</td><td>Wrong (1,501) → correct (482)</td></tr>
+  <tr><td>"How many types of microphones?" (2026-08-06)</td><td class="num">14,801</td><td class="num">7,434</td><td class="num">49.8%</td><td>Correct, false-negative badge → correct + verified</td></tr>
+  <tr><td>"Tell me about SQL migrations" (2026-08-07)</td><td class="num">270,961</td><td class="num">7,794</td><td class="num">97.1%</td><td>Wrong + incomplete → correct, every claim traced to evidence</td></tr>
+</table>
+<p class="caveat">"Before" is the worst real logged run for each question, not a hypothetical baseline; "after" is the final, browser- or verifier-confirmed state, not an intermediate fix attempt.</p>
+
+<div class="callout good"><b>The throughline:</b> every fix that actually held converged on the same shape - resolve the ambiguity once, as data or as a stated default rule, not as a heuristic re-derived from scratch on every question. The fixes that didn't hold on the first attempt were exactly the ones still asking the model to infer something from context rather than check a fact: the cheap-but-wrong aggregate query (2026-08-06 v1, 11,926 tokens, mislabeled an accessory), and the narrow phrasing-based patches here (2026-08-07, fixed twice before the underlying category-vs-phrasing rule was actually correct). Cost and correctness moved together every time, not against each other - the cheapest wrong answer was never actually cheaper than the eventual correct one, once what it would take to get the model to argue itself out of a bad guess is counted too.</div>
+
+</div>
+</body>
+</html>
