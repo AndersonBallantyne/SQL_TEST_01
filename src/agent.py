@@ -138,9 +138,9 @@ If asked to save or persist a computed result for later reuse, use save_datafram
 Anything you save with save_dataframe becomes a normal table you can rediscover later — use list_tables and describe_table to find and inspect it, the same way you would any other table, before assuming a past result isn't available.
 For questions about the general kind or theme of equipment (e.g. "camera gear", "audio equipment") rather than exact structured filters, use search_summaries instead of writing SQL yourself - it finds conceptually related items even without exact keyword matches.
 
-For questions about this project's own history, design decisions, or documentation, use search_docs; but for questions about a category the cheat sheet already tracks as a table - every file, every command, every SQL migration - prefer run_sql_query against docs.chunks instead, regardless of how the question is phrased - "list every X", "what are the X", "tell me about X", and "describe the X" all mean the same retrieval need here. Semantic search ranks by content similarity, not completeness or chronological order: it can return a plausible-looking partial sample instead of the full set, or rank an older, thematically-similar chunk above a genuinely newer one - confirmed live both ways (a "tell me about SQL migrations" answer that fabricated unsupported claims from an incomplete sample; a "latest incident" answer that returned an older one).
+For questions about this project's own history, design decisions, or documentation, use search_docs; but for questions about a category the cheat sheet already tracks as a table - every file, every command, every SQL migration, or the latest commits/activity/work - prefer run_sql_query against docs.chunks instead, regardless of how the question is phrased - "list every X", "what are the X", "tell me about X", "describe the X", and "what's the latest X" all mean the same retrieval need here. Semantic search ranks by content similarity, not completeness or chronological order: it can return a plausible-looking partial sample instead of the full set, or rank an older, thematically-similar chunk above a genuinely newer one - confirmed live both ways (a "tell me about SQL migrations" answer that fabricated unsupported claims from an incomplete sample; a "latest incident" answer that returned an older one).
 docs.chunks has columns chunk_id, source_file, chunk_text (plus an embedding column) - describe_table won't show these since it's a bare-name lookup, not schema-qualified. For these questions, don't guess keywords with ILIKE against chunk_text; instead query chunk_text WHERE source_file = 'docs/sql-test-01-cheatsheet.html' - that file is this project's own living cheat sheet and already enumerates every file, command, and SQL migration used, in order. If that exact path ever returns nothing, run SELECT DISTINCT source_file FROM docs.chunks first rather than guessing another literal string - the path is whatever extract_doc_chunks.py's SOURCE_FILES list currently uses, which can change.
-For "latest/most recent X" questions, add ORDER BY chunk_id DESC to that same query - the cheat sheet is append-only (new entries added at the end of each build or incident, never edited in place), so within that one file a higher chunk_id reliably means "added more recently."
+Don't use that SELECT DISTINCT source_file listing to pick a different, better-sounding file instead - only ever to relocate the cheat sheet itself if its exact path changed. A file name that looks newest is not evidence that it IS newest: the per-build handoff briefs (docs/BUILD_N_FLOW/*.html) are frozen snapshots, written once when that build shipped and never touched again, so docs/BUILD_7_FLOW/build7-handoff-brief.html looking like the highest-numbered build doesn't mean it covers anything after Build 7 shipped. Only the cheat sheet keeps growing post-ship - every later incident, fix, or maintenance pass is appended there too, regardless of which build or file it's actually about. Confirmed live: a "latest commits" question queried source_file names, picked build7-handoff-brief.html for looking newest, and reported Build 7 as the latest work - silently missing two weeks of subsequent incidents and fixes that exist only in the cheat sheet. For any "latest/most recent X" question, always query the cheat sheet specifically (never a handoff brief), and add ORDER BY chunk_id DESC to that query - the cheat sheet is append-only (new entries added at the end of each build or incident, never edited in place), so within that one file a higher chunk_id reliably means "added more recently."
 When search_docs genuinely is the right tool - a narrative/thematic question with no enumerable category behind it, like "why was X designed this way" - only state what the retrieved chunks actually say. A handful of similarity-ranked results is a sample, not a survey: don't generalize a pattern across the whole system (e.g. that something is "always" true, "cumulative," or "idempotent") unless a chunk states that explicitly, and don't present a partial sample as if it were the complete picture - say what's missing instead of filling the gap with something plausible-sounding.
 
 clean.allocations' summary column stores each checkout's equipment as one delimited text string (e.g., "ITEM NAME - TAG | ITEM NAME - TAG | ...", sometimes prefixed "Returned: "). Don't parse it yourself.
@@ -156,6 +156,10 @@ MAX_TOOL_TURNS = 15
 MAX_FULL_FIDELITY_ROUNDS = 3
 
 def flatten_history(history_rounds):
+    # Each round's stored full_messages must hold only that round's own turns (see
+    # own_messages_start in ask_agent), never inherited history - otherwise splicing the last
+    # MAX_FULL_FIDELITY_ROUNDS rounds in here re-embeds each of their own already-inherited
+    # copies of the rounds before them, compounding ~2x per round instead of staying bounded.
     older_rounds = history_rounds[:-MAX_FULL_FIDELITY_ROUNDS]
     recent_rounds = history_rounds[-MAX_FULL_FIDELITY_ROUNDS:]
 
@@ -174,6 +178,13 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
     # Build 5/6 make concurrent ask_agent() calls possible, defeating the point of this ID.
     question_id = uuid.uuid4().hex[:12]
     messages = flatten_history(history_rounds or [])
+    # Everything from here on is this round's own turns - stored/returned separately from
+    # the inherited history above it, so a future round's flatten_history() splices in only
+    # one round's worth of new content instead of re-embedding what was already inherited
+    # (which had compounded full_messages exponentially: 76/144/274/506/938 messages across
+    # 5 consecutive rounds, since each round's stored history already contained its own
+    # inherited copy of the previous rounds').
+    own_messages_start = len(messages)
     messages.append({"role": "user", "content": user_question})
 
     turn = 0
@@ -197,7 +208,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
             print(f"Anthropic API error: {e}")
             log_final_answer(question_id, user_question, answer, error=str(e), input_tokens=total_input_tokens, output_tokens=total_output_tokens)
             usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
-            return {"answer": answer, "error": str(e), "full_messages": messages, "question_id": question_id, "usage": usage}
+            return {"answer": answer, "error": str(e), "full_messages": messages[own_messages_start:], "question_id": question_id, "usage": usage}
 
         total_input_tokens += response.usage.input_tokens
         total_output_tokens += response.usage.output_tokens
@@ -223,7 +234,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
                 print(f"[VERIFY ERROR] {e}")
             usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
             print(f"[TOTAL TOKENS] in={total_input_tokens} out={total_output_tokens} total={total_input_tokens + total_output_tokens}")
-            return {"answer": answer, "error": None, "full_messages": messages, "question_id": question_id, "usage": usage}
+            return {"answer": answer, "error": None, "full_messages": messages[own_messages_start:], "question_id": question_id, "usage": usage}
 
 
 
@@ -281,7 +292,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
     print(f"Stopped after reaching the {max_tool_turns}-turn limit.")
     log_final_answer(question_id, user_question, answer, error="max_turns_reached", input_tokens=total_input_tokens, output_tokens=total_output_tokens)
     usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
-    return {"answer": answer, "error": "max_turns_reached", "full_messages": messages, "question_id": question_id, "usage": usage}
+    return {"answer": answer, "error": "max_turns_reached", "full_messages": messages[own_messages_start:], "question_id": question_id, "usage": usage}
 
 
 
