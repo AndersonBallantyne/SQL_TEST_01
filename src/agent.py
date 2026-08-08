@@ -17,7 +17,7 @@ if hasattr(sys.stdout, "reconfigure"):
 from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries, search_docs
 import time
 from verify_answer import verify_answer
-from logging_utils import log_tool_call, log_final_answer, log_verification, get_tool_calls
+from logging_utils import log_tool_call, log_final_answer, log_verification, log_verification_error, get_tool_calls
 
 load_dotenv(encoding="utf-8-sig")
 
@@ -150,10 +150,45 @@ For anything about individual items - counts, categories/types, accessories vs. 
 Default rule, not just an example: "how many X do you have" or "how many types of X" always means base equipment, not its accessories - always add AND is_accessory = false to these queries, for every category, unless the user explicitly asks about accessories/parts/chargers/cases themselves. A category (e.g. 'laptop', 'microphone') groups an item with its accessories together on purpose, precisely so a query can separate them with this one flag - dropping the filter silently folds chargers, cases, batteries, and cables into the count.
 
 If a question needs a subcategory count compared against a broader total (e.g. per-model counts vs. an overall count), compute both with the exact same WHERE condition - counts computed under different filters will look contradictory even when each is individually correct.
+
+Whenever a WHERE clause mixes AND with OR, wrap every OR group in its own parentheses. SQL evaluates AND before OR, so source_file = 'x' AND chunk_text ILIKE '%a%' OR chunk_text ILIKE '%b%' OR chunk_text ILIKE '%c%' silently applies the source_file filter to only the first branch - the second and third run unscoped against every row in the table, not just the intended file. Write it as source_file = 'x' AND (chunk_text ILIKE '%a%' OR chunk_text ILIKE '%b%' OR chunk_text ILIKE '%c%') instead - confirmed live: an unparenthesized version of exactly this pattern returned zero rows from the intended file and twenty from unrelated ones.
 """
 MAX_TOOL_TURNS = 15
 
 MAX_FULL_FIDELITY_ROUNDS = 3
+
+# The fidelity window above bounds round COUNT, not per-round payload size - flagged as an
+# unmitigated risk back in Build 6's own planning notes, and confirmed real 2026-08-08: a
+# single legitimate, correctly-scoped run_sql_query result (58,824 chars, an ORDER BY ...
+# LIMIT 100/200 documentation query) got replayed at full size into every turn of the next
+# question, tripling its own cost before that question had even run a tool call of its own.
+# This caps what a round CARRIES FORWARD into future rounds' inherited context, not what it
+# sees live - the round that actually gathered the data still gets the real, full result for
+# its own reasoning; this only shrinks the copy that gets persisted for others to inherit.
+MAX_HISTORY_TOOL_RESULT_CHARS = 3000
+
+def _cap_tool_results_for_history(messages):
+    capped = []
+    for msg in messages:
+        if msg["role"] == "user" and isinstance(msg["content"], list):
+            new_content = []
+            for block in msg["content"]:
+                if isinstance(block, dict) and block.get("type") == "tool_result":
+                    content = block.get("content", "")
+                    if isinstance(content, str) and len(content) > MAX_HISTORY_TOOL_RESULT_CHARS:
+                        block = {
+                            **block,
+                            "content": (
+                                f"{content[:MAX_HISTORY_TOOL_RESULT_CHARS]}... "
+                                f"[history truncated: {len(content):,} total chars - "
+                                f"re-run the query if this data is needed again]"
+                            ),
+                        }
+                new_content.append(block)
+            capped.append({**msg, "content": new_content})
+        else:
+            capped.append(msg)
+    return capped
 
 def flatten_history(history_rounds):
     # Each round's stored full_messages must hold only that round's own turns (see
@@ -199,7 +234,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
         try:
             response = client.messages.create(
                 model="claude-haiku-4-5",
-                max_tokens=1024,
+                max_tokens=2048,
                 system=SYSTEM_PROMPT,
                 tools=tools,
                 messages=messages
@@ -208,7 +243,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
             print(f"Anthropic API error: {e}")
             log_final_answer(question_id, user_question, answer, error=str(e), input_tokens=total_input_tokens, output_tokens=total_output_tokens)
             usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
-            return {"answer": answer, "error": str(e), "full_messages": messages[own_messages_start:], "question_id": question_id, "usage": usage}
+            return {"answer": answer, "error": str(e), "full_messages": _cap_tool_results_for_history(messages[own_messages_start:]), "question_id": question_id, "usage": usage}
 
         total_input_tokens += response.usage.input_tokens
         total_output_tokens += response.usage.output_tokens
@@ -224,6 +259,16 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
         messages.append({"role": "assistant", "content": response.content})
 
         if response.stop_reason != "tool_use":
+            if response.stop_reason == "max_tokens":
+                # Confirmed live 2026-08-08: a genuinely correct, in-progress answer hit this
+                # cap mid-generation and got returned/logged as if it were complete - opening
+                # with "14+ confirmed bugs" but silently stopping after 12, with no indication
+                # anywhere that anything was missing. Raising max_tokens (1024 -> 2048) cuts how
+                # often this fires; this makes the remaining cases visible instead of silent,
+                # the same "truncate with a sentinel, never bare" rule MAX_FIELD_CHARS and
+                # MAX_SQL_RESULT_ROWS already apply to tool results.
+                print(f"[ANSWER TRUNCATED] hit max_tokens for question_id {question_id}")
+                answer += "\n\n*(This answer was cut off before finishing - it hit a length limit mid-response.)*"
             log_final_answer(question_id, user_question, answer, input_tokens=total_input_tokens, output_tokens=total_output_tokens)
             try:
                 evidence = get_tool_calls(question_id, include_output=True)
@@ -232,9 +277,10 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
                     log_verification(question_id, user_question, answer, supported, reason)
             except Exception as e:
                 print(f"[VERIFY ERROR] {e}")
+                log_verification_error(question_id, user_question, e)
             usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
             print(f"[TOTAL TOKENS] in={total_input_tokens} out={total_output_tokens} total={total_input_tokens + total_output_tokens}")
-            return {"answer": answer, "error": None, "full_messages": messages[own_messages_start:], "question_id": question_id, "usage": usage}
+            return {"answer": answer, "error": None, "full_messages": _cap_tool_results_for_history(messages[own_messages_start:]), "question_id": question_id, "usage": usage}
 
 
 
@@ -292,7 +338,7 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
     print(f"Stopped after reaching the {max_tool_turns}-turn limit.")
     log_final_answer(question_id, user_question, answer, error="max_turns_reached", input_tokens=total_input_tokens, output_tokens=total_output_tokens)
     usage = {"input_tokens": total_input_tokens, "output_tokens": total_output_tokens}
-    return {"answer": answer, "error": "max_turns_reached", "full_messages": messages[own_messages_start:], "question_id": question_id, "usage": usage}
+    return {"answer": answer, "error": "max_turns_reached", "full_messages": _cap_tool_results_for_history(messages[own_messages_start:]), "question_id": question_id, "usage": usage}
 
 
 

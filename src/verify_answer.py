@@ -71,7 +71,7 @@ Is the proposed answer supported by the tool evidence?"""
 
     response = client.messages.create(
         model="claude-haiku-4-5",
-        max_tokens=512,
+        max_tokens=1024,
         system=VERIFIER_SYSTEM_PROMPT,
         tools=[VERIFIER_TOOL],
         tool_choice={"type": "tool", "name": "report_verdict"},
@@ -80,7 +80,23 @@ Is the proposed answer supported by the tool evidence?"""
 
     for block in response.content:
         if block.type == "tool_use" and block.name == "report_verdict":
-            return block.input["supported"], block.input["reason"]
+            # Confirmed live 2026-08-08: a large evidence + answer payload made this call hit
+            # its own max_tokens cap mid-generation, truncating report_verdict's JSON after
+            # "supported" but before "reason" ever got written. block.input["reason"] then threw
+            # KeyError, silently swallowed by agent.py's try/except - the user saw no badge at
+            # all, not even a red one, with zero trace of why. Raising max_tokens (512 -> 1024)
+            # cuts how often this fires; .get() with a fallback means a still-truncated response
+            # returns a real (if less detailed) verdict instead of vanishing.
+            if response.stop_reason == "max_tokens" and "reason" not in block.input:
+                print(f"[VERIFIER TRUNCATED] report_verdict hit max_tokens before 'reason' was written")
+            supported = block.input.get("supported")
+            if supported is None:
+                raise RuntimeError(f"Verifier's report_verdict call was missing 'supported' entirely: {block.input!r}")
+            reason = block.input.get(
+                "reason",
+                "Verifier's explanation was cut off before it could be generated (the verifier's own response hit its token limit).",
+            )
+            return supported, reason
 
     raise RuntimeError("Verifier did not return a report_verdict tool call.")
 

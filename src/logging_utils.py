@@ -123,3 +123,20 @@ def log_verification(question_id, user_question, answer, supported, reason):
     }
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry, default=str) + "\n")
+
+def log_verification_error(question_id, user_question, error):
+    # A distinct shape from log_verification's entries (keyed on "verification_error" instead
+    # of "supported") so get_verification() can't accidentally match it. Added 2026-08-08 after
+    # a real verifier crash (report_verdict truncated mid-JSON) was only found by manually
+    # reproducing the call - agent.py's try/except around verification was printing to console
+    # only, nothing durable, so the app showed no badge at all with zero trace of why in any
+    # log a future debugging session could actually search.
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "question_id": question_id,
+        "user_question": user_question,
+        "verification_error": str(error),
+    }
+    with open(LOG_PATH, "a") as f:
+        f.write(json.dumps(entry, default=str) + "\n")
