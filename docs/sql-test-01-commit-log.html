@@ -1,0 +1,699 @@
+<title>SQL_TEST_01 — Commit Log</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A;
+      --surface: #172023;
+      --ink: #E8EDED;
+      --ink-2: #C2CBCD;
+      --muted: #8CA0A3;
+      --rule: #32403F;
+      --teal: #1C7A82;
+      --teal-ink: #EFFBFB;
+      --teal-tint: #17282A;
+      --accent: #E2916A;
+      --accent-tint: #2C2019;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A;
+    --surface: #172023;
+    --ink: #E8EDED;
+    --ink-2: #C2CBCD;
+    --muted: #8CA0A3;
+    --rule: #32403F;
+    --teal: #1C7A82;
+    --teal-ink: #EFFBFB;
+    --teal-tint: #17282A;
+    --accent: #E2916A;
+    --accent-tint: #2C2019;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+    --teal-tint: #E7EEEE;
+    --accent: #B5502B;
+    --accent-tint: #F7E9E2;
+    --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent-tint); color: var(--ink); }
+
+  .page {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--teal);
+    flex: none;
+  }
+
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(28px, 4vw, 38px);
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0 0 10px;
+  }
+  .lede {
+    font-size: 16px;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0 0 28px;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 32px;
+  }
+  .meta dt {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  .meta dd { margin: 0; font-size: 14px; color: var(--ink); }
+
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin: 0 0 48px;
+  }
+  nav.toc a {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+    color: var(--teal);
+    text-decoration: none;
+    padding: 6px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: var(--surface);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  nav.toc a:hover { border-color: var(--teal); background: var(--teal-tint); }
+  nav.toc a:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+  section.group { margin-bottom: 44px; scroll-margin-top: 24px; }
+
+  .group-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .group-head h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600;
+    font-size: 21px;
+    margin: 0;
+  }
+  .group-tag {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .group-note {
+    font-size: 13.5px;
+    color: var(--ink-2);
+    margin: 4px 0 14px;
+    max-width: 64ch;
+  }
+
+  .ref-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    background: var(--surface);
+  }
+  table.ref {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  table.ref thead th {
+    text-align: left;
+    background: var(--teal);
+    color: var(--teal-ink);
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    white-space: nowrap;
+  }
+  table.ref thead th:first-child { border-top-left-radius: 9px; }
+  table.ref thead th:last-child { border-top-right-radius: 9px; }
+  table.ref td {
+    padding: 11px 16px;
+    border-top: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  table.ref tbody tr:hover td { background: var(--teal-tint); }
+  table.ref td.cmd {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--accent);
+    white-space: pre;
+    width: 46%;
+  }
+  table.ref td.desc { color: var(--ink-2); }
+  table.ref td.desc b { color: var(--ink); font-weight: 600; }
+  table.ref td.num {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 12px;
+    color: var(--muted);
+    width: 36px;
+    text-align: right;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 600px) {
+    table.ref td.cmd { width: auto; }
+    table.ref thead { display: none; }
+    table.ref tr { display: block; border-top: 1px solid var(--rule); }
+    table.ref tr:first-child { border-top: none; }
+    table.ref td { display: block; border-top: none; padding: 6px 14px; }
+    table.ref td.cmd { padding-top: 12px; }
+    table.ref td.desc { padding-bottom: 12px; }
+    table.ref td.num { width: auto; text-align: left; color: var(--ink-2); font-size: 11px; padding-bottom: 0; }
+  }
+
+  @media print {
+    @page { margin: 0.5in; }
+    nav.toc a { border-color: var(--rule) !important; }
+    .page { padding: 0; max-width: 100%; }
+    section.group { break-inside: avoid-page; }
+    .ref-table-wrap { overflow-x: visible; box-shadow: none; }
+    table.ref thead { display: none; }
+    table.ref tr { display: block; border-top: 1px solid var(--rule); break-inside: avoid; }
+    table.ref tr:first-child { border-top: none; }
+    table.ref td { display: block; border-top: none; padding: 5px 16px; }
+    table.ref td.cmd {
+      padding-top: 11px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 11px;
+    }
+    table.ref td.desc { padding-bottom: 11px; font-size: 11.5px; }
+    table.ref td.num { width: auto; text-align: left; padding-bottom: 0; }
+  }
+</style>
+
+<div class="page">
+
+  <p class="eyebrow">SQL_TEST_01 · Commit Log · Living Document</p>
+  <h1>Every commit, in order</h1>
+  <p class="lede">Every commit summary message in this repository, oldest first, grouped by the date it was made. Summary line only — no bodies, no diffs. Appended as new commits land, not written once and frozen.</p>
+
+  <dl class="meta">
+    <div><dt>Commits</dt><dd>133, across 23 days (2026-07-01 through 2026-08-10)</dd></div>
+    <div><dt>Source</dt><dd><code>git log --date=format:'%Y-%m-%d' --pretty=format:'%ad|%s' --reverse</code></dd></div>
+    <div><dt>Branch</dt><dd>main</dd></div>
+  </dl>
+
+  <nav class="toc" aria-label="Jump to date">
+    <a href="#2026-07-01">2026-07-01</a>
+    <a href="#2026-07-02">2026-07-02</a>
+    <a href="#2026-07-07">2026-07-07</a>
+    <a href="#2026-07-10">2026-07-10</a>
+    <a href="#2026-07-13">2026-07-13</a>
+    <a href="#2026-07-16">2026-07-16</a>
+    <a href="#2026-07-17">2026-07-17</a>
+    <a href="#2026-07-18">2026-07-18</a>
+    <a href="#2026-07-19">2026-07-19</a>
+    <a href="#2026-07-20">2026-07-20</a>
+    <a href="#2026-07-21">2026-07-21</a>
+    <a href="#2026-07-22">2026-07-22</a>
+    <a href="#2026-07-23">2026-07-23</a>
+    <a href="#2026-07-24">2026-07-24</a>
+    <a href="#2026-07-27">2026-07-27</a>
+    <a href="#2026-07-29">2026-07-29</a>
+    <a href="#2026-07-30">2026-07-30</a>
+    <a href="#2026-07-31">2026-07-31</a>
+    <a href="#2026-08-04">2026-08-04</a>
+    <a href="#2026-08-05">2026-08-05</a>
+    <a href="#2026-08-06">2026-08-06</a>
+    <a href="#2026-08-07">2026-08-07</a>
+    <a href="#2026-08-10">2026-08-10</a>
+  </nav>
+
+  <section class="group" id="2026-07-01">
+    <div class="group-head"><h2>2026-07-01</h2><span class="group-tag">1 commit</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Initial commit: Dockersized Postres and SQL Server setup</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-02">
+    <div class="group-head"><h2>2026-07-02</h2><span class="group-tag">2 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Schema Test File</td></tr>
+          <tr><td class="num">2</td><td class="desc">mssql_local password change</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-07">
+    <div class="group-head"><h2>2026-07-07</h2><span class="group-tag">2 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Add idempotent seed data for customers and orders</td></tr>
+          <tr><td class="num">2</td><td class="desc">Add SQL Server schema and seed for customers/orders</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-10">
+    <div class="group-head"><h2>2026-07-10</h2><span class="group-tag">1 commit</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Trying to reset PASS</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-13">
+    <div class="group-head"><h2>2026-07-13</h2><span class="group-tag">1 commit</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Fix credential exposure and seed idempotency bugs found in audit</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-16">
+    <div class="group-head"><h2>2026-07-16</h2><span class="group-tag">4 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Ignore __pycache__ in .gitignore</td></tr>
+          <tr><td class="num">2</td><td class="desc">Add schema-discovery tools and register them in the agent (pre-loop-generalization)</td></tr>
+          <tr><td class="num">3</td><td class="desc">Generalize the tool-use loop to handle chained tool calls</td></tr>
+          <tr><td class="num">4</td><td class="desc">Harden agent with read-only DB role, SQL guard, and query logging (Phase 5)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-17">
+    <div class="group-head"><h2>2026-07-17</h2><span class="group-tag">4 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Containerize the agent as a docker-compose service (Phase 6)</td></tr>
+          <tr><td class="num">2</td><td class="desc">Fix multi-tool-call bug, cap the tool-use loop, handle API errors</td></tr>
+          <tr><td class="num">3</td><td class="desc">Fix diamond text overflow across diagrams, add hardening-pass diagram</td></tr>
+          <tr><td class="num">4</td><td class="desc">Reorganize PROJECT_DIAGRAMS into per-build subfolders</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-18">
+    <div class="group-head"><h2>2026-07-18</h2><span class="group-tag">3 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Add raw ingestion script for allocations CSV (Build 2, Phase 1)</td></tr>
+          <tr><td class="num">2</td><td class="desc">Add raw_schema.sql for the raw.allocations staging table</td></tr>
+          <tr><td class="num">3</td><td class="desc">Add Build 2, Phase 2 flow diagram (profile &amp; transform)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-19">
+    <div class="group-head"><h2>2026-07-19</h2><span class="group-tag">3 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Number the Postgres SQL files to encode their run order</td></tr>
+          <tr><td class="num">2</td><td class="desc">Add pandas dependency and the raw-data profiling script</td></tr>
+          <tr><td class="num">3</td><td class="desc">Add command-reference cheat sheet as a living project doc</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-20">
+    <div class="group-head"><h2>2026-07-20</h2><span class="group-tag">13 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Add clean.allocations schema and transformation script (Build 2, Phase 2)</td></tr>
+          <tr><td class="num">2</td><td class="desc">Fix cheat sheet's docker exec redirection to PowerShell syntax</td></tr>
+          <tr><td class="num">3</td><td class="desc">Add Build 2, Phase 3 flow diagram (agent integration &amp; data quality)</td></tr>
+          <tr><td class="num">4</td><td class="desc">Connect the agent to clean.allocations and add a pandera/pytest suite (Build 2, Phase 3)</td></tr>
+          <tr><td class="num">5</td><td class="desc">Append Build 2, Phase 3 commands to the living cheat sheet</td></tr>
+          <tr><td class="num">6</td><td class="desc">Add Build 2.5, Phase 1 flow diagram (provision the scratch workspace)</td></tr>
+          <tr><td class="num">7</td><td class="desc">Provision the agent scratch workspace (Build 2.5, Phase 1)</td></tr>
+          <tr><td class="num">8</td><td class="desc">Add save_dataframe, a guarded write tool for agent_scratch (Build 2.5, Phase 2)</td></tr>
+          <tr><td class="num">9</td><td class="desc">Wire save_dataframe into the agent and prove a save-then-read-back round trip (Build 2.5, Phase 3)</td></tr>
+          <tr><td class="num">10</td><td class="desc">Add automated boundary tests for the agent scratch workspace (Build 2.5, Phase 4)</td></tr>
+          <tr><td class="num">11</td><td class="desc">Add standalone Build 2.5 handoff brief</td></tr>
+          <tr><td class="num">12</td><td class="desc">Cap the number of distinct tables in agent_scratch (Build 2.5 follow-up)</td></tr>
+          <tr><td class="num">13</td><td class="desc">Update handoff brief: table-count cap limitation now resolved</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-21">
+    <div class="group-head"><h2>2026-07-21</h2><span class="group-tag">16 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Add Build 3, Phase 1 flow diagram (enable semantic search)</td></tr>
+          <tr><td class="num">2</td><td class="desc">Rename profile.py to profile_raw_data.py (Build 3 incident)</td></tr>
+          <tr><td class="num">3</td><td class="desc">Enable pgvector and backfill embeddings for allocation summaries (Build 3, Phase 1)</td></tr>
+          <tr><td class="num">4</td><td class="desc">Fix cheat sheet's profile.py reference after the Build 3 rename</td></tr>
+          <tr><td class="num">5</td><td class="desc">Add search_summaries.py, proving raw similarity search works (Build 3, Phase 1)</td></tr>
+          <tr><td class="num">6</td><td class="desc">Wire search_summaries into the agent (Build 3, Phase 2)</td></tr>
+          <tr><td class="num">7</td><td class="desc">Add Build 3 agent request-flow diagram (runtime lifecycle, not a build phase)</td></tr>
+          <tr><td class="num">8</td><td class="desc">Add standalone Build 3 handoff brief (in progress, Phases 1-2)</td></tr>
+          <tr><td class="num">9</td><td class="desc">Add automated test suite for semantic search (Build 3, Phase 3)</td></tr>
+          <tr><td class="num">10</td><td class="desc">Make embed_summaries.py idempotent - only embeds rows missing summary_embedding (Build 3 follow-up)</td></tr>
+          <tr><td class="num">11</td><td class="desc">Update Build 3 handoff brief: re-embedding limitation now resolved</td></tr>
+          <tr><td class="num">12</td><td class="desc">Add HNSW vector index on clean.allocations.summary_embedding (Build 3 follow-up)</td></tr>
+          <tr><td class="num">13</td><td class="desc">Update Build 3 handoff brief: HNSW vector index limitation now resolved</td></tr>
+          <tr><td class="num">14</td><td class="desc">Catch the living cheat sheet up through Build 2.5 and Build 3</td></tr>
+          <tr><td class="num">15</td><td class="desc">Add Build 3.5 Phase 1 flow diagram: Chunk &amp; Embed the Docs</td></tr>
+          <tr><td class="num">16</td><td class="desc">Add a project-wide file map to the living cheat sheet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-22">
+    <div class="group-head"><h2>2026-07-22</h2><span class="group-tag">9 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Add a running list of Claude's own working commands to the cheat sheet</td></tr>
+          <tr><td class="num">2</td><td class="desc">Add Build 2 handoff brief — Raw-to-Queryable Data Pipeline</td></tr>
+          <tr><td class="num">3</td><td class="desc">Complete Build 3.5 — Documentation RAG Agent (all 3 phases)</td></tr>
+          <tr><td class="num">4</td><td class="desc">Add Build 3.5 handoff brief — Documentation RAG Agent</td></tr>
+          <tr><td class="num">5</td><td class="desc">Catch the living cheat sheet up through Build 3.5</td></tr>
+          <tr><td class="num">6</td><td class="desc">Add missing per-phase flow diagrams for Build 3 and Build 3.5</td></tr>
+          <tr><td class="num">7</td><td class="desc">Add Build 4 Phase 1 flow diagram: Structured Tool-Call Tracing</td></tr>
+          <tr><td class="num">8</td><td class="desc">Complete Build 4, Phase 1 — structured tool-call tracing</td></tr>
+          <tr><td class="num">9</td><td class="desc">Add Build 4 Phase 2 flow diagram: The Eval Harness</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-23">
+    <div class="group-head"><h2>2026-07-23</h2><span class="group-tag">10 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Build 4 Phase 2: eval harness, plus turn-budget and keyword-robustness fixes</td></tr>
+          <tr><td class="num">2</td><td class="desc">Add Build 4 Phase 3 flow diagram: The Metrics Rollup</td></tr>
+          <tr><td class="num">3</td><td class="desc">Add question_id to the tool-call log, ahead of Build 5/6 concurrency</td></tr>
+          <tr><td class="num">4</td><td class="desc">Document non-obvious design decisions across the project as code comments</td></tr>
+          <tr><td class="num">5</td><td class="desc">Build 4 Phase 3: metrics rollup script</td></tr>
+          <tr><td class="num">6</td><td class="desc">Add Build 4 handoff brief</td></tr>
+          <tr><td class="num">7</td><td class="desc">Catch the living cheat sheet up through Build 4</td></tr>
+          <tr><td class="num">8</td><td class="desc">Build 4 follow-up: metrics history, log rotation, and real sample data in the brief</td></tr>
+          <tr><td class="num">9</td><td class="desc">Redact leaked dev credentials from Build 1 handoff brief</td></tr>
+          <tr><td class="num">10</td><td class="desc">Build 5 Phase 1: CI workflow, masked data fixture, reproducibility fixes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-24">
+    <div class="group-head"><h2>2026-07-24</h2><span class="group-tag">8 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Fix CI: scope pytest discovery, remove stray api_test.py</td></tr>
+          <tr><td class="num">2</td><td class="desc">Build 5 Phase 3: gated eval harness job in CI</td></tr>
+          <tr><td class="num">3</td><td class="desc">Comment-only touch to trigger Phase 3's gated eval job live</td></tr>
+          <tr><td class="num">4</td><td class="desc">Replace real+fixture split with one official synthesized dataset</td></tr>
+          <tr><td class="num">5</td><td class="desc">Redact real department code from Build 3 handoff brief</td></tr>
+          <tr><td class="num">6</td><td class="desc">Skip the genuinely CI-incompatible eval_cases_round2 case explicitly</td></tr>
+          <tr><td class="num">7</td><td class="desc">Add Build 5 handoff brief, catch the living cheat sheet up through Build 5</td></tr>
+          <tr><td class="num">8</td><td class="desc">Gitignore the personal working-style reference folder</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-27">
+    <div class="group-head"><h2>2026-07-27</h2><span class="group-tag">2 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Add Build 6 Phase 1 - minimal Streamlit chat UI for the agent</td></tr>
+          <tr><td class="num">2</td><td class="desc">Document the Build 6 Phase 1 process incident and next-session handoff prompt</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-29">
+    <div class="group-head"><h2>2026-07-29</h2><span class="group-tag">4 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Publish Build 6 Phase 2 flow diagram - hybrid tiered conversation memory</td></tr>
+          <tr><td class="num">2</td><td class="desc">Cap run_sql_query result size and log the actual question asked</td></tr>
+          <tr><td class="num">3</td><td class="desc">Add Build 3.5/4/5 handoff briefs to the docs.chunks source list</td></tr>
+          <tr><td class="num">4</td><td class="desc">Build 6 Phase 2 (steps 1-7) - hybrid tiered conversation memory</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-30">
+    <div class="group-head"><h2>2026-07-30</h2><span class="group-tag">5 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Log the agent's final answer, not just tool-call activity</td></tr>
+          <tr><td class="num">2</td><td class="desc">Narrow agent scope to allocations, add one evidence-based prompt fix</td></tr>
+          <tr><td class="num">3</td><td class="desc">Publish Build 6 Phase 3 flow diagram - containerize the app</td></tr>
+          <tr><td class="num">4</td><td class="desc">Build 6 Phase 3 - containerize the app as a docker-compose service</td></tr>
+          <tr><td class="num">5</td><td class="desc">Add a process-ID diagnostic to confirm server restarts</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-07-31">
+    <div class="group-head"><h2>2026-07-31</h2><span class="group-tag">9 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Close Build 6 Phase 1 hands-on gate: retype chat UI in place</td></tr>
+          <tr><td class="num">2</td><td class="desc">Publish Build 6 Phase 3.5 flow diagram (design deferred, not built)</td></tr>
+          <tr><td class="num">3</td><td class="desc">Build 6 Phase 4: surface tool-call activity in a Tools Used expander</td></tr>
+          <tr><td class="num">4</td><td class="desc">Phase 4 follow-up: always show the Tools Used expander, even at 0</td></tr>
+          <tr><td class="num">5</td><td class="desc">Build 6 handoff brief + living cheat sheet catch-up</td></tr>
+          <tr><td class="num">6</td><td class="desc">Build 6 Phase 3.5: persistent shared chat history + FAQ-style expander UI</td></tr>
+          <tr><td class="num">7</td><td class="desc">Update all Build 6 docs for Phase 3.5, fix docs.chunks recurring staleness bug</td></tr>
+          <tr><td class="num">8</td><td class="desc">Cap agent_scratch.chat_rounds - no display/storage limit existed</td></tr>
+          <tr><td class="num">9</td><td class="desc">Document the chat_rounds retention cap fix in both docs, refresh corpus</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-08-04">
+    <div class="group-head"><h2>2026-08-04</h2><span class="group-tag">4 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Build 7: verify-before-surface (all 4 phases)</td></tr>
+          <tr><td class="num">2</td><td class="desc">Add Build 7 flow diagrams (all 4 phases)</td></tr>
+          <tr><td class="num">3</td><td class="desc">Build 7 handoff brief + living cheat sheet catch-up</td></tr>
+          <tr><td class="num">4</td><td class="desc">Purge Claude co-author trailer from all history, update cheat sheet convention row</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-08-05">
+    <div class="group-head"><h2>2026-08-05</h2><span class="group-tag">5 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Fix CI: add missing 012_chat_rounds_schema.sql to both migration lists</td></tr>
+          <tr><td class="num">2</td><td class="desc">Repo audit + full reorganization: src/, migrations/, tests/, docs/, legacy/</td></tr>
+          <tr><td class="num">3</td><td class="desc">Fix run_eval.py crashing on log_final_answer/log_verification entries</td></tr>
+          <tr><td class="num">4</td><td class="desc">Watch the eval runners themselves in the eval paths-filter</td></tr>
+          <tr><td class="num">5</td><td class="desc">Document the two eval-harness bugs the reorg's CI run itself surfaced</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-08-06">
+    <div class="group-head"><h2>2026-08-06</h2><span class="group-tag">1 commit</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Track token usage alongside tool use and latency, logged and displayed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-08-07">
+    <div class="group-head"><h2>2026-08-07</h2><span class="group-tag">18 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Fix verifier false positive on subset-condition SQL comparisons</td></tr>
+          <tr><td class="num">2</td><td class="desc">Cap individual field size in SQL results, stabilize the eval harness</td></tr>
+          <tr><td class="num">3</td><td class="desc">Bake the embedding model into the image, fix cold-start latency</td></tr>
+          <tr><td class="num">4</td><td class="desc">Normalize checkout items into clean.allocation_items</td></tr>
+          <tr><td class="num">5</td><td class="desc">Document the 2026-08-06 token-burn/verifier incident</td></tr>
+          <tr><td class="num">6</td><td class="desc">Fix stale docs.chunks path and two ambiguous eval cases</td></tr>
+          <tr><td class="num">7</td><td class="desc">Fix two more docs.chunks retrieval gaps found the same day</td></tr>
+          <tr><td class="num">8</td><td class="desc">Add a tracked pre-commit hook to auto-refresh the docs search index</td></tr>
+          <tr><td class="num">9</td><td class="desc">Fix .githooks/pre-commit missing its executable bit in git's index</td></tr>
+          <tr><td class="num">10</td><td class="desc">Catch the cheat sheet up through the 2026-08-07 incident</td></tr>
+          <tr><td class="num">11</td><td class="desc">Add the 2026-08-07 deployment-verification incident audit</td></tr>
+          <tr><td class="num">12</td><td class="desc">Cross-reference the 2026-08-07 incident, fix a stale claim</td></tr>
+          <tr><td class="num">13</td><td class="desc">Fix an exponential history-compounding bug and a docs-routing gap</td></tr>
+          <tr><td class="num">14</td><td class="desc">Fold two more same-day findings into the 2026-08-07 incident audit</td></tr>
+          <tr><td class="num">15</td><td class="desc">Cap the fidelity window's payload size, fix an AND/OR bug, stop two silent failures</td></tr>
+          <tr><td class="num">16</td><td class="desc">Fold Phase 9 and Phase 10 into the 2026-08-07 incident audit</td></tr>
+          <tr><td class="num">17</td><td class="desc">Generalize the grounding rule from search_docs to every evidence tool</td></tr>
+          <tr><td class="num">18</td><td class="desc">Close Phase 11 in the 2026-08-07 audit, evidenced with a live screenshot</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="group" id="2026-08-10">
+    <div class="group-head"><h2>2026-08-10</h2><span class="group-tag">8 commits</span></div>
+    <div class="ref-table-wrap">
+      <table class="ref">
+        <thead><tr><th>#</th><th>Commit summary</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="desc">Route open/deferred-item questions to data, not search, and stop chasing truncated evidence</td></tr>
+          <tr><td class="num">2</td><td class="desc">Add the 2026-08-10 stale-status-claim incident audit</td></tr>
+          <tr><td class="num">3</td><td class="desc">Split long chunks at extraction time - the mechanism, not the instance</td></tr>
+          <tr><td class="num">4</td><td class="desc">Add Phase 5 to the 2026-08-10 audit: the logic fix, not just the situation</td></tr>
+          <tr><td class="num">5</td><td class="desc">Close the scratch-table cleanup deferral with age-based tracking</td></tr>
+          <tr><td class="num">6</td><td class="desc">Close out the Known Open &amp; Deferred Items table</td></tr>
+          <tr><td class="num">7</td><td class="desc">Add immediate scratch-table deletion, bypassing the age gate</td></tr>
+          <tr><td class="num">8</td><td class="desc">Document immediate scratch-table deletion in the cheat sheet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Living document — one row per commit, summary line only, grouped by calendar date. Regenerated from <code>git log</code> as new commits land, not written once and frozen. See <a href="sql-test-01-cheatsheet.html">sql-test-01-cheatsheet.html</a> for what each change actually did.
+  </footer>
+
+</div>
