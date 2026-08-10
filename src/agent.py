@@ -14,7 +14,7 @@ import anthropic
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 #from tools import run_sql_query, list_tables, describe_table, save_dataframe
-from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries, search_docs
+from tools import run_sql_query, list_tables, describe_table, save_dataframe, search_summaries, search_docs, list_stale_scratch_tables
 import time
 from verify_answer import verify_answer
 from logging_utils import log_tool_call, log_final_answer, log_verification, log_verification_error, get_tool_calls
@@ -95,6 +95,21 @@ tools = [
     },
 
     {
+        "name": "list_stale_scratch_tables",
+        "description": "List your own scratch-workspace tables (agent_scratch) older than a threshold, with their age in days. Read-only - reports candidates, never deletes anything. You have no delete capability at all: if a user wants old scratch tables removed, tell them what you found and that they can delete them from the sidebar in the app UI - never claim you deleted something, and never imply you can.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "mention_after_days": {
+                    "type": "integer",
+                    "description": "Minimum age in days for a table to be worth mentioning at all. Defaults to 7."
+                }
+            },
+            "required": []
+        }
+    },
+
+    {
         "name": "search_summaries",
         "description": "Semantic search over allocation summaries (equipment descriptions). Use this for questions about the general kind or theme of equipment rather than an exact structured filter - it finds conceptually related items even without exact keyword matches. Returns a message, not an error, if nothing is sufficiently relevant.",
         "input_schema": {
@@ -136,6 +151,8 @@ When you need data to answer a question, use the run_sql_query tool. Only write 
 If asked to save or persist a computed result for later reuse, use save_dataframe. It only writes to your own scratch workspace and cannot affect any of the main database tables.
 
 Anything you save with save_dataframe becomes a normal table you can rediscover later — use list_tables and describe_table to find and inspect it, the same way you would any other table, before assuming a past result isn't available.
+
+If asked whether there are old/stale scratch tables, use list_stale_scratch_tables - it reports tables 7+ days old, each flagged with whether it's actually eligible for deletion (30+ days old) or just old enough to be worth mentioning. You have no way to delete anything yourself - there is no delete tool. If the user wants old tables removed, tell them what you found and point them to the sidebar in the app UI, where deletion happens through a real button click, not through you. Never say or imply you deleted, cleaned up, or removed a table.
 For questions about the general kind or theme of equipment (e.g. "camera gear", "audio equipment") rather than exact structured filters, use search_summaries instead of writing SQL yourself - it finds conceptually related items even without exact keyword matches.
 
 For questions about this project's own history, design decisions, or documentation, use search_docs; but for questions about a category the cheat sheet already tracks as a table - every file, every command, every SQL migration, the latest commits/activity/work, or open/deferred/outstanding items - prefer run_sql_query against docs.chunks instead, regardless of how the question is phrased - "list every X", "what are the X", "tell me about X", "describe the X", "what's the latest X", and "what's open/deferred/still pending" all mean the same retrieval need here. For open/deferred items specifically, query chunk_text WHERE source_file = 'docs/sql-test-01-cheatsheet.html' AND chunk_text ILIKE '%Known Open%' first - a dedicated, kept-current table exists precisely so this question never has to be re-derived by guessing keywords across a dozen incident narratives each time it's asked. Semantic search ranks by content similarity, not completeness or chronological order: it can return a plausible-looking partial sample instead of the full set, or rank an older, thematically-similar chunk above a genuinely newer one - confirmed live both ways (a "tell me about SQL migrations" answer that fabricated unsupported claims from an incomplete sample; a "latest incident" answer that returned an older one).
@@ -311,6 +328,8 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
                     result = search_summaries(block.input["query_text"])
                 elif block.name == "search_docs":
                     result = search_docs(block.input["query_text"])
+                elif block.name == "list_stale_scratch_tables":
+                    result = list_stale_scratch_tables(block.input.get("mention_after_days", 7))
                 else:
                     raise ValueError(f"Unknown tool name: {block.name}")
 

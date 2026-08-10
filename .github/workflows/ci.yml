@@ -80,7 +80,8 @@ jobs:
                    migrations/006_agent_scratch_role.sql migrations/007_agent_scratch_schema.sql \
                    migrations/008_add_summary_embedding.sql migrations/009_add_summary_embedding_hnsw_index.sql \
                    migrations/010_docs_chunks_schema.sql migrations/011_metrics_history_schema.sql \
-                   migrations/012_chat_rounds_schema.sql migrations/013_allocation_items_schema.sql; do
+                   migrations/012_chat_rounds_schema.sql migrations/013_allocation_items_schema.sql \
+                   migrations/014_scratch_table_metadata.sql; do
             echo "Applying $f"
             psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
           done
@@ -179,7 +180,8 @@ jobs:
                    migrations/006_agent_scratch_role.sql migrations/007_agent_scratch_schema.sql \
                    migrations/008_add_summary_embedding.sql migrations/009_add_summary_embedding_hnsw_index.sql \
                    migrations/010_docs_chunks_schema.sql migrations/011_metrics_history_schema.sql \
-                   migrations/012_chat_rounds_schema.sql migrations/013_allocation_items_schema.sql; do
+                   migrations/012_chat_rounds_schema.sql migrations/013_allocation_items_schema.sql \
+                   migrations/014_scratch_table_metadata.sql; do
             echo "Applying $f"
             psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
           done

@@ -93,5 +93,8 @@ def test_scratch_table_cap_blocks_new_tables_but_not_existing_ones(monkeypatch):
     conn = _connect_as("POSTGRES_AGENT_WRITER_USER", "POSTGRES_AGENT_WRITER_PASSWORD")
     with conn.cursor() as cur:
         cur.execute("DROP TABLE IF EXISTS agent_scratch.pytest_cap_existing_table")
+        # save_dataframe (014) now also inserts a table_metadata row on creation - drop it too,
+        # or repeated test runs leave orphaned metadata for a table that no longer exists.
+        cur.execute("DELETE FROM agent_scratch.table_metadata WHERE table_name = %s", ["pytest_cap_existing_table"])
     conn.commit()
     conn.close()

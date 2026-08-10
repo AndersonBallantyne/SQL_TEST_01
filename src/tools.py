@@ -89,7 +89,7 @@ def list_tables() -> list[dict]:
         SELECT table_schema, table_name
         FROM information_schema.tables
         WHERE table_schema IN ('clean', 'agent_scratch', 'docs')
-          AND NOT (table_schema = 'agent_scratch' AND table_name = 'chat_rounds')
+          AND NOT (table_schema = 'agent_scratch' AND table_name IN ('chat_rounds', 'table_metadata'))
         ORDER BY table_name;
     """)
 
@@ -102,7 +102,7 @@ def describe_table(name: str) -> list[dict]:
         SELECT column_name, data_type
         FROM information_schema.columns
         WHERE table_schema IN ('clean', 'agent_scratch', 'docs') AND table_name = %s
-          AND NOT (table_schema = 'agent_scratch' AND table_name = 'chat_rounds')
+          AND NOT (table_schema = 'agent_scratch' AND table_name IN ('chat_rounds', 'table_metadata'))
         ORDER BY ordinal_position;
     """, [name])
 
@@ -263,6 +263,17 @@ def save_dataframe(table_name: str, columns: list[str], rows: list[tuple]) -> di
         )
         cur.execute(create_stmt)
 
+        if not table_already_exists:
+            # Only on genuine creation, not on a later save_dataframe call that appends more
+            # rows to an existing table - created_at should reflect when the table was first
+            # made, not the most recent write to it. ON CONFLICT DO NOTHING is defensive, not
+            # expected: table_already_exists already gates this to the new-table path.
+            cur.execute(
+                "INSERT INTO agent_scratch.table_metadata (table_name) VALUES (%s) "
+                "ON CONFLICT (table_name) DO NOTHING",
+                [table_name],
+            )
+
         insert_stmt = sql.SQL("INSERT INTO agent_scratch.{} ({}) VALUES ({})").format(
             sql.Identifier(table_name),
             sql.SQL(", ").join(sql.Identifier(c) for c in columns),
@@ -274,6 +285,103 @@ def save_dataframe(table_name: str, columns: list[str], rows: list[tuple]) -> di
     conn.close()
     print(f"[{datetime.now().isoformat()}] Wrote {len(rows)} rows to agent_scratch.{table_name}")
     return {"schema": "agent_scratch", "table": table_name, "rows_written": len(rows)}
+
+
+# Closes half of the scratch-cleanup gap deferred at Build 2.5 ("no cleanup policy... manual
+# DROP TABLE is fine for now") - age only, not last-use (Postgres doesn't track object access
+# time without extra instrumentation; a deliberate, noted simplification, not a silent gap).
+# Two-tier by design, confirmed with the user rather than assumed: a table is worth mentioning
+# once it's old enough that it's plausibly done being useful, but only eligible for actual
+# deletion once it's old enough that keeping it is very unlikely to still matter. The agent can
+# call this freely (read-only) to answer "any old scratch tables?" - it has no delete tool at
+# all. Deletion only ever happens through delete_scratch_tables(), and only ever from a direct
+# Streamlit UI action (a real button click), never autonomously from the conversational agent.
+def list_stale_scratch_tables(mention_after_days: int = 7, delete_eligible_after_days: int = 30) -> list[dict]:
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_READER_USER"],
+        password=os.environ["POSTGRES_READER_PASSWORD"],
+    )
+    with conn.cursor() as cur:
+        # LEFT JOIN, not INNER - a real scratch table with no metadata row (created before
+        # this migration, or if the INSERT above ever silently failed) should still be
+        # reported, as unknown-age, rather than disappearing from the listing entirely.
+        cur.execute("""
+            SELECT t.table_name, m.created_at,
+                   EXTRACT(DAY FROM now() - m.created_at)::int AS age_days
+            FROM information_schema.tables t
+            LEFT JOIN agent_scratch.table_metadata m ON m.table_name = t.table_name
+            WHERE t.table_schema = 'agent_scratch'
+              AND t.table_name NOT IN ('chat_rounds', 'table_metadata')
+            ORDER BY m.created_at ASC NULLS FIRST
+        """)
+        rows = cur.fetchall()
+    conn.close()
+
+    results = []
+    for table_name, created_at, age_days in rows:
+        if created_at is None:
+            results.append({
+                "table_name": table_name, "created_at": None, "age_days": None,
+                "eligible_for_deletion": False,
+                "note": "no tracked creation date - not evaluated for staleness",
+            })
+            continue
+        if age_days < mention_after_days:
+            continue
+        results.append({
+            "table_name": table_name,
+            "created_at": created_at.isoformat(),
+            "age_days": age_days,
+            "eligible_for_deletion": age_days >= delete_eligible_after_days,
+        })
+    return results
+
+
+def delete_scratch_tables(table_names: list[str], delete_eligible_after_days: int = 30) -> dict:
+    # Called only from a direct Streamlit UI action (see app.py's sidebar) - never exposed to
+    # the conversational agent as a tool. Re-checks eligibility itself rather than trusting the
+    # caller, the same defense-in-depth shape as SAFE_NAME + sql.Identifier() both guarding
+    # table_name elsewhere in this file: the UI is expected to only ever offer eligible tables,
+    # but this still refuses to drop anything it can't independently confirm is actually stale.
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_AGENT_WRITER_USER"],
+        password=os.environ["POSTGRES_AGENT_WRITER_PASSWORD"],
+    )
+    deleted, skipped = [], []
+    with conn.cursor() as cur:
+        for table_name in table_names:
+            if not SAFE_NAME.match(table_name):
+                skipped.append({"table_name": table_name, "reason": "invalid table name"})
+                continue
+            if table_name in ("chat_rounds", "table_metadata"):
+                skipped.append({"table_name": table_name, "reason": "protected system table"})
+                continue
+            cur.execute(
+                "SELECT EXTRACT(DAY FROM now() - created_at)::int FROM agent_scratch.table_metadata "
+                "WHERE table_name = %s",
+                [table_name],
+            )
+            row = cur.fetchone()
+            if row is None:
+                skipped.append({"table_name": table_name, "reason": "no tracked creation date - not eligible"})
+                continue
+            age_days = row[0]
+            if age_days < delete_eligible_after_days:
+                skipped.append({"table_name": table_name, "reason": f"only {age_days} days old - not yet eligible"})
+                continue
+            cur.execute(sql.SQL("DROP TABLE IF EXISTS agent_scratch.{}").format(sql.Identifier(table_name)))
+            cur.execute("DELETE FROM agent_scratch.table_metadata WHERE table_name = %s", [table_name])
+            deleted.append(table_name)
+    conn.commit()
+    conn.close()
+    print(f"[{datetime.now().isoformat()}] Deleted {len(deleted)} scratch table(s): {deleted}")
+    return {"deleted": deleted, "skipped": skipped}
 
 
 def _jsonable(obj):

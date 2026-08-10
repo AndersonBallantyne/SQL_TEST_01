@@ -2,7 +2,7 @@ import json
 import streamlit as st
 from agent import ask_agent, PROCESS_ID
 from logging_utils import get_tool_calls, get_verification, get_usage
-from tools import save_chat_round, load_chat_rounds
+from tools import save_chat_round, load_chat_rounds, list_stale_scratch_tables, delete_scratch_tables
 
 # Streamlit reruns this whole script on every interaction, so history has to live in
 # session_state explicitly - a plain Python list would reset to empty on every rerun.
@@ -12,6 +12,47 @@ from tools import save_chat_round, load_chat_rounds
 st.set_page_config(page_title="Ask-Your-Database Agent", page_icon="🗄️")
 st.title("Ask-Your-Database Agent")
 st.caption(f"Server process: {PROCESS_ID} — changes only if the app restarts")
+
+
+# Deletion lives here, not as an agent tool - the conversational agent can only ever list/
+# recommend (list_stale_scratch_tables, read-only). Actual deletion requires a real button
+# click in this sidebar, so it never depends on the model correctly judging whether a chat
+# reply counts as genuine user confirmation. Two-tier: 7+ days old is worth mentioning,
+# 30+ days old is actually offered for deletion - a table can be old enough to flag without
+# being old enough to remove.
+with st.sidebar:
+    st.subheader("Scratch table cleanup")
+
+    if "scratch_cleanup_result" in st.session_state:
+        result = st.session_state.pop("scratch_cleanup_result")
+        if result["deleted"]:
+            st.success(f"Deleted: {', '.join(result['deleted'])}")
+        if result["skipped"]:
+            st.warning("Skipped: " + "; ".join(f"{s['table_name']} ({s['reason']})" for s in result["skipped"]))
+
+    stale = list_stale_scratch_tables()
+    eligible = [t for t in stale if t["age_days"] is not None and t["eligible_for_deletion"]]
+    worth_mentioning = [t for t in stale if t["age_days"] is not None and not t["eligible_for_deletion"]]
+    unknown_age = [t for t in stale if t["age_days"] is None]
+
+    if not stale:
+        st.caption("No scratch tables 7+ days old.")
+    if worth_mentioning:
+        st.caption("Worth a look (not yet eligible for deletion):")
+        for t in worth_mentioning:
+            st.caption(f"  · {t['table_name']} ({t['age_days']}d)")
+    if unknown_age:
+        st.caption(f"{len(unknown_age)} table(s) with no tracked creation date - not evaluated.")
+
+    if eligible:
+        st.caption("Eligible for deletion (30+ days old):")
+        labels = {t["table_name"]: f"{t['table_name']} ({t['age_days']}d)" for t in eligible}
+        selected = st.multiselect(
+            "Select tables to delete", list(labels.keys()), format_func=lambda name: labels[name]
+        )
+        if selected and st.button(f"Delete {len(selected)} selected table(s)", type="primary"):
+            st.session_state.scratch_cleanup_result = delete_scratch_tables(selected)
+            st.rerun()
 
 
 if "rounds" not in st.session_state:
