@@ -340,12 +340,28 @@ def list_stale_scratch_tables(mention_after_days: int = 7, delete_eligible_after
     return results
 
 
-def delete_scratch_tables(table_names: list[str], delete_eligible_after_days: int = 30) -> dict:
+def list_all_scratch_tables() -> list[dict]:
+    # Every scratch table, no age filter at all - backs the sidebar's "delete any table now"
+    # section (app.py), for a user who's done with a table immediately and doesn't want to
+    # wait out the staleness thresholds. Not agent-callable - the agent already has list_tables
+    # for general discovery; this exists only to feed the UI's own always-available delete list.
+    return run_sql_query("""
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'agent_scratch' AND table_name NOT IN ('chat_rounds', 'table_metadata')
+        ORDER BY table_name
+    """)
+
+
+def delete_scratch_tables(table_names: list[str], require_eligibility: bool = True, delete_eligible_after_days: int = 30) -> dict:
     # Called only from a direct Streamlit UI action (see app.py's sidebar) - never exposed to
-    # the conversational agent as a tool. Re-checks eligibility itself rather than trusting the
-    # caller, the same defense-in-depth shape as SAFE_NAME + sql.Identifier() both guarding
-    # table_name elsewhere in this file: the UI is expected to only ever offer eligible tables,
-    # but this still refuses to drop anything it can't independently confirm is actually stale.
+    # the conversational agent as a tool. require_eligibility=True (the default, used by the
+    # "eligible for deletion" section) re-checks age itself rather than trusting the caller, the
+    # same defense-in-depth shape as SAFE_NAME + sql.Identifier() both guarding table_name
+    # elsewhere in this file. require_eligibility=False (the "delete any table now" section,
+    # confirmed with the user 2026-08-10) skips the age check entirely - a human explicitly
+    # picking a table by name in the UI and clicking delete is a different trust context than
+    # the agent or an automated caller, which is what the age gate was actually built to stop.
+    # SAFE_NAME and the protected-name check are never skippable, in either mode.
     conn = psycopg.connect(
         host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
         port=5432,
@@ -362,19 +378,20 @@ def delete_scratch_tables(table_names: list[str], delete_eligible_after_days: in
             if table_name in ("chat_rounds", "table_metadata"):
                 skipped.append({"table_name": table_name, "reason": "protected system table"})
                 continue
-            cur.execute(
-                "SELECT EXTRACT(DAY FROM now() - created_at)::int FROM agent_scratch.table_metadata "
-                "WHERE table_name = %s",
-                [table_name],
-            )
-            row = cur.fetchone()
-            if row is None:
-                skipped.append({"table_name": table_name, "reason": "no tracked creation date - not eligible"})
-                continue
-            age_days = row[0]
-            if age_days < delete_eligible_after_days:
-                skipped.append({"table_name": table_name, "reason": f"only {age_days} days old - not yet eligible"})
-                continue
+            if require_eligibility:
+                cur.execute(
+                    "SELECT EXTRACT(DAY FROM now() - created_at)::int FROM agent_scratch.table_metadata "
+                    "WHERE table_name = %s",
+                    [table_name],
+                )
+                row = cur.fetchone()
+                if row is None:
+                    skipped.append({"table_name": table_name, "reason": "no tracked creation date - not eligible"})
+                    continue
+                age_days = row[0]
+                if age_days < delete_eligible_after_days:
+                    skipped.append({"table_name": table_name, "reason": f"only {age_days} days old - not yet eligible"})
+                    continue
             cur.execute(sql.SQL("DROP TABLE IF EXISTS agent_scratch.{}").format(sql.Identifier(table_name)))
             cur.execute("DELETE FROM agent_scratch.table_metadata WHERE table_name = %s", [table_name])
             deleted.append(table_name)

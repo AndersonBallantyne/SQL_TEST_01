@@ -150,6 +150,44 @@ def test_delete_refuses_protected_system_tables():
     assert all("protected" in s["reason"] for s in result["skipped"])
 
 
+def test_delete_with_require_eligibility_false_deletes_a_fresh_table():
+    # The "delete any table now" UI path (app.py) - a human explicitly picking a table by
+    # name is a different trust context than the agent or an automated caller, which is what
+    # the eligibility gate was actually built to stop.
+    table_name = "pytest_cleanup_immediate"
+    _cleanup(table_name)
+    try:
+        tools.save_dataframe(table_name, ["x"], [(1,)])  # 0 days old - would normally be refused
+        result = tools.delete_scratch_tables([table_name], require_eligibility=False)
+        assert result["deleted"] == [table_name]
+        assert result["skipped"] == []
+    finally:
+        _cleanup(table_name)
+
+
+def test_delete_with_require_eligibility_false_still_rejects_invalid_and_protected_names():
+    # SAFE_NAME and the protected-name check are never skippable, in either mode - bypassing
+    # the age gate was a deliberate, scoped decision, not a general "trust the caller" switch.
+    result = tools.delete_scratch_tables(
+        ["not a safe name", "chat_rounds", "table_metadata"], require_eligibility=False
+    )
+    assert result["deleted"] == []
+    assert len(result["skipped"]) == 3
+
+
+def test_list_all_scratch_tables_includes_a_fresh_table_and_excludes_system_tables():
+    table_name = "pytest_cleanup_list_all"
+    _cleanup(table_name)
+    try:
+        tools.save_dataframe(table_name, ["x"], [(1,)])
+        names = [t["table_name"] for t in tools.list_all_scratch_tables()]
+        assert table_name in names
+        assert "chat_rounds" not in names
+        assert "table_metadata" not in names
+    finally:
+        _cleanup(table_name)
+
+
 def test_table_metadata_excluded_from_list_tables_and_describe_table():
     tables = tools.list_tables()
     names = [(t["table_schema"], t["table_name"]) for t in tables]

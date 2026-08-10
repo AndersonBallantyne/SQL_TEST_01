@@ -2,7 +2,7 @@ import json
 import streamlit as st
 from agent import ask_agent, PROCESS_ID
 from logging_utils import get_tool_calls, get_verification, get_usage
-from tools import save_chat_round, load_chat_rounds, list_stale_scratch_tables, delete_scratch_tables
+from tools import save_chat_round, load_chat_rounds, list_stale_scratch_tables, list_all_scratch_tables, delete_scratch_tables
 
 # Streamlit reruns this whole script on every interaction, so history has to live in
 # session_state explicitly - a plain Python list would reset to empty on every rerun.
@@ -52,6 +52,33 @@ with st.sidebar:
         )
         if selected and st.button(f"Delete {len(selected)} selected table(s)", type="primary"):
             st.session_state.scratch_cleanup_result = delete_scratch_tables(selected)
+            st.rerun()
+
+    # A separate, always-available section - the age gate above exists to stop the agent or
+    # any automated caller from deleting fresh data casually, not to stop a human who's done
+    # with a table right now and knows exactly which one they want gone. No age restriction at
+    # all here (require_eligibility=False) - confirmed with the user 2026-08-10, a deliberate
+    # answer to "what if I want to delete a table immediately after using it," not an oversight.
+    st.divider()
+    st.subheader("Delete any scratch table now")
+    st.caption("No age restriction — for a table you're done with immediately.")
+
+    if "scratch_immediate_delete_result" in st.session_state:
+        result = st.session_state.pop("scratch_immediate_delete_result")
+        if result["deleted"]:
+            st.success(f"Deleted: {', '.join(result['deleted'])}")
+        if result["skipped"]:
+            st.warning("Skipped: " + "; ".join(f"{s['table_name']} ({s['reason']})" for s in result["skipped"]))
+
+    all_tables = [t["table_name"] for t in list_all_scratch_tables()]
+    if not all_tables:
+        st.caption("No scratch tables exist.")
+    else:
+        selected_now = st.multiselect("Select tables to delete immediately", all_tables)
+        if selected_now and st.button(f"Delete {len(selected_now)} table(s) now", type="secondary"):
+            st.session_state.scratch_immediate_delete_result = delete_scratch_tables(
+                selected_now, require_eligibility=False
+            )
             st.rerun()
 
 
