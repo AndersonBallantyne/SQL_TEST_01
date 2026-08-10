@@ -6,6 +6,15 @@ LOG_PATH = "logs/tool_calls.jsonl"
 
 def log_tool_call(tool_name, input_data, output_data, latency_ms, turn, question_id, user_question=None, error=None):
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    # Not a real token count - the API only reports usage per API turn, never per tool call,
+    # and a turn can make more than one tool call at once, so there's no way to attribute an
+    # exact token cost to one call. Character count of the result is what actually gets resent
+    # as context on every later turn (agent.py's tool_result content is str(result), the same
+    # value this is measuring), so it's exactly attributable to this one call with no ambiguity
+    # - the same proxy MAX_FIELD_CHARS/MAX_SQL_RESULT_ROWS already use for this same problem.
+    # chars/4 is the standard rough English-text token estimate, offered only to give the number
+    # a familiar unit - result_chars is the real, precise measurement underneath it.
+    result_chars = len(str(output_data)) if output_data is not None else 0
     entry = {
         "timestamp": datetime.now().isoformat(),
         # Groups a question's turns back together - "turn" alone resets to 1 for every
@@ -21,6 +30,8 @@ def log_tool_call(tool_name, input_data, output_data, latency_ms, turn, question
         "output": output_data if error is None else None,
         "error": error,
         "latency_ms": round(latency_ms, 2),
+        "result_chars": result_chars,
+        "approx_tokens": round(result_chars / 4),
     }
     with open(LOG_PATH, "a") as f:
         f.write(json.dumps(entry, default=str) + "\n")
@@ -42,6 +53,10 @@ def get_tool_calls(question_id, include_output=False):
                     "tool_name": entry["tool_name"],
                     "input": entry["input"],
                     "latency_ms": entry["latency_ms"],
+                    # .get() with a default - log lines written before this field existed
+                    # don't have it, and reloading an old persisted chat round shouldn't crash.
+                    "result_chars": entry.get("result_chars", 0),
+                    "approx_tokens": entry.get("approx_tokens", 0),
                 }
                 if include_output:
                     call["output"] = entry["output"]

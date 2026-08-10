@@ -108,13 +108,24 @@ def render_tool_call_details(tool_calls, usage, nested):
         total = usage["input_tokens"] + usage["output_tokens"]
         token_note = f" · {total:,} tokens ({usage['input_tokens']:,} in / {usage['output_tokens']:,} out)"
 
+    # Only shown once there's more than one call to compare - with a single tool call there's
+    # nothing to isolate, that one call already is the whole answer's tool cost. Not a real
+    # per-call token count (the API only reports usage per turn, never per tool call) - result
+    # size (chars) is what actually gets resent as context on every later turn, so it's an
+    # exactly-attributable proxy, the same one MAX_FIELD_CHARS/MAX_SQL_RESULT_ROWS already use.
+    def _call_caption(call):
+        base = f"{call['latency_ms']:.0f} ms"
+        if len(tool_calls) > 1:
+            base += f" · ~{call['approx_tokens']:,} tokens ({call['result_chars']:,} chars)"
+        return base
+
     if nested:
         summary = f"Tools used ({len(tool_calls)})" if tool_calls else "Answered directly - no tools were called for this question."
         st.caption(summary + token_note)
         for call in tool_calls:
             st.markdown(f"**{call['tool_name']}**")
             st.code(json.dumps(call["input"], indent=2), language="json")
-            st.caption(f"{call['latency_ms']:.0f} ms")
+            st.caption(_call_caption(call))
     else:
         with st.expander(f"Tools used ({len(tool_calls)}){token_note}"):
             if not tool_calls:
@@ -122,7 +133,7 @@ def render_tool_call_details(tool_calls, usage, nested):
             for call in tool_calls:
                 st.markdown(f"**{call['tool_name']}**")
                 st.code(json.dumps(call["input"], indent=2), language="json")
-                st.caption(f"{call['latency_ms']:.0f} ms")
+                st.caption(_call_caption(call))
 
 def render_verification_badge(verification):
     if verification is None:
