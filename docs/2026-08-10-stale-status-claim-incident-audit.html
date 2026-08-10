@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Incident Audit — Stale Status Claims and a Self-Inflicted Cost Regression, 2026-08-10</title>
+<style>
+  :root {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768; --muted: #7C8894;
+    --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9; --teal-tint: #E7EEEE;
+    --accent: #B5502B; --accent-tint: #F7E9E2; --red: #9A2B2B; --red-tint: #F6E6E6;
+    --green: #1E6B3A; --green-tint: #E6F1EA; --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD; --muted: #8CA0A3;
+      --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB; --teal-tint: #17282A;
+      --accent: #E2916A; --accent-tint: #2C2019; --red: #E28A8A; --red-tint: #2A1B1B;
+      --green: #7FD9A0; --green-tint: #16241C; --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD; --muted: #8CA0A3;
+    --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB; --teal-tint: #17282A;
+    --accent: #E2916A; --accent-tint: #2C2019; --red: #E28A8A; --red-tint: #2A1B1B;
+    --green: #7FD9A0; --green-tint: #16241C; --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768; --muted: #7C8894;
+    --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9; --teal-tint: #E7EEEE;
+    --accent: #B5502B; --accent-tint: #F7E9E2; --red: #9A2B2B; --red-tint: #F6E6E6;
+    --green: #1E6B3A; --green-tint: #E6F1EA; --shadow: 0 1px 2px rgba(16, 24, 39, 0.06);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+  h1 { font-size: 1.7rem; margin: 0 0 0.3rem; }
+  h2 { font-size: 1.25rem; margin: 2.4rem 0 0.8rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); color: var(--teal); }
+  h3 { font-size: 1.02rem; margin: 1.4rem 0 0.5rem; }
+  .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.6rem; }
+  .meta-box { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 1rem 1.3rem; box-shadow: var(--shadow); font-size: 0.9rem; }
+  .meta-box div { margin: 0.2rem 0; }
+  .meta-box b { color: var(--ink-2); }
+  code { font-family: "Consolas", "IBM Plex Mono", monospace; background: var(--teal-tint); color: var(--teal); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.88em; }
+  pre code { display: block; padding: 0.8rem 1rem; overflow-x: auto; white-space: pre; }
+  a { color: var(--teal); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-radius: 10px; padding: 1rem 1.3rem; margin: 1rem 0; font-size: 0.92rem; }
+  .callout.finding { background: var(--accent-tint); border-left: 4px solid var(--accent); }
+  .callout.decision { background: var(--teal-tint); border-left: 4px solid var(--teal); }
+  .callout.bad { background: var(--red-tint); border-left: 4px solid var(--red); }
+  .callout.good { background: var(--green-tint); border-left: 4px solid var(--green); }
+  .phase { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 1.3rem 1.5rem; margin: 1.2rem 0; box-shadow: var(--shadow); }
+  .phase-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .phase-head h3 { margin: 0; }
+  .ts { font-family: "Consolas", monospace; font-size: 0.8rem; color: var(--muted); background: var(--teal-tint); border-radius: 6px; padding: 0.15rem 0.5rem; }
+  .qid { font-family: "Consolas", monospace; font-size: 0.75rem; color: var(--muted); }
+  .verdict { font-family: "Consolas", monospace; font-size: 0.75rem; font-weight: 600; border-radius: 5px; padding: 0.1rem 0.5rem; }
+  .verdict.pass { background: var(--green-tint); color: var(--green); }
+  .verdict.fail { background: var(--red-tint); color: var(--red); }
+  .verdict.correct-fail { background: var(--accent-tint); color: var(--accent); }
+  ul.tight li { margin: 0.3rem 0; }
+  .caveat { font-size: 0.85rem; color: var(--muted); font-style: italic; }
+  img.evidence { max-width: 100%; border-radius: 8px; border: 1px solid var(--rule); box-shadow: var(--shadow); margin: 0.8rem 0; }
+  .figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 0.3rem; }
+  @media print { body { font-size: 12px; } .phase { box-shadow: none; break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Incident Audit: Stale Status Claims, and a Self-Inflicted Cost Regression</h1>
+<p class="subtitle">SQL_TEST_01 — Ask-Your-Database Agent (Build 6/7) — 2026-08-10</p>
+
+<div class="meta-box">
+  <div><b>Scope:</b> a routine verification pass, three days after the 2026-08-07 incident, that found two confidently-wrong status claims in live answers — then, while fixing them, introduced a real cost regression of its own, caught and fixed before being called done rather than after.</div>
+  <div><b>Timezone:</b> Pacific (UTC-7), converted from the container's UTC-recorded logs.</div>
+  <div><b>Evidence basis:</b> every timestamp and token count below is pulled directly from <code>logs/tool_calls.jsonl</code>, <code>agent_scratch.chat_rounds</code>, direct <code>docker exec</code>/<code>psql</code> queries against <code>docs.chunks</code>, and <code>git log</code> — not reconstructed from memory.</div>
+</div>
+
+<h2>Executive summary</h2>
+<p>Two live browser questions — "list all open and deferred items" and "is there a scope for full deployment of Streamlit app?" — both came back green-badged and <code>supported: true</code>, and both were wrong about current status. The first called the 2026-08-07 deployment-verification gap "still unresolved"; the second repeated the claim as an active "known deployment challenge." Direct verification found the opposite: the gap was closed same-day on 2026-08-07, and the running container's code matched git HEAD exactly, byte for byte. A second, smaller claim — that <code>docs.chunks</code> still had orphaned rows from before the 2026-08-05 reorg — was also stale; a direct query confirmed zero such rows exist. Root cause for the first: <code>MAX_FIELD_CHARS</code> truncates every retrieved field at 500 characters, and the cheat sheet's incident entries are written problem-first, resolution-second — so the truncation cutoff landed, with almost comedic precision, right before the word "Fixed" every time that entry was retrieved. The verifier never caught it because the claim was genuinely consistent with the incomplete evidence it was given — the same <code>supported: true</code> blind spot from the 2026-08-07 audit, in a fourth shape: a stale <em>temporal</em> inference instead of a fabricated fact. The first fix attempt — a caution rule telling the model not to conclude "unresolved" from a truncated chunk — corrected both answers, but at a real cost: one question's total went from a few thousand tokens to <b>202,821</b>, because the rule gave the model permission to keep searching rather than a bounded, cheap action. That is the exact "soft exploratory instruction causes more searching, not less" anti-pattern this project's own 2026-08-06 incident already named and moved away from — reintroduced here by accident, caught by re-testing before being called done, and fixed the same way that original incident was: by resolving the ambiguity once, as data (a consolidated, kept-current "Known Open &amp; Deferred Items" table), not as a heuristic the model has to re-derive and re-search for on every question.</p>
+
+<h2>Timeline</h2>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 1 — Two live answers, both confidently wrong about current status</h3><span class="ts">18:21 – 18:29 PDT</span></div>
+  <table>
+    <tr><td class="ts">18:21</td><td>"List all open and deferred items for this project" — 4 tool calls, 41,417 tokens</td><td class="qid">5425deb8fa1e</td></tr>
+    <tr><td class="ts">18:28</td><td>"Is there a scope for full deployment of Streamlit app?" — 3 tool calls, 29,377 tokens</td><td class="qid">72eafb19faad</td></tr>
+  </table>
+  <p>Both answers were internally coherent, cited real evidence, and were marked <span class="verdict pass">supported: true</span> by the verifier. Both stated the 2026-08-07 deployment-verification gap as a current, unresolved problem — one calling it "still unresolved," the other "one unresolved scope gap." A third claim (orphaned <code>docs.chunks</code> rows from the pre-reorg era, "not yet done") also appeared, sourced from a 2026-08-05 handoff brief that had never been updated.</p>
+  <div class="callout finding"><b>Direct verification, not assumed:</b> <code>docker exec askdb_streamlit grep</code> confirmed the running container's <code>agent.py</code> matches the current git HEAD byte for byte. <code>SELECT COUNT(*) FROM docs.chunks WHERE source_file LIKE 'PROJECT_DIAGRAMS%'</code> returned zero rows. Both claims were stale, not current findings.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 2 — Root cause: a truncation cutoff that lands right before the word "Fixed"</h3></div>
+  <p>The retrieved chunk behind the deployment-gap claim (<code>chunk_id 6988</code>) is 3,303 characters long. <code>MAX_FIELD_CHARS = 500</code> caps every field a query returns, so the model only ever saw the first ~500 characters — which happened to end mid-sentence, right before "<code>Fixed, then asked directly whether the underlying docs.chunks refresh step could be made automatic...</code>". The cheat sheet's own writing convention (problem stated first, resolution stated second, within the same entry) meant this wasn't a one-off: any sufficiently long incident entry has the same structural risk. The verifier's <code>supported: true</code> verdict was not wrong on its own terms — the claim really was consistent with the truncated evidence retrieved. It just wasn't consistent with the complete entry.</p>
+  <div class="callout finding"><b>The recurring shape:</b> this is the fourth confirmed live instance of the same underlying blind spot from the 2026-08-07 audit — <code>supported: true</code> proves consistency with the evidence gathered, never that the right (or complete) evidence was gathered. Incomplete <code>search_docs</code> sample (Phase 5), frozen snapshot over living file (Phase 8b), fabricated classification on <code>run_sql_query</code> (Phase 11) — and now, a genuinely retrieved, genuinely relevant chunk that got cut off exactly where the answer to the question being asked began.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 3 — First fix: correctness restored, cost exploded</h3></div>
+  <p>Two changes went out together: the deployment-gap cheat sheet entry got a front-loaded <b>"(RESOLVED..."</b> marker within its first 90 characters (safely inside any truncation window), and <code>SYSTEM_PROMPT</code> gained a rule telling the model not to conclude "unresolved" from a truncated chunk alone — with a second clause suggesting it could <i>"query nearby chunk_ids in the same source_file for a follow-up that confirms current status either way."</i> Re-tested live on a fresh rebuild: both answers became correct. Both also became enormous.</p>
+  <table>
+    <tr><th>Question</th><th class="num">Tokens</th><th>Tool calls</th></tr>
+    <tr><td>"List all open and deferred items" (re-test)</td><td class="num">202,821</td><td class="num">13</td></tr>
+    <tr><td>"Is there a scope for full deployment...?" (re-test)</td><td class="num">117,146</td><td class="num">7</td></tr>
+  </table>
+  <div class="callout bad"><b>Self-inflicted regression, caught before being called done:</b> the "or query nearby chunk_ids" clause gave the model a soft, open-ended license to keep searching instead of a bounded action. Combined with a genuinely hard retrieval problem (the cheat sheet has no single section answering "what's open," so the model tried a dozen different ILIKE keyword guesses - <code>%open%</code>, <code>%TODO%</code>, <code>%pending%</code>, <code>%outstanding%</code>, <code>%backlog%</code> - most returning nothing), this produced the exact same shape of blowup this project's own 2026-08-06 incident already diagnosed and moved away from: <i>"a soft 'pull the full list when ambiguous' option caused more exploration, not less. More expensive than the wrong answer it replaced."</i> Re-introduced here, three days later, by a different rule solving a different problem the same wrong way.</div>
+</div>
+
+<div class="phase">
+  <div class="phase-head"><h3>Phase 4 — Second fix: resolve it as data, the way the pattern actually gets closed</h3></div>
+  <p>Consistent with the throughline already established across every prior incident in this project - resolve an ambiguity once, as a stated fact, not as a heuristic the model re-derives from scratch on every question - the real fix was a new, consolidated <b>"Known Open &amp; Deferred Items"</b> table added directly to the cheat sheet: five rows, one per item, each starting with an explicit status word (<code>RESOLVED</code>, <code>OPEN, DEFERRED BY DESIGN</code>, or <code>CLOSED, HISTORICAL DECISION</code>), kept current as of this audit. <code>SYSTEM_PROMPT</code>'s existing SQL-routing rule (the same one that already routes "every file," "every command," "every migration," and "latest X" to a direct query) was extended to name "open/deferred/outstanding items" as another tracked category, pointing directly at this table. The exploratory "query nearby chunk_ids" clause was removed entirely and replaced with a flat instruction: hedge once, don't chase the tail with more queries - the table exists specifically so this class of question never needs that in the first place.</p>
+  <div class="callout good"><b>Verified live, on a freshly rebuilt and recreated container:</b> both questions re-run from scratch.</div>
+  <table>
+    <tr><th>Question</th><th class="num">Tokens</th><th>Tool calls</th><th>Correctness</th></tr>
+    <tr><td>"List all open and deferred items"</td><td class="num">17,872</td><td class="num">3</td><td>Correctly lists exactly the 2 genuinely open items, correctly notes the 2 closed ones</td></tr>
+    <tr><td>"Is there a scope for full deployment...?"</td><td class="num">23,954</td><td class="num">3</td><td>Correctly states the Build 6 goal was achieved, deployment gap explicitly cited as resolved</td></tr>
+  </table>
+  <p>Both verified <span class="verdict pass">supported: true</span>, with the verifier's reasoning citing the specific status-labeled chunks directly. Full test suite: 39/39 (this was entirely a documentation/prompt-wording fix; no code path changed, so no new unit test was needed - validated behaviorally against the live API instead, the only real way to check retrieval and wording together).</p>
+</div>
+
+<h2>Before / after</h2>
+<table>
+  <tr><th>Question</th><th class="num">Stale-claim run</th><th class="num">Regression run</th><th class="num">Final</th><th>Correctness</th></tr>
+  <tr><td>"List all open and deferred items"</td><td class="num">41,417</td><td class="num">202,821</td><td class="num">17,872</td><td>Wrong → correct but 4.9x costlier → correct and cheapest of all three</td></tr>
+  <tr><td>"Is there a scope for full deployment...?"</td><td class="num">29,377</td><td class="num">117,146</td><td class="num">23,954</td><td>Wrong → correct but 4x costlier → correct and cheapest of all three</td></tr>
+</table>
+<p class="caveat">The middle column is a real, deployed, re-tested state - not a hypothetical worst case. It was live for the length of this investigation before being caught and replaced.</p>
+
+<h2>Decision log</h2>
+<table>
+  <tr><th>Decision</th><th>Why</th></tr>
+  <tr><td>Verify the agent's own self-report against direct evidence rather than trust it</td><td>The project's own standing practice - a green badge and a <code>supported: true</code> verdict prove internal consistency, never completeness or currency. Direct <code>docker exec</code>/<code>psql</code> checks are what actually caught both stale claims.</td></tr>
+  <tr><td>Re-test the first fix before calling it done, not just trust that correctness improved</td><td>The exact discipline that caught the 202,821-token regression. A fix that only gets checked for correctness, not cost, can pass review and still be strictly worse than what it replaced.</td></tr>
+  <tr><td>Fix the retrieval gap as consolidated data, not a smarter prompt rule alone</td><td>A prompt rule can bound behavior, but it can't manufacture an efficient index that doesn't exist. The cheat sheet had no single place answering "what's open" - the model's expensive keyword-guessing was a symptom of that gap, not just of the caution rule.</td></tr>
+  <tr><td>Remove the exploratory "query nearby chunk_ids" clause entirely rather than tune it</td><td>Any soft permission to keep searching re-opens the same cost risk for the next question this pattern applies to. A flat "hedge once, don't chase" instruction plus a real data fix closes it structurally instead of by degree.</td></tr>
+</table>
+
+<h2>Lessons</h2>
+<ul class="tight">
+  <li>A truncation cutoff can land exactly where the answer to the question begins - not hypothetically, confirmed twice in the same chunk pattern (problem-first, resolution-second prose, cut at a fixed character count). When a project's own writing convention is consistent, a fixed-size truncation risk isn't random - it's structurally biased toward hiding the same kind of information every time.</li>
+  <li>A caution rule that tells a model "don't conclude X, verify further" is not automatically safe just because it improves correctness. Without a bounded, cheap verification path already available, "verify further" becomes "search until satisfied" - and satisfaction has no natural cost ceiling.</li>
+  <li>This project already named this exact anti-pattern once, in the 2026-08-06 incident, and it recurred anyway three days later in an unrelated fix. A lesson learned from one incident doesn't automatically transfer to the next one that has the same shape - it has to be checked for, not just remembered.</li>
+  <li>Re-testing after a fix has to check cost, not just correctness. This session's own workflow - rebuild, redeploy, re-test live, read the actual token usage - is what caught the regression before it shipped as "done." A fix that's only checked against the original failure mode can introduce a new one invisibly.</li>
+  <li><code>supported: true</code> continues to only mean "consistent with the evidence gathered." A fourth confirmed live shape of the same blind spot: a real, relevant, correctly-retrieved chunk that was simply cut off before it said the thing that mattered.</li>
+</ul>
+
+</div>
+</body>
+</html>
