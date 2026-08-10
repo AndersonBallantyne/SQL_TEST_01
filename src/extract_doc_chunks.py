@@ -75,6 +75,58 @@ def extract_finding_chunks(soup):
     return chunks
 
 
+# tools.py's MAX_FIELD_CHARS (500) truncates any field a live query returns - a chunk longer
+# than that isn't just imprecise for retrieval, it can silently lose whatever comes after the
+# cutoff. Confirmed real 2026-08-10: a 3,303-char incident chunk, written problem-first,
+# resolution-second, got cut off right before the word "Fixed" - a "list open items" answer
+# then reported an already-closed incident as still unresolved, and the verifier had no way to
+# catch it, since the claim really was consistent with the (incomplete) evidence it saw.
+# Patching that one entry's wording fixed that one question; it did nothing for the other 126
+# chunks already over 500 chars, or the next one this callout-per-chunk strategy produces.
+# Splitting every long chunk at extraction time - not query time - fixes the actual mechanism:
+# no chunk this pipeline ever produces can be long enough to have anything truncated out of it.
+CHUNK_SPLIT_TARGET_CHARS = 450
+
+
+def _split_long_text(text, max_len=CHUNK_SPLIT_TARGET_CHARS):
+    if len(text) <= max_len:
+        return [text]
+    # Split on sentence boundaries, not an arbitrary character offset, so a split piece is
+    # still a coherent standalone sentence rather than a fragment cut off mid-clause.
+    sentences = text.split(". ")
+    pieces = []
+    current = ""
+    for i, sentence in enumerate(sentences):
+        piece = sentence if i == len(sentences) - 1 else sentence + ". "
+        if current and len(current) + len(piece) > max_len:
+            pieces.append(current.strip())
+            current = piece
+        else:
+            current += piece
+    if current.strip():
+        pieces.append(current.strip())
+    # A single sentence can itself exceed max_len (this project's prose leans on em-dashes over
+    # periods) - the sentence-boundary split above wouldn't catch that. Hard-wrap anything still
+    # oversized on whitespace so the size guarantee holds unconditionally, not "usually."
+    final_pieces = []
+    for piece in pieces:
+        if len(piece) <= max_len:
+            final_pieces.append(piece)
+            continue
+        words = piece.split(" ")
+        current_piece = ""
+        for word in words:
+            candidate = f"{current_piece} {word}".strip()
+            if current_piece and len(candidate) > max_len:
+                final_pieces.append(current_piece)
+                current_piece = word
+            else:
+                current_piece = candidate
+        if current_piece:
+            final_pieces.append(current_piece)
+    return final_pieces
+
+
 def extract_narrative_chunks(soup):
     # The plain "what/why" prose in every brief's opening section - .lede, .doc-subtitle,
     # .section-note, .phase-goal - never lands in a .callout/.finding/table row, so none
@@ -90,34 +142,46 @@ def extract_narrative_chunks(soup):
     return chunks
 
 
-conn = psycopg.connect(
-    host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
-    port=5432,
-    dbname=os.environ["POSTGRES_DB"],
-    user=os.environ["POSTGRES_USER"],
-    password=os.environ["POSTGRES_PASSWORD"],
-)
-
-for path in SOURCE_FILES:
-    with open(path, encoding="utf-8") as f:
-        soup = BeautifulSoup(f.read(), "html.parser")
-
-    chunks = (
-        extract_callout_chunks(soup)
-        + extract_table_row_chunks(soup)
-        + extract_finding_chunks(soup)
-        + extract_narrative_chunks(soup)
+def main():
+    # Guarded behind __main__ (was previously module-level, unconditional) - a pure helper
+    # like _split_long_text should be importable (for tests, for reuse) without opening a live
+    # database connection and re-extracting every doc as a side effect of the import itself.
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_USER"],
+        password=os.environ["POSTGRES_PASSWORD"],
     )
 
-    with conn.cursor() as cur:
-        # Delete this file's old chunks first so re-running after editing a source doc
-        # replaces its chunks instead of accumulating duplicates alongside them.
-        cur.execute("DELETE FROM docs.chunks WHERE source_file = %s", (path,))
-        cur.executemany(
-            "INSERT INTO docs.chunks (source_file, chunk_text) VALUES (%s, %s)",
-            [(path, chunk) for chunk in chunks],
-        )
-    conn.commit()
-    print(f"{path}: {len(chunks)} chunk(s) extracted.")
+    for path in SOURCE_FILES:
+        with open(path, encoding="utf-8") as f:
+            soup = BeautifulSoup(f.read(), "html.parser")
 
-conn.close()
+        chunks = (
+            extract_callout_chunks(soup)
+            + extract_table_row_chunks(soup)
+            + extract_finding_chunks(soup)
+            + extract_narrative_chunks(soup)
+        )
+        # Applied once, centrally, after every extraction function - not inside each one - so
+        # the size guarantee covers every chunk this pipeline ever produces, not just the ones
+        # from whichever function happened to get patched when one chunk caused one problem.
+        chunks = [piece for chunk in chunks for piece in _split_long_text(chunk)]
+
+        with conn.cursor() as cur:
+            # Delete this file's old chunks first so re-running after editing a source doc
+            # replaces its chunks instead of accumulating duplicates alongside them.
+            cur.execute("DELETE FROM docs.chunks WHERE source_file = %s", (path,))
+            cur.executemany(
+                "INSERT INTO docs.chunks (source_file, chunk_text) VALUES (%s, %s)",
+                [(path, chunk) for chunk in chunks],
+            )
+        conn.commit()
+        print(f"{path}: {len(chunks)} chunk(s) extracted.")
+
+    conn.close()
+
+
+if __name__ == "__main__":
+    main()
