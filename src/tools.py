@@ -89,7 +89,7 @@ def list_tables() -> list[dict]:
         SELECT table_schema, table_name
         FROM information_schema.tables
         WHERE table_schema IN ('clean', 'agent_scratch', 'docs')
-          AND NOT (table_schema = 'agent_scratch' AND table_name IN ('chat_rounds', 'table_metadata'))
+          AND NOT (table_schema = 'agent_scratch' AND table_name IN ('chat_rounds', 'table_metadata', 'demo_token_log'))
         ORDER BY table_name;
     """)
 
@@ -102,7 +102,7 @@ def describe_table(name: str) -> list[dict]:
         SELECT column_name, data_type
         FROM information_schema.columns
         WHERE table_schema IN ('clean', 'agent_scratch', 'docs') AND table_name = %s
-          AND NOT (table_schema = 'agent_scratch' AND table_name IN ('chat_rounds', 'table_metadata'))
+          AND NOT (table_schema = 'agent_scratch' AND table_name IN ('chat_rounds', 'table_metadata', 'demo_token_log'))
         ORDER BY ordinal_position;
     """, [name])
 
@@ -314,7 +314,7 @@ def list_stale_scratch_tables(mention_after_days: int = 7, delete_eligible_after
             FROM information_schema.tables t
             LEFT JOIN agent_scratch.table_metadata m ON m.table_name = t.table_name
             WHERE t.table_schema = 'agent_scratch'
-              AND t.table_name NOT IN ('chat_rounds', 'table_metadata')
+              AND t.table_name NOT IN ('chat_rounds', 'table_metadata', 'demo_token_log')
             ORDER BY m.created_at ASC NULLS FIRST
         """)
         rows = cur.fetchall()
@@ -347,9 +347,45 @@ def list_all_scratch_tables() -> list[dict]:
     # for general discovery; this exists only to feed the UI's own always-available delete list.
     return run_sql_query("""
         SELECT table_name FROM information_schema.tables
-        WHERE table_schema = 'agent_scratch' AND table_name NOT IN ('chat_rounds', 'table_metadata')
+        WHERE table_schema = 'agent_scratch' AND table_name NOT IN ('chat_rounds', 'table_metadata', 'demo_token_log')
         ORDER BY table_name
     """)
+
+
+def get_todays_demo_token_usage() -> int:
+    # Only ever called by app_demo.py (the public Streamlit Community Cloud deployment) -
+    # src/app.py (local, single-operator) has no daily cap and never queries this table.
+    # SUM at read time, not a running-total row, so appdb_agent_writer never needs UPDATE -
+    # matches migration 015's own reasoning.
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_READER_USER"],
+        password=os.environ["POSTGRES_READER_PASSWORD"],
+    )
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT COALESCE(SUM(tokens_used), 0) FROM agent_scratch.demo_token_log
+            WHERE logged_at::date = CURRENT_DATE
+        """)
+        total = cur.fetchone()[0]
+    conn.close()
+    return int(total)
+
+
+def log_demo_token_usage(tokens_used: int) -> None:
+    conn = psycopg.connect(
+        host=os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+        port=5432,
+        dbname=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_AGENT_WRITER_USER"],
+        password=os.environ["POSTGRES_AGENT_WRITER_PASSWORD"],
+    )
+    with conn.cursor() as cur:
+        cur.execute("INSERT INTO agent_scratch.demo_token_log (tokens_used) VALUES (%s)", [tokens_used])
+    conn.commit()
+    conn.close()
 
 
 def delete_scratch_tables(table_names: list[str], require_eligibility: bool = True, delete_eligible_after_days: int = 30) -> dict:

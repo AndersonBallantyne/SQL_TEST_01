@@ -81,7 +81,7 @@ jobs:
                    migrations/008_add_summary_embedding.sql migrations/009_add_summary_embedding_hnsw_index.sql \
                    migrations/010_docs_chunks_schema.sql migrations/011_metrics_history_schema.sql \
                    migrations/012_chat_rounds_schema.sql migrations/013_allocation_items_schema.sql \
-                   migrations/014_scratch_table_metadata.sql; do
+                   migrations/014_scratch_table_metadata.sql migrations/015_demo_token_log.sql; do
             echo "Applying $f"
             psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
           done
@@ -181,7 +181,7 @@ jobs:
                    migrations/008_add_summary_embedding.sql migrations/009_add_summary_embedding_hnsw_index.sql \
                    migrations/010_docs_chunks_schema.sql migrations/011_metrics_history_schema.sql \
                    migrations/012_chat_rounds_schema.sql migrations/013_allocation_items_schema.sql \
-                   migrations/014_scratch_table_metadata.sql; do
+                   migrations/014_scratch_table_metadata.sql migrations/015_demo_token_log.sql; do
             echo "Applying $f"
             psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
           done
