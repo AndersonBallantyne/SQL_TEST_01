@@ -8,6 +8,9 @@ chat front end, and a second agent that checks the first one's answers before th
 Full write-up, build-by-build, plus the real incidents that changed the design:
 **[andersonballantyne.github.io](https://andersonballantyne.github.io/)**
 
+Try it live (synthetic data, read-only, rate-limited):
+**[Ask-Your-Database demo](https://sqltest01-xsbrz2cqxejyktbhe7ekzm.streamlit.app/)**
+
 ## What's here
 
 | Build | What it added |
