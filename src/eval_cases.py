@@ -17,13 +17,29 @@ EVAL_CASES = [
         # burying them in paraphrased prose. Confirmed live: 4/5 with the new wording
         # vs. a real failure the same day with the old one. Not airtight (a substring
         # check on free text never fully is), but a real, measured improvement.
+        # expected_tool widened to a list 2026-08-10, CI run 31449449929: failed on
+        # tool_ok alone (keywords_ok was True, answer fully correct) - the model used
+        # run_sql_query against docs.chunks instead of search_docs, following the
+        # SYSTEM_PROMPT's own "what are the X" routing rule (2026-08-07) literally.
+        # The last green eval run (0ed4f11) called search_docs for this same question;
+        # both paths reach docs.chunks content and both are intentional per the prompt -
+        # not a regression, an eval case never updated after that routing rule widened.
         "question": "What are the names of agent_scratch's two database roles, and why are there two instead of one?",
-        "expected_tool": "search_docs",
+        "expected_tool": ["search_docs", "run_sql_query"],
         "expected_keywords": ["appdb_reader", "appdb_agent_writer"],
     },
     {
+        # expected_tool widened to a list for the same reason and same CI run as the case
+        # above. "What kind of X" is a category question, and the SYSTEM_PROMPT's own rule
+        # for individual-item questions (added 2026-08-07) deliberately routes category/type
+        # questions to clean.allocation_items via run_sql_query instead of search_summaries -
+        # confirmed live, that path's answer was fully correct and better-organized (split
+        # camera bodies from accessories via is_accessory) than semantic search alone would
+        # produce. describe_table included too: the model queried the schema first, on this
+        # run, before writing the SQL - not itself the point of this case, but a legitimate
+        # step in reaching a correct run_sql_query answer.
         "question": "What kind of camera equipment has been checked out recently?",
-        "expected_tool": "search_summaries",
+        "expected_tool": ["search_summaries", "run_sql_query", "describe_table"],
         "expected_keywords": ["camera"],
     },
     {
