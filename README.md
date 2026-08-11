@@ -5,6 +5,9 @@ model proposes SQL; a read-only database role decides what's actually allowed to
 builds, one system: the agent itself, a real data pipeline, retrieval, observability, CI, a
 chat front end, and a second agent that checks the first one's answers before they're shown.
 
+Full write-up, build-by-build, plus the real incidents that changed the design:
+**[andersonballantyne.github.io](https://andersonballantyne.github.io/)**
+
 ## What's here
 
 | Build | What it added |
