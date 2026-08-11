@@ -24,28 +24,41 @@ When the evidence includes a SQL query, read its actual WHERE/ILIKE conditions, 
 - If a per-category count is individually LARGER than a stricter total it's being compared against, that count cannot be a valid subset of that total - it is measuring something broader (e.g. a brand-name match with no keyword requirement, versus a total that requires the keyword). An answer that presents such a count as if it belonged to the same narrower category as the total is misleading, even if no single number is fabricated - explain specifically which condition is broader than which, don't just say the numbers "don't add up."
 - Multiple per-category counts summing to MORE than a total, on its own, is not a contradiction - a single row can satisfy more than one category's condition at once. Do not flag this pattern by itself when every individual category count is still less than or equal to the total.
 
-Call report_verdict with supported=true only if every claim in the proposed answer is backed by the tool evidence. If the answer contradicts the evidence, overstates it, mislabels what a count actually measures, or claims something the evidence never shows, set supported=false and explain why in reason - keep this direct, unqualified language (e.g. "the evidence shows X, not Y") for anything that actually conflicts with what the evidence shows.
+Call report_verdict with exactly one of three verdicts:
 
-Not every unbacked claim is a contradiction, though. This evidence set only covers tool calls made for this specific question - it has no visibility into earlier turns of the same conversation. A claim that isn't fabricated-sounding and doesn't conflict with anything the evidence shows, but also isn't present in it at all (e.g. specific column names/types, or other structured detail the evidence here never queried), could be a real detail correctly carried over from a tool call earlier in the conversation, invisible to this check, or it could be inaccurate - there's no way to tell which from what's in front of you. For that specific case, still set supported=false, but start reason with "Verify further:" and name exactly which claim(s) can't be confirmed from this evidence, rather than declaring them wrong outright. Keep everything else about your normal reasoning (which claims are confirmed, which conditions matter, why) - this only changes the framing for claims you can't confirm one way or the other, not the level of detail you give."""
+- "supported" - every claim in the proposed answer is backed by the tool evidence.
+
+- "contradicted" - the answer contradicts the evidence, or takes evidence that does exist and stretches it beyond what it actually shows (e.g. a partial or generic mention presented as if it directly confirms a specific detail, or a count mislabeled as measuring something narrower than its actual condition). Use direct, unqualified language in reason for this case (e.g. "the evidence shows X, not Y").
+
+- "unconfirmed" - a claim isn't fabricated-sounding and doesn't conflict with anything the evidence shows, but has no evidence at all behind it either way (e.g. specific column names/types, domain terminology, or other structured detail the evidence here never queried). This evidence set only covers tool calls made for this specific question - it has no visibility into earlier turns of the same conversation, and it cannot tell whether such a claim reflects real background knowledge the model has about the system versus something inaccurate. Stating a claim confidently does not make it "contradicted" - confident wording is not evidence. Use "unconfirmed" whenever a claim's truth simply cannot be determined from what's in front of you, and name exactly which claim(s) in reason.
+
+If the proposed answer mixes claims from more than one category, pick "contradicted" if any claim is actually contradicted or stretched (that is the more serious problem), otherwise pick "unconfirmed" if any remaining claim can't be confirmed, otherwise "supported". In reason, give your normal reasoning either way (which claims are confirmed, which conditions matter, why) - the verdict field alone carries the contradicted-vs-unconfirmed distinction, so reason doesn't need any special framing or prefix of its own."""
 
 # tool_choice forces this call every time (see verify_answer()) so the verdict is always a
-# structured field, never prose that would need parsing.
+# structured field, never prose that would need parsing. verdict is a 3-way enum rather than
+# a boolean - a boolean plus a "start reason with 'Verify further:'" prose convention was tried
+# first and never worked in practice (confirmed live 2026-08-11: a reproducible case where the
+# model's own reason text kept describing the unconfirmed-not-contradicted situation in its own
+# words, but the boolean+prefix convention still collapsed it to a flat unsupported=false every
+# time). Forcing a categorical tool-argument choice is what structured tool-calling is actually
+# reliable at; remembering a text-formatting convention buried in prose is not.
 VERIFIER_TOOL = {
     "name": "report_verdict",
     "description": "Report whether the proposed answer is supported by the tool evidence.",
     "input_schema": {
         "type": "object",
         "properties": {
-            "supported": {
-                "type": "boolean",
-                "description": "True if the proposed answer is fully supported by the tool evidence, false otherwise."
+            "verdict": {
+                "type": "string",
+                "enum": ["supported", "contradicted", "unconfirmed"],
+                "description": "supported: every claim is backed by the evidence. contradicted: the answer conflicts with or overstates the evidence. unconfirmed: a plausible, non-fabricated claim has no evidence either way."
             },
             "reason": {
                 "type": "string",
                 "description": "A short explanation of the verdict, citing what the evidence does or doesn't show."
             }
         },
-        "required": ["supported", "reason"]
+        "required": ["verdict", "reason"]
     }
 }
 
@@ -84,20 +97,34 @@ Is the proposed answer supported by the tool evidence?"""
         if block.type == "tool_use" and block.name == "report_verdict":
             # Confirmed live 2026-08-08: a large evidence + answer payload made this call hit
             # its own max_tokens cap mid-generation, truncating report_verdict's JSON after
-            # "supported" but before "reason" ever got written. block.input["reason"] then threw
+            # "verdict" but before "reason" ever got written. block.input["reason"] then threw
             # KeyError, silently swallowed by agent.py's try/except - the user saw no badge at
             # all, not even a red one, with zero trace of why. Raising max_tokens (512 -> 1024)
             # cuts how often this fires; .get() with a fallback means a still-truncated response
             # returns a real (if less detailed) verdict instead of vanishing.
             if response.stop_reason == "max_tokens" and "reason" not in block.input:
                 print(f"[VERIFIER TRUNCATED] report_verdict hit max_tokens before 'reason' was written")
-            supported = block.input.get("supported")
-            if supported is None:
-                raise RuntimeError(f"Verifier's report_verdict call was missing 'supported' entirely: {block.input!r}")
+            verdict = block.input.get("verdict")
+            if verdict is None:
+                raise RuntimeError(f"Verifier's report_verdict call was missing 'verdict' entirely: {block.input!r}")
             reason = block.input.get(
                 "reason",
                 "Verifier's explanation was cut off before it could be generated (the verifier's own response hit its token limit).",
             )
+            # The verdict enum carries the contradicted-vs-unconfirmed distinction now, not a
+            # prose prefix the model has to remember to write - the caller-facing shape (a plain
+            # supported: bool, reason: str) stays exactly what it was so agent.py/app.py/
+            # run_verify_eval.py don't need to change at all.
+            if verdict == "supported":
+                supported = True
+            elif verdict == "contradicted":
+                supported = False
+            elif verdict == "unconfirmed":
+                supported = False
+                reason = f"Verify further: {reason}"
+            else:
+                print(f"[VERIFIER UNEXPECTED VERDICT] report_verdict returned verdict={verdict!r}, treating as unsupported")
+                supported = False
             return supported, reason
 
     raise RuntimeError("Verifier did not return a report_verdict tool call.")
