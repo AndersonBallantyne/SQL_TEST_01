@@ -1,4 +1,5 @@
-from extract_doc_chunks import _split_long_text, CHUNK_SPLIT_TARGET_CHARS
+from bs4 import BeautifulSoup
+from extract_doc_chunks import _split_long_text, CHUNK_SPLIT_TARGET_CHARS, extract_list_chunks
 
 
 def test_short_text_passes_through_unchanged():
@@ -47,3 +48,43 @@ def test_splitting_preserves_all_words_no_loss():
     rejoined_words = " ".join(pieces).split(" ")
     original_words = one_giant_sentence.split(" ")
     assert rejoined_words == original_words
+
+
+def test_extract_list_chunks_captures_feature_list_items():
+    # project-overview-v2.html's shape (2026-08-10) - bullet feature lists don't land in any
+    # of the other extraction functions (.callout/.finding/table.ref/.lede), which is exactly
+    # how a real swap of this file into SOURCE_FILES silently extracted only 3 of its 21
+    # actual chunks before this function existed.
+    soup = BeautifulSoup(
+        '<ul class="feature-list"><li><b>Self-verification.</b> Checked by a second agent.</li>'
+        '<li><b>Full cost observability.</b> Every call is logged.</li></ul>',
+        "html.parser",
+    )
+    chunks = extract_list_chunks(soup)
+    assert chunks == [
+        "Self-verification. Checked by a second agent.",
+        "Full cost observability. Every call is logged.",
+    ]
+
+
+def test_extract_list_chunks_pairs_build_list_dt_dd_by_position():
+    soup = BeautifulSoup(
+        '<dl class="build-list"><dt>Build 1</dt><dd>The agent itself.</dd>'
+        "<dt>Build 2</dt><dd>The data pipeline.</dd></dl>",
+        "html.parser",
+    )
+    chunks = extract_list_chunks(soup)
+    assert chunks == ["Build 1: The agent itself.", "Build 2: The data pipeline."]
+
+
+def test_extract_list_chunks_drops_a_trailing_unmatched_dt():
+    # Documents the real limitation named in extract_list_chunks' own comment: zip() pairs
+    # positionally and silently stops at the shorter list - a dt with no matching dd doesn't
+    # error, it just never becomes a chunk. Not a hidden bug: proven here so a future change
+    # to this pairing logic has something concrete to break against.
+    soup = BeautifulSoup(
+        '<dl class="build-list"><dt>Build 1</dt><dd>The agent itself.</dd><dt>Build 2</dt></dl>',
+        "html.parser",
+    )
+    chunks = extract_list_chunks(soup)
+    assert chunks == ["Build 1: The agent itself."]

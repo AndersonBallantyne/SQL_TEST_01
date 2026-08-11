@@ -17,7 +17,7 @@ load_dotenv(encoding="utf-8-sig")
 # this file's own location in src/ - docs/ was PROJECT_DIAGRAMS/ before the 2026-08-05 reorg.
 SOURCE_FILES = [
     "docs/sql-test-01-cheatsheet.html",
-    "docs/project-overview.html",
+    "docs/project-overview-v2.html",
 ] + sorted(
     # glob returns os.sep-joined paths - backslash on Windows - which would silently create
     # a second, duplicate set of rows under a different source_file string every time this
@@ -142,6 +142,29 @@ def extract_narrative_chunks(soup):
     return chunks
 
 
+def extract_list_chunks(soup):
+    # Same gap extract_narrative_chunks was built to close, for a different shape - bullet
+    # feature lists (.feature-list li) and definition-list build breakdowns (.build-list
+    # dt/dd pairs), introduced in project-overview-v2.html (2026-08-10), don't land in any
+    # of the shapes above either. Found the same way: swapping that file into SOURCE_FILES
+    # only actually extracted its 3 .lede paragraphs - every feature and every build's
+    # description went unindexed with no error or warning, silently searchable as nothing.
+    chunks = []
+    for li in soup.select(".feature-list li"):
+        text = li.get_text(" ", strip=True)
+        if text:
+            chunks.append(text)
+    for dl in soup.select(".build-list"):
+        # dt/dd are siblings, not nested - zip() pairs them positionally, which holds only
+        # because every dt here is followed by exactly one dd (true today, not enforced).
+        for label, desc in zip(dl.find_all("dt"), dl.find_all("dd")):
+            label_text = label.get_text(" ", strip=True)
+            desc_text = desc.get_text(" ", strip=True)
+            if label_text and desc_text:
+                chunks.append(f"{label_text}: {desc_text}")
+    return chunks
+
+
 def main():
     # Guarded behind __main__ (was previously module-level, unconditional) - a pure helper
     # like _split_long_text should be importable (for tests, for reuse) without opening a live
@@ -154,6 +177,17 @@ def main():
         password=os.environ["POSTGRES_PASSWORD"],
     )
 
+    with conn.cursor() as cur:
+        # A source file removed from SOURCE_FILES (renamed, replaced, deleted) would
+        # otherwise keep its old chunks forever - the per-path DELETE below only ever
+        # fires for a path this run is about to re-extract, never one it's no longer told
+        # to touch. Confirmed real, not hypothetical: swapping project-overview.html for
+        # project-overview-v2.html (2026-08-10) left 9 rows stranded under the old path
+        # with no cleanup path - the same "orphaned rows" bug shape the 2026-08-05 repo
+        # audit already found once, in PROJECT_DIAGRAMS's old paths after that reorg.
+        cur.execute("DELETE FROM docs.chunks WHERE NOT (source_file = ANY(%s))", (SOURCE_FILES,))
+    conn.commit()
+
     for path in SOURCE_FILES:
         with open(path, encoding="utf-8") as f:
             soup = BeautifulSoup(f.read(), "html.parser")
@@ -163,6 +197,7 @@ def main():
             + extract_table_row_chunks(soup)
             + extract_finding_chunks(soup)
             + extract_narrative_chunks(soup)
+            + extract_list_chunks(soup)
         )
         # Applied once, centrally, after every extraction function - not inside each one - so
         # the size guarantee covers every chunk this pipeline ever produces, not just the ones

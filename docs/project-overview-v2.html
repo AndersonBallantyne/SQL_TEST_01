@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SQL_TEST_01 — Project Overview</title>
+<style>
+  :root {
+    --paper: #F3F6F7;
+    --surface: #FFFFFF;
+    --ink: #101827;
+    --ink-2: #4B5768;
+    --muted: #7C8894;
+    --rule: #C7D0D2;
+    --teal: #0B5158;
+    --teal-ink: #F3F9F9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+      --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #10171A; --surface: #172023; --ink: #E8EDED; --ink-2: #C2CBCD;
+    --muted: #8CA0A3; --rule: #32403F; --teal: #1C7A82; --teal-ink: #EFFBFB;
+  }
+  :root[data-theme="light"] {
+    --paper: #F3F6F7; --surface: #FFFFFF; --ink: #101827; --ink-2: #4B5768;
+    --muted: #7C8894; --rule: #C7D0D2; --teal: #0B5158; --teal-ink: #F3F9F9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 48px 24px 72px; }
+  .eyebrow {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 14px;
+  }
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: clamp(26px, 4vw, 34px); margin: 0 0 18px;
+  }
+  h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-weight: 600; font-size: 20px; margin: 40px 0 14px;
+  }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 68ch; margin: 0 0 14px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 24px 0 8px; }
+  .stats span {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 12px; color: var(--teal); padding: 6px 12px;
+    border: 1px solid var(--rule); border-radius: 999px; background: var(--surface);
+  }
+  .feature-list { list-style: none; margin: 0 0 8px; padding: 0; }
+  .feature-list li {
+    position: relative; padding-left: 22px; margin-bottom: 14px;
+    color: var(--ink-2); font-size: 15px; max-width: 68ch;
+  }
+  .feature-list li::before {
+    content: ""; position: absolute; left: 0; top: 8px;
+    width: 7px; height: 7px; border-radius: 50%; background: var(--teal);
+  }
+  .feature-list li b { color: var(--ink); font-weight: 600; }
+  .build-list { margin: 0 0 8px; padding: 0; max-width: 68ch; }
+  .build-list dt {
+    font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--teal); margin: 14px 0 2px;
+  }
+  .build-list dd { margin: 0 0 4px; color: var(--ink-2); font-size: 14.5px; }
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="eyebrow">SQL_TEST_01 · Project Overview</p>
+  <h1>A Database Agent That Checks Its Own Work</h1>
+  <p class="lede">This is a natural-language interface to a real PostgreSQL database. Ask a question in plain English, and an agent writes the SQL, runs it through a read-only role, and answers strictly from what the query returned. A second, independent agent then checks that answer against the same evidence before it's shown — an overreaching or unsupported claim gets flagged, not silently trusted.</p>
+  <p class="lede">The system runs end-to-end: a live Docker Compose stack, a real data pipeline, a chat interface, continuous integration, and an automated test suite — all currently working, not sketched out for later.</p>
+
+  <div class="stats">
+    <span>7 builds, complete</span>
+    <span>14 SQL migrations</span>
+    <span>60 automated tests</span>
+    <span>CI-gated on every push</span>
+    <span>3 incidents found live, fixed, and documented</span>
+  </div>
+
+  <h2>What it does</h2>
+  <ul class="feature-list">
+    <li><b>Answers questions in plain English</b> by writing and running its own SQL against a real PostgreSQL database, behind a role that can only ever <code>SELECT</code>.</li>
+    <li><b>Finds thematically related results with no exact keyword match</b>, using pgvector semantic search over the underlying data.</li>
+    <li><b>Answers questions about its own build history and status</b> the same way — semantic search over the project's own documentation, kept current automatically as the project grows.</li>
+    <li><b>Persists computed results for reuse</b> in a scratch workspace, isolated to its own database role and schema, with age-based visibility into what's been left behind and a UI-only path to remove it.</li>
+    <li><b>Runs as a working chat application</b> — a Streamlit front end with persistent, tiered conversation memory and full transparency into every tool call an answer relied on.</li>
+  </ul>
+
+  <h2>What makes it stand out</h2>
+  <ul class="feature-list">
+    <li><b>Self-verification.</b> Every tool-backed answer is checked by an independent second agent against the actual evidence gathered for it, with a visible pass/fail badge and a plain-English reason — not a claim of correctness, a check of it.</li>
+    <li><b>Full cost observability.</b> Every tool call and API turn is logged; token usage is tracked per question and, where it matters, per individual tool call, so a cost spike can be traced to its actual cause instead of guessed at.</li>
+    <li><b>Least-privilege data access.</b> Two separate Postgres roles: one strictly read-only for querying, one scoped to a single schema for the agent's own writes — never an extension of read access, enforced at the database level, not just in application code.</li>
+    <li><b>CI-gated correctness.</b> The full test suite and a dedicated evaluation harness — covering both the main agent's answers and the verifier's own judgment — run from a genuinely clean environment on every push, not just locally before a commit.</li>
+    <li><b>Incident-driven engineering.</b> Real issues have been found through live usage after deployment, not only through planned test cases: root-caused to their actual mechanism, fixed, and re-verified against a freshly redeployed instance. Each one is documented in a standalone, public write-up — the process is visible, not smoothed over.</li>
+    <li><b>Documentation that stays current on its own.</b> A command reference and a full commit history update as the system grows and stay in sync with the agent's own searchable knowledge base through a tracked pre-commit hook — so the agent's answers about its own project don't go stale.</li>
+  </ul>
+
+  <h2>How it was built</h2>
+  <dl class="build-list">
+    <dt>Build 1</dt>
+    <dd>The agent itself — a hand-rolled tool-use loop, no framework, against a read-only database role.</dd>
+    <dt>Build 2 / 2.5</dt>
+    <dd>A real raw-to-clean ETL pipeline from an actual equipment-checkout export, plus a writable scratch schema scoped to its own role.</dd>
+    <dt>Build 3 / 3.5</dt>
+    <dd>Semantic search over the data, then extended to the project's own documentation.</dd>
+    <dt>Build 4</dt>
+    <dd>Structured tool-call logging, an evaluation harness, and a metrics rollup.</dd>
+    <dt>Build 5</dt>
+    <dd>Public repository, continuous integration, and a real mid-build data-anonymization pivot.</dd>
+    <dt>Build 6</dt>
+    <dd>The Streamlit chat front end, with persistent, tiered conversation memory.</dd>
+    <dt>Build 7</dt>
+    <dd>The verifier — a second agent that checks every answer against its own tool evidence before it's shown.</dd>
+  </dl>
+
+  <p class="lede" style="margin-top:32px;">Every claim above is backed by running code and a public commit history, not a plan for one — whether the context is evaluating a candidate or scoping a contractor, what's described here can be inspected directly: the source, the tests, the CI runs, and the incident write-ups documenting what went wrong along the way and how it was actually fixed.</p>
+
+  <footer>Revised project overview (v2), 2026-08-10 — swapped into SOURCE_FILES in place of project-overview.html, which is kept on disk unchanged as the original, written at Build 3.5. Seed document for this project's own documentation-search corpus, kept current as the project grows, not written once and frozen.</footer>
+</div>
+</body>
+</html>
