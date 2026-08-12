@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from extract_doc_chunks import _split_long_text, CHUNK_SPLIT_TARGET_CHARS, extract_list_chunks
+from extract_doc_chunks import _split_long_text, CHUNK_SPLIT_TARGET_CHARS, extract_list_chunks, extract_numbered_row_chunks
 
 
 def test_short_text_passes_through_unchanged():
@@ -88,3 +88,62 @@ def test_extract_list_chunks_drops_a_trailing_unmatched_dt():
     )
     chunks = extract_list_chunks(soup)
     assert chunks == ["Build 1: The agent itself."]
+
+
+def test_extract_numbered_row_chunks_prefixes_each_row_with_its_date():
+    # sql-test-01-commit-log.html's shape (2026-08-11) - td.num/td.desc rows, not td.cmd/
+    # td.desc, so extract_table_row_chunks() silently skips every row here (its td.cmd
+    # selector never matches), the same "added to SOURCE_FILES, extracted zero chunks, no
+    # error" shape the feature-list/build-list gap above already proved once.
+    soup = BeautifulSoup(
+        '<section class="group" id="2026-08-11">'
+        '<div class="group-head"><h2>2026-08-11</h2></div>'
+        '<table class="ref"><tbody>'
+        '<tr><td class="num">1</td><td class="desc">First commit of the day</td></tr>'
+        '<tr><td class="num">2</td><td class="desc">Second commit of the day</td></tr>'
+        "</tbody></table></section>",
+        "html.parser",
+    )
+    chunks = extract_numbered_row_chunks(soup)
+    assert chunks == [
+        "2026-08-11, commit 1: First commit of the day",
+        "2026-08-11, commit 2: Second commit of the day",
+    ]
+
+
+def test_extract_numbered_row_chunks_keeps_same_numbers_from_different_dates_distinct():
+    # td.num restarts at 1 for every date group - without the date prefix, "commit 1" from
+    # two different days would be indistinguishable chunks, silently conflating unrelated
+    # commits the moment the file covers more than one day.
+    soup = BeautifulSoup(
+        '<section class="group" id="2026-07-01">'
+        '<div class="group-head"><h2>2026-07-01</h2></div>'
+        '<table class="ref"><tbody>'
+        '<tr><td class="num">1</td><td class="desc">Oldest commit</td></tr>'
+        "</tbody></table></section>"
+        '<section class="group" id="2026-08-11">'
+        '<div class="group-head"><h2>2026-08-11</h2></div>'
+        '<table class="ref"><tbody>'
+        '<tr><td class="num">1</td><td class="desc">Newest commit</td></tr>'
+        "</tbody></table></section>",
+        "html.parser",
+    )
+    chunks = extract_numbered_row_chunks(soup)
+    assert chunks == [
+        "2026-07-01, commit 1: Oldest commit",
+        "2026-08-11, commit 1: Newest commit",
+    ]
+
+
+def test_extract_numbered_row_chunks_ignores_td_cmd_rows():
+    # The cheat sheet's command-reference rows (td.cmd/td.desc) live under this same
+    # table.ref selector - confirms this function only ever matches td.num rows and doesn't
+    # double-extract command rows that extract_table_row_chunks() already covers.
+    soup = BeautifulSoup(
+        '<section class="group"><div class="group-head"><h2>ref</h2></div>'
+        '<table class="ref"><tbody>'
+        '<tr><td class="cmd">git log</td><td class="desc">Recent commit history</td></tr>'
+        "</tbody></table></section>",
+        "html.parser",
+    )
+    assert extract_numbered_row_chunks(soup) == []

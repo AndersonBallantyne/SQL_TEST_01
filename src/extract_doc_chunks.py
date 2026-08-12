@@ -18,6 +18,7 @@ load_dotenv(encoding="utf-8-sig")
 SOURCE_FILES = [
     "docs/sql-test-01-cheatsheet.html",
     "docs/project-overview-v2.html",
+    "docs/sql-test-01-commit-log.html",
 ] + sorted(
     # glob returns os.sep-joined paths - backslash on Windows - which would silently create
     # a second, duplicate set of rows under a different source_file string every time this
@@ -165,6 +166,29 @@ def extract_list_chunks(soup):
     return chunks
 
 
+def extract_numbered_row_chunks(soup):
+    # sql-test-01-commit-log.html's rows are td.num/td.desc (a per-day running count + a
+    # commit summary), not td.cmd/td.desc - extract_table_row_chunks() requires td.cmd
+    # specifically and silently skips every row here otherwise, the same "added to
+    # SOURCE_FILES but extracted zero chunks, no error" shape project-overview-v2.html's
+    # feature-list/build-list gap already hit once. A new function for a new row shape, same
+    # pattern as extract_list_chunks - not a modification to extract_table_row_chunks's own
+    # td.cmd match, since a command-reference row and a numbered commit row mean different
+    # things. Scoped per section.group (not a flat table.ref tr scan like the sibling
+    # function) because td.num restarts at 1 for every date - a bare "Commit 1" chunk with no
+    # date attached would be ambiguous the moment there's more than one day in the file.
+    chunks = []
+    for section in soup.select("section.group"):
+        heading = section.select_one(".group-head h2")
+        date = heading.get_text(" ", strip=True) if heading else "unknown date"
+        for row in section.select("table.ref tr"):
+            num = row.select_one("td.num")
+            desc = row.select_one("td.desc")
+            if num and desc:
+                chunks.append(f"{date}, commit {num.get_text(' ', strip=True)}: {desc.get_text(' ', strip=True)}")
+    return chunks
+
+
 def main():
     # Guarded behind __main__ (was previously module-level, unconditional) - a pure helper
     # like _split_long_text should be importable (for tests, for reuse) without opening a live
@@ -198,6 +222,7 @@ def main():
             + extract_finding_chunks(soup)
             + extract_narrative_chunks(soup)
             + extract_list_chunks(soup)
+            + extract_numbered_row_chunks(soup)
         )
         # Applied once, centrally, after every extraction function - not inside each one - so
         # the size guarantee covers every chunk this pipeline ever produces, not just the ones
