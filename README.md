@@ -28,7 +28,7 @@ Try it live (synthetic data, read-only, rate-limited):
 ```
 src/          every first-party Python module and script, flat (they import each other
               directly - agent.py, tools.py, the data pipeline, the eval harnesses, app.py)
-migrations/   001-012, applied in order against Postgres
+migrations/   001-015, applied in order against Postgres
 tests/        pytest suite (pythonpath = src, configured in pytest.ini)
 data/         the one official synthesized dataset - real structure, no real institutional data
 docs/         per-build flow diagrams, handoff briefs, and the living command cheat sheet
@@ -40,10 +40,10 @@ legacy/       schema/seed files for a secondary SQL Server lab environment, not 
 ```bash
 cp .env.example .env   # fill in real values - see the comments in that file for what each does
 docker compose up -d postgres
-# apply migrations/001 through migrations/012 in order against that Postgres, e.g.:
+# apply migrations/001 through migrations/015 in order against that Postgres, e.g.:
 for f in migrations/*.sql; do psql -h 127.0.0.1 -U devuser -d appdb -f "$f"; done
-python src/ingest.py && python src/transform.py && python src/embed_summaries.py
-python src/extract_doc_chunks.py && python src/embed_chunks.py
+python src/ingest.py && python src/transform.py && python src/build_allocation_items.py
+python src/embed_summaries.py && python src/extract_doc_chunks.py && python src/embed_chunks.py
 docker compose up -d streamlit_app   # http://localhost:8501
 ```
 

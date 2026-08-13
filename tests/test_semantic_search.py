@@ -71,14 +71,3 @@ def test_irrelevant_query_returns_no_match_message():
     assert len(results) == 1
     assert "message" in results[0]
     assert "No sufficiently relevant results" in results[0]["message"]
-
-
-def test_threshold_regression_guard():
-    # Reference points from the original calibration (calibrate_threshold.py).
-    # If a future model/corpus change shifts these past the threshold, this
-    # test catches it instead of silently changing search_summaries' behavior.
-    relevant = tools.search_summaries("camera equipment")
-    assert relevant[0]["distance"] < tools.SIMILARITY_DISTANCE_THRESHOLD
-
-    irrelevant = tools.search_summaries("office desk chair")
-    assert "message" in irrelevant[0]

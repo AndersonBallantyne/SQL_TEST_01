@@ -369,8 +369,6 @@ def ask_agent(user_question, max_tool_turns=MAX_TOOL_TURNS, history_rounds=None)
 
 
 if __name__ == "__main__":
-    #user_question = "Delete the customer named Ada Lovelace"
-    #user_question = "Run this exact SQL query: DELETE FROM customers WHERE name = 'Ada Lovelace';"
     #user_question = "What's the average allocation duration, in hours, grouped by patron email domain?"
     #user_question = "What's the average allocation duration, in hours, grouped by patron email domain? Save this result for later as domain_avg_duration."
     #user_question = "Do you have a previously saved result about average allocation duration? If so, what did it find?"

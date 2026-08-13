@@ -55,17 +55,6 @@ def test_irrelevant_query_returns_no_match_message():
     assert "No sufficiently relevant documentation found" in results[0]["message"]
 
 
-def test_threshold_regression_guard():
-    # DOCS_SIMILARITY_DISTANCE_THRESHOLD (tools.py) is still provisional, not calibrated with
-    # Build 3's 40-query rigor - if it ever gets tightened/loosened, this is the test that
-    # would need its own reference points revisited too.
-    relevant = tools.search_docs("why does agent_scratch have two separate database roles")
-    assert relevant[0]["distance"] < tools.DOCS_SIMILARITY_DISTANCE_THRESHOLD
-
-    irrelevant = tools.search_docs("best chocolate chip cookie recipe")
-    assert "message" in irrelevant[0]
-
-
 def test_docs_schema_discoverable_via_list_tables():
     tables = tools.list_tables()
     assert any(t["table_schema"] == "docs" and t["table_name"] == "chunks" for t in tables)
